@@ -7,7 +7,7 @@ const MyCalendar = ({ userData }) => {
   const [date, SetDate] = useState(new Date());
   return (
     <>
-      <Calendar value={date} onChange={SetDate} />
+      <Calendar value={date} onChange={SetDate} calendarType="US" />
       <Today userData={userData} date={date} />
     </>
   );
