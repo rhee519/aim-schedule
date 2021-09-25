@@ -20,6 +20,7 @@ const Today = ({ userData, date }) => {
           setWorkTime(docSnap.data().workTime);
         }
       } catch (error) {
+        console.log("from Today.js");
         console.log(error);
       }
     };

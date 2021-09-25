@@ -23,6 +23,7 @@ const WorkTimeForm = ({ userData }) => {
           setIsWorking(data.isWorking);
         }
       } catch (error) {
+        console.log("from WorkTimeForm.js");
         console.log(error);
       }
     };
@@ -47,6 +48,7 @@ const WorkTimeForm = ({ userData }) => {
           });
         }
       } catch (error) {
+        console.log("from WorkTimeForm.js");
         console.log(error);
       }
     };

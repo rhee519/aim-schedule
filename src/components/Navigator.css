@@ -1,0 +1,46 @@
+.nav--container {
+  position: fixed;
+  top: 0;
+  z-index: 1;
+  background-color: red;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100vw;
+  height: 70px;
+}
+
+.nav--menu {
+  background-color: white;
+  position: absolute;
+  display: flex;
+  margin: 20px;
+  width: 30px;
+  height: 30px;
+}
+
+.nav--home {
+  left: 0;
+  background-image: url("../images/logo.png");
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position-y: center;
+  box-sizing: border-box;
+  color: transparent;
+}
+
+.nav--profile {
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: navy;
+  /* background-color: #fff; */
+  border-radius: 100%;
+}
+
+.nav--profile img {
+  /* overflow: hidden; */
+  border-radius: 100px;
+  width: 30px;
+}
