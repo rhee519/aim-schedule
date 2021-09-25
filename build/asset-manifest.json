@@ -1,0 +1,23 @@
+{
+  "files": {
+    "main.css": "/aim-schedule/static/css/main.118503f5.chunk.css",
+    "main.js": "/aim-schedule/static/js/main.b9bb9555.chunk.js",
+    "main.js.map": "/aim-schedule/static/js/main.b9bb9555.chunk.js.map",
+    "runtime-main.js": "/aim-schedule/static/js/runtime-main.47f7ef00.js",
+    "runtime-main.js.map": "/aim-schedule/static/js/runtime-main.47f7ef00.js.map",
+    "static/css/2.8cebfa1f.chunk.css": "/aim-schedule/static/css/2.8cebfa1f.chunk.css",
+    "static/js/2.fcf01280.chunk.js": "/aim-schedule/static/js/2.fcf01280.chunk.js",
+    "static/js/2.fcf01280.chunk.js.map": "/aim-schedule/static/js/2.fcf01280.chunk.js.map",
+    "index.html": "/aim-schedule/index.html",
+    "static/css/2.8cebfa1f.chunk.css.map": "/aim-schedule/static/css/2.8cebfa1f.chunk.css.map",
+    "static/css/main.118503f5.chunk.css.map": "/aim-schedule/static/css/main.118503f5.chunk.css.map",
+    "static/js/2.fcf01280.chunk.js.LICENSE.txt": "/aim-schedule/static/js/2.fcf01280.chunk.js.LICENSE.txt"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.47f7ef00.js",
+    "static/css/2.8cebfa1f.chunk.css",
+    "static/js/2.fcf01280.chunk.js",
+    "static/css/main.118503f5.chunk.css",
+    "static/js/main.b9bb9555.chunk.js"
+  ]
+}
