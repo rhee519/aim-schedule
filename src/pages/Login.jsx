@@ -3,8 +3,8 @@ import {
   GoogleAuthProvider,
   signInWithRedirect,
 } from "@firebase/auth";
-import { faGoogle } from "@fortawesome/free-brands-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+// import { faGoogle } from "@fortawesome/free-brands-svg-icons";
+// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
 import { auth } from "../myFirebase";
 import "./Login.css";
@@ -14,9 +14,6 @@ const Login = () => {
     event.preventDefault();
     const provider = new GoogleAuthProvider();
     signInWithRedirect(auth, provider);
-    // getRedirectResult(auth).then((result) => {
-    //   console.log(auth.currentUser);
-    // });
   };
   return (
     <div className="login--container">
@@ -24,7 +21,8 @@ const Login = () => {
         <h2>Sign in</h2>
         <button onClick={onGoogleLoginClick}>
           Continue with Google{" "}
-          <FontAwesomeIcon icon={faGoogle} size="2x" color="#aaa" />
+          {/* <FontAwesomeIcon icon={faGoogle} size="2x" color="#aaa" /> */}
+          <img id="google" src="../images/google.svg" alt="google" />
         </button>
       </div>
     </div>
