@@ -1,0 +1,62 @@
+@import "../variables.scss";
+
+$login-height: 70vh;
+$login-width: 300px;
+
+.login--container {
+  background-color: #fff;
+  position: absolute;
+  top: 50px;
+  left: -$login-width/2;
+  height: $login-height;
+  width: $login-width;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid $form-color-border;
+  border-radius: 10px;
+}
+
+.login--box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.aim-korea {
+  position: absolute;
+  top: 100px;
+  width: 100px;
+  height: 100px;
+  // background-color: aqua;
+  // border: 1px solid #000;
+  background-image: url("../images/logo.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.8;
+  // color: black;
+  margin-bottom: 30px;
+}
+
+#social--container {
+  position: absolute;
+  bottom: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  // height: 50px;
+  width: 200px;
+  padding: 5px;
+}
+
+.signin--text {
+  margin-bottom: 70px;
+}
+
+#google {
+  background-image: url("../images/google.svg");
+  width: 16px;
+  height: 16px;
+  margin-left: 5px;
+}

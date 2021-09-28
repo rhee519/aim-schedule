@@ -7,7 +7,7 @@ import {
 } from "@firebase/firestore";
 import React, { useEffect, useState } from "react";
 import { db } from "../myFirebase";
-import Todo from "./Todo";
+import Todo from "../components/Todo";
 
 const TodoList = ({ userData }) => {
   const [todo, setTodo] = useState("");

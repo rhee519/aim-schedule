@@ -1,25 +1,36 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import "./Navigator.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-// import { faUser } from "@fortawesome/free-regular-svg-icons";
-import { faUserAlt } from "@fortawesome/free-solid-svg-icons";
+import {
+  faCalendarAlt,
+  faHome,
+  faList,
+  faUserAlt,
+} from "@fortawesome/free-solid-svg-icons";
+import "./Navigator.scss";
 
 const Navigator = ({ userData }) => {
   return (
     <div className="nav--container">
-      <Link className="nav--menu nav--home" to="/">
-        {/* <h4>Home</h4> */}
-        {/* <img src="../../images/logo.png" alt="AIM Korea Logo" /> */}
+      <Link className="nav--home" to="/">
+        <FontAwesomeIcon icon={faHome} />
       </Link>
-      <Link className="nav--menu nav--profile" to="/profile">
-        {/* <h4>Profile</h4> */}
-        {userData ? (
-          <img src={userData.photoURL} alt="profile" />
-        ) : (
-          <FontAwesomeIcon icon={faUserAlt} size="2x" />
-        )}
-      </Link>
+      <div className="nav--side--menu">
+        <Link className="nav--todo-list" to="/todo-list">
+          <FontAwesomeIcon icon={faList} />
+        </Link>
+        <Link className="nav--calendar" to="/calendar">
+          <FontAwesomeIcon icon={faCalendarAlt} />
+        </Link>
+        <Link className="nav--profile" to="/profile">
+          {/* <h4>Profile</h4> */}
+          {userData ? (
+            <img src={userData.photoURL} alt="profile" />
+          ) : (
+            <FontAwesomeIcon icon={faUserAlt} />
+          )}
+        </Link>
+      </div>
     </div>
   );
 };

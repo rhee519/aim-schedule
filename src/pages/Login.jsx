@@ -7,7 +7,7 @@ import {
 // import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
 import { auth } from "../myFirebase";
-import "./Login.css";
+import "./Login.scss";
 
 const Login = () => {
   const onGoogleLoginClick = (event) => {
@@ -17,12 +17,13 @@ const Login = () => {
   };
   return (
     <div className="login--container">
-      <div>
-        <h2>Sign in</h2>
-        <button onClick={onGoogleLoginClick}>
-          Continue with Google{" "}
+      <div className="login--box">
+        <div className="aim-korea logo"></div>
+        <h2 className="signin--text">Sign in</h2>
+        <button id="social--container" onClick={onGoogleLoginClick}>
+          <span>Continue with Google{"  "}</span>
           {/* <FontAwesomeIcon icon={faGoogle} size="2x" color="#aaa" /> */}
-          <img id="google" src="../images/google.svg" alt="google" />
+          <div id="google" alt="google"></div>
         </button>
       </div>
     </div>

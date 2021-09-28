@@ -1,0 +1,28 @@
+$fold-btn-width: 30px;
+$fold-btn-height: 30px;
+
+.work-time-form--container {
+  position: absolute;
+  border: 1px solid #000;
+  top: 80vh;
+  left: 20px;
+}
+
+#fold {
+  position: absolute;
+  top: -$fold-btn-height/2;
+  left: -$fold-btn-width/2;
+  width: $fold-btn-width;
+  height: $fold-btn-height;
+  border-radius: 100px;
+}
+
+.work-time-form--display {
+  // width: 100px;
+  padding: 10px;
+  display: flex;
+  // flex-wrap: wrap;
+  flex-direction: column;
+  // align-items: center;
+  // justify-content: center;
+}

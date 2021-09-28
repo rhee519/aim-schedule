@@ -6,13 +6,17 @@ import Login from "../pages/Login";
 import NotFound from "../pages/NotFound";
 import Profile from "../pages/Profile";
 import Navigator from "./Navigator";
-import "./AppRouter.css";
+import MyCalendar from "../pages/MyCalendar";
+import TodoList from "../pages/TodoList";
+import WorkTimeForm from "./WorkTimeForm";
+
+import "./AppRouter.scss";
 
 const AppRouter = ({ userData }) => {
   return (
     <BrowserRouter>
       <Navigator userData={userData} />
-      {/* {auth.currentUser && <Navigator />} */}
+      <WorkTimeForm userData={userData} />
       <div className="router--container">
         <Switch>
           {auth.currentUser ? (
@@ -22,6 +26,12 @@ const AppRouter = ({ userData }) => {
               </Route>
               <Route path="/profile">
                 <Profile userData={userData} />
+              </Route>
+              <Route path="/calendar">
+                <MyCalendar userData={userData} />
+              </Route>
+              <Route path="/todo-list">
+                <TodoList userData={userData} />
               </Route>
               <Redirect path="/login" to="/" />
             </>
