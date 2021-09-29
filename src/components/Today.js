@@ -49,7 +49,7 @@ const Today = ({ userData, date }) => {
     // clean-up
   }, []);
 
-  // console.log(weekWorkTime);
+  console.log(weekWorkTime);
   return (
     <>
       <h4>{dateString} Log!</h4>

@@ -1,7 +1,7 @@
 import { onAuthStateChanged } from "@firebase/auth";
 import React, { useEffect, useState } from "react";
 import { auth } from "../myFirebase";
-import AppRouter from "./AppRouter";
+// import AppRouter from "./AppRouter";
 import Loading from "./Loading";
 import "./App.css";
 import NotFound from "../pages/NotFound";
@@ -23,7 +23,7 @@ function App() {
   return (
     <div className="app-container">
       {/* {isLoading ? <Loading /> : <AppRouter userData={userData} />} */}
-      {isLoading ? <Loading /> : <NotFound />}
+      {isLoading ? <Loading /> : <NotFound userData={userData} />}
     </div>
   );
 }
