@@ -1,14 +1,15 @@
 @import "../variables.scss";
 
 .nav--container {
-  position: relative;
+  position: absolute;
   top: 0;
   z-index: 1;
   /* background-color: red; */
   display: flex;
   // justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid grey;
+  // border-bottom: 1px solid grey;
+  box-shadow: rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px;
   width: 100vw;
   height: $nav-height;
 }

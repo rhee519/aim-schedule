@@ -17,8 +17,9 @@ const Login = () => {
   };
   return (
     <div className="login--container">
+      <div className="img--box"></div>
       <div className="login--box">
-        <div className="aim-korea logo"></div>
+        {/* <div className="aim-korea logo"></div> */}
         <h2 className="signin--text">Sign in</h2>
         <button id="social--container" onClick={onGoogleLoginClick}>
           <span>Continue with Google{"  "}</span>

@@ -1,6 +1,8 @@
 @import "../variables.scss";
 .router--container {
-  position: absolute;
   // background-color: turquoise;
-  top: $nav-height;
+  width: $inner-width;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }

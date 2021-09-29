@@ -1,50 +1,82 @@
 @import "../variables.scss";
+@import url("https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;700&display=swap");
 
-$login-height: 500px;
-$login-width: 300px;
+$box-width: 300px;
+$box-height: 300px;
+$font-color: #7f380a;
 
 .login--container {
-  background-image: url("../images/login_bg.jpg");
-  position: absolute;
-  top: 50px;
-  left: -$login-width/2;
-  height: $login-height;
-  width: $login-width;
+  background-color: #fff;
+  box-shadow: rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px;
+  overflow: hidden;
+  // position: absolute;
+  // top: calc(50vh - $box-height/2);
+  // left: -$box-width;
+  // width: $login-width;
   display: flex;
   justify-content: center;
   align-items: center;
-  border: 1px solid $form-color-border;
+  // border: 1px solid $form-color-border;
   border-radius: 10px;
+}
+
+.img--box {
+  background-image: url("../images/login_bg.jpg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position-y: -$box-height/3;
+  box-shadow: rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px;
+  width: $box-width;
+  height: $box-height;
 }
 
 .login--box {
+  width: $box-width;
+  height: $box-height;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   align-items: center;
 }
 
-.aim-korea {
+// .aim-korea {
+//   position: relative;
+//   // top: 10%;
+//   width: 100px;
+//   height: 100px;
+//   // background-color: aqua;
+//   // border: 1px solid #000;
+//   background-image: url("../images/logo.png");
+//   background-repeat: no-repeat;
+//   background-position: center;
+//   background-size: contain;
+//   opacity: 0.8;
+//   // color: black;
+//   margin-bottom: 30px;
+// }
+
+.signin--text {
   position: relative;
-  // top: 10%;
-  width: 100px;
-  height: 100px;
-  // background-color: aqua;
-  // border: 1px solid #000;
-  background-image: url("../images/logo.png");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
-  opacity: 0.8;
-  // color: black;
-  margin-bottom: 30px;
+  top: 40px;
+  left: 10px;
+  color: $font-color;
+  width: $box-width - 20px;
+  text-transform: uppercase;
+  text-align: left;
+  font-family: "Ubuntu", sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  border-bottom: 1px solid #7f380a;
+  margin-bottom: 70px;
 }
 
 #social--container {
-  border: 2px solid $login-btn-color;
+  position: relative;
+  bottom: 40px;
+  border: 2px solid $font-color;
   border-radius: 10px;
-  color: $login-btn-color;
-  position: absolute;
-  bottom: 50px;
+  color: $font-color;
+  font-family: "Ubuntu", sans-serif;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -52,13 +84,9 @@ $login-width: 300px;
   width: 200px;
   padding: 5px;
   &:hover {
-    background-color: $login-btn-color;
+    background-color: $font-color;
     color: #fff;
   }
-}
-
-.signin--text {
-  margin-bottom: 70px;
 }
 
 #google {
