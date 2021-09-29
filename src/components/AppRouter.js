@@ -1,5 +1,10 @@
 import React from "react";
-import { BrowserRouter, Switch, Route, Redirect } from "react-router-dom";
+import {
+  // BrowserRouter,
+  Switch,
+  Route,
+  Redirect,
+} from "react-router-dom";
 import Home from "../pages/Home";
 import Login from "../pages/Login";
 import NotFound from "../pages/NotFound";
@@ -13,7 +18,8 @@ import "./AppRouter.scss";
 
 const AppRouter = ({ userData }) => {
   return (
-    <BrowserRouter>
+    <>
+      {/* <BrowserRouter> */}
       <Navigator userData={userData} />
       {userData && <WorkTimeForm userData={userData} />}
       <div className="router--container">
@@ -47,7 +53,8 @@ const AppRouter = ({ userData }) => {
           </Route>
         </Switch>
       </div>
-    </BrowserRouter>
+      {/* </BrowserRouter> */}
+    </>
   );
 };
 
