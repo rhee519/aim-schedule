@@ -14,39 +14,42 @@ const Today = ({ userData, date }) => {
     // when this component is mounted,
     // fetch data of this date.
     const dayDocRef = doc(db, userData.uid, dateString);
-    const weekDocRef = doc(
-      db,
-      userData.uid,
-      `week${getWeekNumber(new Date())}`
-    );
-    const todayDocRef = doc(db, userData.uid, todayString);
-    const fetchData = async (docReference, setTime) => {
+    const weekDocRef = doc(db, userData.uid, `week${getWeekNumber(date)}`);
+    const fetchData = async () => {
       try {
-        const docSnap = await getDoc(docReference);
-        if (docSnap.exists()) {
-          setTime(docSnap.data().workTime);
+        const dayDocSnap = await getDoc(dayDocRef);
+        const weekDocSnap = await getDoc(weekDocRef);
+        if (dayDocSnap.exists()) {
+          setWorkTime(dayDocSnap.data().workTime);
+        }
+        if (weekDocSnap.exists()) {
+          setWeekWorkTime(weekDocSnap.data().weekWorkTime);
         }
       } catch (error) {
         console.log("from Today.js");
         console.log(error);
       }
     };
-    fetchData(dayDocRef, setWorkTime);
-    fetchData(weekDocRef, setWeekWorkTime);
+    fetchData();
 
     // listener
-    const q = query(todayDocRef);
+    const q = query(dayDocRef);
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (dateString === todayString) fetchData(todayDocRef, setWorkTime);
+      if (dateString === todayString) fetchData();
     });
 
     return () => {
       setWorkTime(0);
+      setWeekWorkTime(0);
       unsubscribe();
     };
-  }, [userData.uid, dateString, todayString]);
+  }, [userData.uid, dateString, todayString, date]);
 
-  console.log(weekWorkTime);
+  useEffect(() => {
+    // clean-up
+  }, []);
+
+  // console.log(weekWorkTime);
   return (
     <>
       <h4>{dateString} Log!</h4>

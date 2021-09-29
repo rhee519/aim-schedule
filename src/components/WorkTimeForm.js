@@ -139,7 +139,7 @@ const WorkTimeForm = ({ userData }) => {
     setIsFolded(!isFolded);
   };
 
-  console.log(workTime, weekWorkTime);
+  // console.log(workTime, weekWorkTime);
 
   return (
     <div className="work-time-form--container">

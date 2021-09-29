@@ -1,6 +1,5 @@
 import React from "react";
 import { BrowserRouter, Switch, Route, Redirect } from "react-router-dom";
-import { auth } from "../myFirebase";
 import Home from "../pages/Home";
 import Login from "../pages/Login";
 import NotFound from "../pages/NotFound";
@@ -16,10 +15,10 @@ const AppRouter = ({ userData }) => {
   return (
     <BrowserRouter>
       <Navigator userData={userData} />
-      <WorkTimeForm userData={userData} />
+      {userData && <WorkTimeForm userData={userData} />}
       <div className="router--container">
         <Switch>
-          {auth.currentUser ? (
+          {userData ? (
             <>
               <Route exact path="/">
                 <Home userData={userData} />
