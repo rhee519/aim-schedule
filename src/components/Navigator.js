@@ -15,6 +15,7 @@ const Navigator = ({ userData }) => {
       <Link className="nav--home" to="/">
         <FontAwesomeIcon icon={faHome} />
       </Link>
+
       <div className="nav--side--menu">
         <Link className="nav--todo-list" to="/todo-list">
           <FontAwesomeIcon icon={faList} />

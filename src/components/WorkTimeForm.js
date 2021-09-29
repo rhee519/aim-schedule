@@ -42,6 +42,7 @@ const WorkTimeForm = ({ userData }) => {
 
   useEffect(() => {
     // component did mount
+    let isSubscribed = true;
     const fetchData = async () => {
       try {
         const dayDocRef = doc(db, userData.uid, todayString);
@@ -54,10 +55,12 @@ const WorkTimeForm = ({ userData }) => {
         const weekDocSnap = await getDoc(weekDocRef);
         if (dayDocSnap.exists()) {
           const data = dayDocSnap.data();
-          setWorkTime(data.workTime);
-          setIsWorking(data.isWorking);
-          setLastStartedAt(data.lastStartedAt);
-          setLastFinishedAt(data.lastFinishedAt);
+          if (isSubscribed) {
+            setWorkTime(data.workTime);
+            setIsWorking(data.isWorking);
+            setLastStartedAt(data.lastStartedAt);
+            setLastFinishedAt(data.lastFinishedAt);
+          }
         }
         if (weekDocSnap.exists()) {
           const data = weekDocSnap.data();
@@ -69,10 +72,13 @@ const WorkTimeForm = ({ userData }) => {
       }
     };
     fetchData();
+
+    return () => (isSubscribed = false);
   }, [todayString, userData.uid]);
 
   useEffect(() => {
     // component did update
+    let isSubscribed = true;
     const updateData = async () => {
       try {
         const dayDocRef = doc(db, userData.uid, todayString);
@@ -83,29 +89,31 @@ const WorkTimeForm = ({ userData }) => {
         );
         const dayDocSnap = await getDoc(dayDocRef);
         const weekDocSnap = await getDoc(weekDocRef);
-        if (dayDocSnap.exists()) {
-          updateDoc(dayDocRef, {
-            workTime,
-            isWorking,
-            lastStartedAt,
-            lastFinishedAt,
-          });
-        } else {
-          setDoc(dayDocRef, {
-            workTime,
-            isWorking,
-            lastStartedAt,
-            lastFinishedAt,
-          });
-        }
-        if (weekDocSnap.exists()) {
-          updateDoc(weekDocRef, {
-            weekWorkTime,
-          });
-        } else {
-          setDoc(weekDocRef, {
-            weekWorkTime,
-          });
+        if (isSubscribed) {
+          if (dayDocSnap.exists()) {
+            updateDoc(dayDocRef, {
+              workTime,
+              isWorking,
+              lastStartedAt,
+              lastFinishedAt,
+            });
+          } else {
+            setDoc(dayDocRef, {
+              workTime,
+              isWorking,
+              lastStartedAt,
+              lastFinishedAt,
+            });
+          }
+          if (weekDocSnap.exists()) {
+            updateDoc(weekDocRef, {
+              weekWorkTime,
+            });
+          } else {
+            setDoc(weekDocRef, {
+              weekWorkTime,
+            });
+          }
         }
       } catch (error) {
         console.log("from WorkTimeForm.js");
@@ -113,6 +121,8 @@ const WorkTimeForm = ({ userData }) => {
       }
     };
     updateData();
+
+    return () => (isSubscribed = false);
   }, [
     todayString,
     userData.uid,
@@ -138,8 +148,6 @@ const WorkTimeForm = ({ userData }) => {
   const onFoldClick = () => {
     setIsFolded(!isFolded);
   };
-
-  // console.log(workTime, weekWorkTime);
 
   return (
     <div className="work-time-form--container">

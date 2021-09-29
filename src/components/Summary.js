@@ -14,6 +14,8 @@ const Summary = ({ userData }) => {
   const todayString = dateFormat(new Date(), "yyyy-mm-dd");
 
   useEffect(() => {
+    let isSubscribed = true;
+
     const dayDocRef = doc(db, userData.uid, todayString);
     const weekDocRef = doc(
       db,
@@ -25,26 +27,27 @@ const Summary = ({ userData }) => {
         const dayDocSnap = await getDoc(dayDocRef);
         const weekDocSnap = await getDoc(weekDocRef);
         if (dayDocSnap.exists()) {
-          setTodayWorkTime(dayDocSnap.data().workTime);
+          if (isSubscribed) setTodayWorkTime(dayDocSnap.data().workTime);
         }
         if (weekDocSnap.exists()) {
-          setWeekWorkTime(weekDocSnap.data().weekWorkTime);
+          if (isSubscribed) setWeekWorkTime(weekDocSnap.data().weekWorkTime);
         }
       } catch (error) {
         console.log("from Summary.js");
         console.log(error);
       }
     };
-    fetchData();
+    if (isSubscribed) fetchData();
 
     const q = query(dayDocRef);
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      fetchData();
+      if (isSubscribed) fetchData();
     });
 
     return () => {
-      setTodayWorkTime(0);
-      setWeekWorkTime(0);
+      isSubscribed = false;
+      // setTodayWorkTime(0);
+      // setWeekWorkTime(0);
       unsubscribe();
     };
   }, [userData.uid, todayString]);
