@@ -52,7 +52,7 @@ $delete-color: $color-darkred;
 .todo-list--btn-add {
   background-color: $form-input-color;
   color: #fff;
-  position: absolute;
+  position: relative;
   width: 30px;
   height: 25px;
   border: 2px solid $form-input-color;

@@ -159,8 +159,11 @@ const TodoList = ({ userData }) => {
             <button
               className="todo--btn todo--btn-delete"
               onClick={onTodoDeleteClick}
+              id={index}
             >
-              <i className="material-icons delete">delete_forever</i>
+              <i className="material-icons delete" id={index}>
+                delete_forever
+              </i>
             </button>
             {/* <input
               type="button"
