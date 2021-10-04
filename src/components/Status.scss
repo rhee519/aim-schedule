@@ -1,0 +1,31 @@
+.status--container {
+  position: relative;
+  width: 80vw;
+  margin: 5px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-end;
+}
+
+#status--profile,
+#status--name,
+#status--position,
+#status--email,
+#stauts--working {
+  margin: 5px;
+}
+
+#status--profile {
+  width: 30px;
+  height: 30px;
+  border-radius: 100px;
+}
+
+#status--name {
+  font-size: 28px;
+}
+
+#status--working {
+  position: absolute;
+  right: 0;
+}

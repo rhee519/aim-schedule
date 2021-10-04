@@ -7,45 +7,48 @@ import Profile from "../pages/Profile";
 import Navigator from "./Navigator";
 import MyCalendar from "../pages/MyCalendar";
 import TodoList from "../pages/TodoList";
+import NotAdmin from "../pages/NotAdmin";
 import WorkTimeForm from "./WorkTimeForm";
 
 import "./AppRouter.scss";
+import Admin from "../pages/Admin";
 
-const AppRouter = ({ userData }) => {
+const AppRouter = ({ userData, isAdmin }) => {
   return (
     <>
-      <Navigator userData={userData} />
+      <Navigator userData={userData} isAdmin={isAdmin} />
       {userData && <WorkTimeForm userData={userData} />}
       <div className="router--container">
-        <Switch>
-          {userData ? (
-            <>
-              <Route exact path="/">
-                <Home userData={userData} />
-              </Route>
-              <Route path="/profile">
-                <Profile userData={userData} />
-              </Route>
-              <Route path="/calendar">
-                <MyCalendar userData={userData} />
-              </Route>
-              <Route path="/todo-list">
-                <TodoList userData={userData} />
-              </Route>
-              <Redirect path="/login" to="/" />
-            </>
-          ) : (
-            <>
-              <Route path="/">
-                <Login />
-              </Route>
-              <Redirect path="*" to="/" />
-            </>
-          )}
-          <Route>
-            <NotFound />
-          </Route>
-        </Switch>
+        {userData ? (
+          <Switch>
+            <Route exact path="/">
+              <Home userData={userData} />
+            </Route>
+            <Route path="/profile">
+              <Profile userData={userData} />
+            </Route>
+            <Route path="/calendar">
+              <MyCalendar userData={userData} />
+            </Route>
+            <Route path="/todo-list">
+              <TodoList userData={userData} />
+            </Route>
+            <Route path="/admin">
+              {isAdmin ? <Admin userData={userData} /> : <NotAdmin />}
+            </Route>
+            <Route path="*">
+              <NotFound />
+            </Route>
+            <Redirect path="/login" to="/" />
+          </Switch>
+        ) : (
+          <Switch>
+            <Route path="/">
+              <Login />
+            </Route>
+            <Redirect path="*" to="/" />
+          </Switch>
+        )}
       </div>
     </>
   );

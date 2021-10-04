@@ -47,7 +47,7 @@ const Today = ({ userData, date }) => {
     };
   }, [userData.uid, dateString, todayString, date]);
 
-  console.log(weekWorkTime);
+  // console.log(weekWorkTime);
   return (
     <>
       <h4>{dateString} Log!</h4>

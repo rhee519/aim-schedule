@@ -1,34 +1,32 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faCalendarAlt,
-  faHome,
-  faList,
-  faUserAlt,
-} from "@fortawesome/free-solid-svg-icons";
 import "./Navigator.scss";
 
-const Navigator = ({ userData }) => {
+const Navigator = ({ userData, isAdmin }) => {
   return (
     <div className="nav--container">
       <Link className="nav--home" to="/">
-        <FontAwesomeIcon icon={faHome} />
+        <span className="material-icons">home</span>{" "}
       </Link>
 
       <div className="nav--side--menu">
+        {isAdmin && (
+          <Link className="nav--admin" to="/admin">
+            <i className="material-icons">admin_panel_settings</i>
+          </Link>
+        )}
         <Link className="nav--todo-list" to="/todo-list">
-          <FontAwesomeIcon icon={faList} />
+          <i className="material-icons">format_list_bulleted</i>
         </Link>
         <Link className="nav--calendar" to="/calendar">
-          <FontAwesomeIcon icon={faCalendarAlt} />
+          <i className="material-icons">event_available</i>{" "}
         </Link>
         <Link className="nav--profile" to="/profile">
           {/* <h4>Profile</h4> */}
           {userData ? (
             <img src={userData.photoURL} alt="profile" />
           ) : (
-            <FontAwesomeIcon icon={faUserAlt} />
+            <span className="material-icons">account_circle</span>
           )}
         </Link>
       </div>

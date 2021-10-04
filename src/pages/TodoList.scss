@@ -1,0 +1,146 @@
+@import "../variables.scss";
+
+$form-width-ratio: 90%;
+$form-input-color: $color-darknavy;
+$delete-color: $color-darkred;
+
+.todo-list--container {
+  position: absolute;
+  top: $nav-height;
+  width: $inner-width;
+  max-width: 80vw;
+  margin-top: 20px;
+  // background-color: yellowgreen;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.todo--btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.todo-list--title {
+  font-size: 32px;
+  margin-bottom: 20px;
+}
+
+.todo-list--form {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: $form-width-ratio;
+  margin-bottom: 20px;
+}
+
+.todo-list--input {
+  flex-grow: 1;
+  height: 30px;
+  border: 2px solid $form-input-color;
+  border-radius: 15px;
+  padding-left: 2%;
+  padding-right: 11%;
+  font-size: 16px;
+  &:focus {
+    outline-color: $form-input-color;
+  }
+}
+
+.todo-list--btn-add {
+  background-color: $form-input-color;
+  color: #fff;
+  position: absolute;
+  width: 30px;
+  height: 25px;
+  border: 2px solid $form-input-color;
+  border-radius: 13px;
+  right: 7%;
+  margin: 5px 0;
+  &:hover {
+    background-color: transparent;
+    color: $form-input-color;
+  }
+  &:active {
+    background-color: $form-input-color;
+    color: #fff;
+  }
+  i {
+    font-weight: 600;
+    font-size: 18px;
+  }
+}
+
+.todo-list--todos {
+  width: $form-width-ratio;
+  // padding-bottom: 20px;
+  // background-color: rgba($form-input-color, 0.7);
+  box-shadow: rgba(0, 0, 0, 0.2) 0px 3px 8px;
+}
+
+.todo-list--todo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: white;
+  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+  padding: 5px 5px;
+  margin: 10px 0;
+  .todo--text {
+    flex-grow: 1;
+    text-align: left;
+    margin: auto 5px;
+  }
+}
+
+.todo--btn-check {
+  border: 3px solid $form-input-color;
+  width: 24px;
+  height: 24px;
+  border-radius: 100px;
+  background-color: #fff;
+  i.check {
+    color: transparent;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  &.checked {
+    i.check {
+      color: $form-input-color;
+    }
+  }
+  &:hover {
+    i.check {
+      color: $form-input-color;
+    }
+  }
+  &:active {
+    background-color: $form-input-color;
+    i.check {
+      color: #fff;
+    }
+  }
+}
+
+.todo--btn-delete {
+  border: none;
+  background-color: transparent;
+  box-shadow: none;
+  i.delete {
+    color: $delete-color;
+  }
+  &:hover {
+    background-color: $delete-color;
+    i.delete {
+      color: #fff;
+    }
+  }
+  &:active {
+    background-color: transparent;
+    i.delete {
+      color: $delete-color;
+    }
+  }
+}

@@ -1,0 +1,6 @@
+.todo--text {
+  font-size: 16px;
+  &.checked {
+    text-decoration: line-through;
+  }
+}

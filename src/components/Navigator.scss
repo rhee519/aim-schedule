@@ -1,16 +1,16 @@
 @import "../variables.scss";
 
+$icon-color: $color-darknavy;
+
 .nav--container {
+  // background-color: $nav-color;
   position: absolute;
   top: 0;
   z-index: 1;
-  /* background-color: red; */
   display: flex;
-  // justify-content: space-between;
   align-items: center;
-  // border-bottom: 1px solid grey;
   box-shadow: rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px;
-  width: 100vw;
+  width: 100%;
   height: $nav-height;
 }
 
@@ -30,7 +30,6 @@
 
 .nav--side--menu {
   position: absolute;
-  // background-color: saddlebrown;
   right: 0;
   margin-right: 10px;
   padding: 5px;
@@ -39,15 +38,17 @@
   align-items: center;
 }
 
+.nav--admin,
 .nav--todo-list,
 .nav--calendar,
 .nav--profile {
   color: $icon-color;
+  font-size: 16px;
   margin: 10px;
 }
 
 .nav--profile img {
   /* overflow: hidden; */
   border-radius: 100px;
-  width: 25px;
+  width: 24px;
 }

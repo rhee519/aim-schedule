@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc, updateDoc } from "@firebase/firestore";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { db } from "../myFirebase";
 import getWeekNumber from "./getWeekNumber";
 import WorkTimeString from "./WorkTimeString";
@@ -40,98 +40,114 @@ const WorkTimeForm = ({ userData }) => {
 
   const [isFolded, setIsFolded] = useState(false);
 
-  useEffect(() => {
-    // component did mount
-    let isSubscribed = true;
-    const fetchData = async () => {
-      try {
-        const dayDocRef = doc(db, userData.uid, todayString);
-        const weekDocRef = doc(
-          db,
-          userData.uid,
-          `week${getWeekNumber(new Date())}`
-        );
-        const dayDocSnap = await getDoc(dayDocRef);
-        const weekDocSnap = await getDoc(weekDocRef);
-        if (dayDocSnap.exists()) {
-          const data = dayDocSnap.data();
-          if (isSubscribed) {
-            setWorkTime(data.workTime);
-            setIsWorking(data.isWorking);
-            setLastStartedAt(data.lastStartedAt);
-            setLastFinishedAt(data.lastFinishedAt);
-          }
-        }
-        if (weekDocSnap.exists()) {
-          const data = weekDocSnap.data();
-          setWeekWorkTime(data.weekWorkTime);
-        }
-      } catch (error) {
-        console.log("from WorkTimeForm.js");
-        console.log(error);
+  const fetchData = useCallback(async () => {
+    try {
+      const userDocRef = doc(db, "userlist", userData.uid);
+      const dayDocRef = doc(db, userData.uid, todayString);
+      const weekDocRef = doc(
+        db,
+        userData.uid,
+        `week${getWeekNumber(new Date())}`
+      );
+      const userDocSnap = await getDoc(userDocRef);
+      const dayDocSnap = await getDoc(dayDocRef);
+      const weekDocSnap = await getDoc(weekDocRef);
+      // userlist collection의 해당 유저 정보를 읽는다.
+      if (userDocSnap.exists()) {
+        setIsWorking(userDocSnap.data().isWorking);
       }
-    };
-    fetchData();
 
-    return () => (isSubscribed = false);
-  }, [todayString, userData.uid]);
-
-  useEffect(() => {
-    // component did update
-    let isSubscribed = true;
-    const updateData = async () => {
-      try {
-        const dayDocRef = doc(db, userData.uid, todayString);
-        const weekDocRef = doc(
-          db,
-          userData.uid,
-          `week${getWeekNumber(new Date())}`
-        );
-        const dayDocSnap = await getDoc(dayDocRef);
-        const weekDocSnap = await getDoc(weekDocRef);
-        if (isSubscribed) {
-          if (dayDocSnap.exists()) {
-            updateDoc(dayDocRef, {
-              workTime,
-              isWorking,
-              lastStartedAt,
-              lastFinishedAt,
-            });
-          } else {
-            setDoc(dayDocRef, {
-              workTime,
-              isWorking,
-              lastStartedAt,
-              lastFinishedAt,
-            });
-          }
-          if (weekDocSnap.exists()) {
-            updateDoc(weekDocRef, {
-              weekWorkTime,
-            });
-          } else {
-            setDoc(weekDocRef, {
-              weekWorkTime,
-            });
-          }
-        }
-      } catch (error) {
-        console.log("from WorkTimeForm.js");
-        console.log(error);
+      if (dayDocSnap.exists()) {
+        const data = dayDocSnap.data();
+        setWorkTime(data.workTime);
+        // setIsWorking(data.isWorking);
+        setLastStartedAt(data.lastStartedAt);
+        setLastFinishedAt(data.lastFinishedAt);
       }
-    };
-    updateData();
+      if (weekDocSnap.exists()) {
+        const data = weekDocSnap.data();
+        setWeekWorkTime(data.weekWorkTime);
+      }
+    } catch (error) {
+      console.log("from WorkTimeForm.js");
+      console.log(error);
+    }
+  }, [userData.uid, todayString]);
 
-    return () => (isSubscribed = false);
+  const updateData = useCallback(async () => {
+    try {
+      const userDocRef = doc(db, "userlist", userData.uid);
+      const dayDocRef = doc(db, userData.uid, todayString);
+      const weekDocRef = doc(
+        db,
+        userData.uid,
+        `week${getWeekNumber(new Date())}`
+      );
+      const userDocSnap = await getDoc(userDocRef);
+      const dayDocSnap = await getDoc(dayDocRef);
+      const weekDocSnap = await getDoc(weekDocRef);
+
+      if (userDocSnap.exists()) {
+        updateDoc(userDocRef, {
+          isWorking,
+        });
+      } else {
+        setDoc(userDocRef, {
+          isWorking,
+        });
+      }
+      if (dayDocSnap.exists()) {
+        updateDoc(dayDocRef, {
+          workTime,
+          // isWorking,
+          lastStartedAt,
+          lastFinishedAt,
+        });
+      } else {
+        setDoc(dayDocRef, {
+          workTime,
+          // isWorking,
+          lastStartedAt,
+          lastFinishedAt,
+        });
+      }
+      if (weekDocSnap.exists()) {
+        updateDoc(weekDocRef, {
+          weekWorkTime,
+        });
+      } else {
+        setDoc(weekDocRef, {
+          weekWorkTime,
+        });
+      }
+    } catch (error) {
+      console.log("from WorkTimeForm.js");
+      console.log(error);
+    }
   }, [
-    todayString,
     userData.uid,
+    todayString,
     workTime,
     weekWorkTime,
     isWorking,
     lastStartedAt,
     lastFinishedAt,
   ]);
+
+  useEffect(() => {
+    // component did mount
+    fetchData();
+    return () => {
+      setWorkTime(0);
+      setWeekWorkTime(0);
+      setIsWorking(false);
+    };
+  }, [fetchData]);
+
+  useEffect(() => {
+    // component did update
+    updateData();
+  }, [updateData]);
 
   const onTimeBtnClick = () => {
     if (isWorking) {
@@ -152,7 +168,7 @@ const WorkTimeForm = ({ userData }) => {
   return (
     <div className="work-time-form--container">
       <button id="fold" onClick={onFoldClick}>
-        {isFolded ? "+" : "-"}
+        <i className="material-icons">{isFolded ? "summarize" : "remove"}</i>
       </button>
       {!isFolded && (
         <div className="work-time-form--display">

@@ -1,69 +1,61 @@
-import {
-  doc,
-  getDoc,
-  onSnapshot,
-  setDoc,
-  updateDoc,
-} from "@firebase/firestore";
-import React, { useEffect, useState } from "react";
+import { doc, getDoc, setDoc, updateDoc } from "@firebase/firestore";
+import React, { useCallback, useEffect, useState } from "react";
 import { db } from "../myFirebase";
 import Todo from "../components/Todo";
+import "./TodoList.scss";
 
 const TodoList = ({ userData }) => {
   const [todo, setTodo] = useState("");
   const [todoList, setTodoList] = useState([]);
 
-  useEffect(() => {
-    // component did mount
+  const fetchData = useCallback(async () => {
+    // let fetchSubscribe = true;
     const docRef = doc(db, userData.uid, "todo-list");
-    const fetchData = async (docReference) => {
-      try {
-        const docSnap = await getDoc(docReference);
+    // if (fetchSubscribe)
+    await getDoc(docRef)
+      .then((docSnap) => {
         if (docSnap.exists()) {
           setTodoList(docSnap.data().todoList);
         } else {
           setTodoList([]);
         }
-      } catch (error) {
+      })
+      .catch((error) => {
         console.log("from TodoList.js");
         console.log(error);
-      }
-    };
-    fetchData(docRef);
+      });
+  }, [userData.uid]);
 
-    const unsubscribe = onSnapshot(docRef, (snapshot) => {
-      fetchData(docRef);
-    });
+  const updateData = useCallback(
+    async (newTodoList) => {
+      const docRef = doc(db, userData.uid, "todo-list");
+      await getDoc(docRef)
+        .then((docSnap) => {
+          if (docSnap.exists()) {
+            updateDoc(docRef, {
+              todoList: newTodoList,
+            });
+          } else {
+            setDoc(docRef, {
+              todoList: newTodoList,
+            });
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+    [userData.uid]
+  );
 
+  useEffect(() => {
+    // component did mount
+    fetchData();
     return () => {
       setTodo("");
       setTodoList([]);
-      unsubscribe();
     };
-  }, [userData.uid]);
-
-  useEffect(() => {
-    // component did update
-    const docRef = doc(db, userData.uid, "todo-list");
-    const updateData = async () => {
-      try {
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          updateDoc(docRef, {
-            todoList,
-          });
-        } else {
-          setDoc(docRef, {
-            todoList,
-          });
-        }
-      } catch (error) {
-        console.log("from TodoList.js");
-        console.log(error);
-      }
-    };
-    updateData();
-  }, [userData.uid, todoList]);
+  }, [fetchData]);
 
   const onChange = (event) => {
     const {
@@ -72,59 +64,115 @@ const TodoList = ({ userData }) => {
     setTodo(value);
   };
 
-  const onSubmit = (event) => {
+  const onSubmit = async (event) => {
     event.preventDefault();
+    if (todo === "") return;
     const timeNow = new Date().getTime();
-    setTodoList([
+    const newTodoList = [
       ...todoList,
       { text: todo, done: false, createdAt: timeNow, modifiedAt: timeNow },
-    ]);
+    ];
 
+    // update database
+    updateData(newTodoList);
+
+    setTodoList(newTodoList);
     setTodo("");
   };
 
-  const onClick = (event) => {
+  // const onClick = (event) => {
+  //   const {
+  //     target: { name, id },
+  //   } = event;
+  //   const newTodoList = [...todoList];
+  //   if (name === "done") {
+  //     newTodoList[id].done = !newTodoList[id].done;
+  //   } else if (name === "delete") {
+  //     newTodoList.splice(id, 1);
+  //   }
+
+  //   setTodoList(newTodoList);
+
+  //   // update database
+  //   updateData(newTodoList);
+  // };
+
+  const onTodoCheckClick = (event) => {
     const {
-      target: { name, id },
+      target: { id },
     } = event;
-    const newList = [...todoList];
-    if (name === "done") {
-      newList[id].done = !newList[id].done;
-    } else if (name === "delete") {
-      newList.splice(id, 1);
-    }
-    setTodoList(newList);
+    const newTodoList = [...todoList];
+    newTodoList[id].done = !newTodoList[id].done;
+    setTodoList(newTodoList);
+    // update database
+    updateData(newTodoList);
+  };
+
+  const onTodoDeleteClick = (event) => {
+    const {
+      target: { id },
+    } = event;
+    const newTodoList = [...todoList];
+    newTodoList.splice(id, 1);
+    setTodoList(newTodoList);
+    // update database
+    updateData(newTodoList);
   };
 
   return (
-    <>
-      <h3>{userData.displayName}의 To-do List.</h3>
-      <form onSubmit={onSubmit}>
-        <input type="text" value={todo} onChange={onChange} />
-        <input type="submit" value="add" />
+    <div className="todo-list--container">
+      <h3 className="todo-list--title">{userData.displayName}의 To-do List.</h3>
+      <form className="todo-list--form" onSubmit={onSubmit}>
+        <input
+          className="todo-list--input"
+          type="text"
+          value={todo}
+          placeholder="Add new task"
+          onChange={onChange}
+        />
+        <button className="todo--btn todo-list--btn-add" type="submit">
+          <i className="material-icons">add</i>
+        </button>
+        {/* <input className="todo-list--btn-add" type="submit" value="add" /> */}
       </form>
-      <ul>
+      <div className="todo-list--todos">
         {todoList.map((todoEl, index) => (
-          <div key={index}>
-            <Todo text={todoEl.text} done={todoEl.done} id={index} />
-            <input
-              type="button"
-              name="done"
+          <div className="todo-list--todo" key={index}>
+            <button
+              className={
+                "todo--btn todo--btn-check" + (todoEl.done ? " checked" : "")
+              }
+              onClick={onTodoCheckClick}
               id={index}
-              onClick={onClick}
-              value={todoEl.done ? "undo" : "done"}
+            >
+              <i className="material-icons check" id={index}>
+                {todoEl.done ? "undo" : "done"}
+              </i>
+            </button>
+            <Todo
+              className="todo--text"
+              text={todoEl.text}
+              done={todoEl.done}
+              id={index}
             />
-            <input
+
+            <button
+              className="todo--btn todo--btn-delete"
+              onClick={onTodoDeleteClick}
+            >
+              <i className="material-icons delete">delete_forever</i>
+            </button>
+            {/* <input
               type="button"
               id={index}
               name="delete"
               value="del"
               onClick={onClick}
-            />
+            /> */}
           </div>
         ))}
-      </ul>
-    </>
+      </div>
+    </div>
   );
 };
 

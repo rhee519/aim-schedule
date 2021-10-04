@@ -4,19 +4,16 @@
 $box-width: 300px;
 $box-height: 300px;
 $font-color: #7f380a;
+$max-width: 80vw;
 
 .login--container {
   background-color: #fff;
   box-shadow: rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px;
   overflow: hidden;
-  // position: absolute;
-  // top: calc(50vh - $box-height/2);
-  // left: -$box-width;
-  // width: $login-width;
+  max-width: $max-width;
   display: flex;
   justify-content: center;
   align-items: center;
-  // border: 1px solid $form-color-border;
   border-radius: 10px;
 }
 
@@ -27,11 +24,13 @@ $font-color: #7f380a;
   background-position-y: -$box-height/3;
   box-shadow: rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px;
   width: $box-width;
+  max-width: $max-width/2;
   height: $box-height;
 }
 
 .login--box {
   width: $box-width;
+  max-width: $max-width/2;
   height: $box-height;
   display: flex;
   flex-direction: column;
