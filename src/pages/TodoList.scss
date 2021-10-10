@@ -5,33 +5,20 @@ $form-input-color: $color-darknavy;
 $delete-color: $color-darkred;
 
 .todo-list--container {
-  position: absolute;
-  top: $nav-height;
-  width: $inner-width;
-  max-width: 80vw;
-  margin-top: 20px;
-  // background-color: yellowgreen;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  @include container;
 }
 
 .todo--btn {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  @include flex--center;
 }
 
 .todo-list--title {
-  font-size: 32px;
-  margin-bottom: 20px;
+  @include page-title;
 }
 
 .todo-list--form {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  position: relative;
+  @include flex--center;
   width: $form-width-ratio;
   margin-bottom: 20px;
 }
@@ -52,12 +39,13 @@ $delete-color: $color-darkred;
 .todo-list--btn-add {
   background-color: $form-input-color;
   color: #fff;
-  position: relative;
+  position: absolute;
   width: 30px;
   height: 25px;
   border: 2px solid $form-input-color;
   border-radius: 13px;
-  right: 7%;
+  top: 0;
+  right: 2%;
   margin: 5px 0;
   &:hover {
     background-color: transparent;
@@ -126,7 +114,7 @@ $delete-color: $color-darkred;
 
 .todo--btn-delete {
   border: none;
-  background-color: transparent;
+  background-color: #fff;
   box-shadow: none;
   i.delete {
     color: $delete-color;
@@ -138,7 +126,7 @@ $delete-color: $color-darkred;
     }
   }
   &:active {
-    background-color: transparent;
+    background-color: #fff;
     i.delete {
       color: $delete-color;
     }

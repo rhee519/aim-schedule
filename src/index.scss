@@ -25,11 +25,14 @@ a {
 }
 
 button {
-  // background-color: $button-color;
+  @include flex--center;
+  background-color: $button-color;
   border-radius: 5px;
   border: 1px solid $button-color-border;
   box-shadow: rgba(100, 100, 111, 0.1) 0px 7px 29px 0px;
   font-size: 16px;
+  cursor: pointer;
+  transition: 0.1s;
 
   &:hover {
     // background-color: $button-color-hover;

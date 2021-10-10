@@ -1,6 +1,8 @@
 @import "../variables.scss";
 
 $icon-color: $color-darknavy;
+$icon-color-hover: $color-darknavy-light;
+$duration: 0.2s;
 
 .nav--container {
   // background-color: $nav-color;
@@ -12,20 +14,40 @@ $icon-color: $color-darknavy;
   box-shadow: rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px;
   width: 100%;
   height: $nav-height;
+
+  i {
+    border-radius: 5px;
+    color: $icon-color;
+    @include flex--center;
+    transition: $duration;
+  }
+}
+
+.nav--home,
+.nav--admin,
+.nav--todo-list,
+.nav--calendar,
+.nav--calendar,
+.nav--profile {
+  @include flex--center;
+  background-color: transparent;
+  width: 30px;
+  height: 30px;
+  border-radius: 5px;
+  box-sizing: border-box;
+  transition: $duration;
+  &:hover {
+    background-color: rgba($icon-color, 0.9);
+    i {
+      color: $body-color;
+    }
+  }
 }
 
 .nav--home {
   position: absolute;
   left: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   margin-left: 10px;
-  width: 30px;
-  height: 30px;
-  color: $icon-color;
-  border-radius: 100%;
-  box-sizing: border-box;
 }
 
 .nav--side--menu {
@@ -42,13 +64,14 @@ $icon-color: $color-darknavy;
 .nav--todo-list,
 .nav--calendar,
 .nav--profile {
-  color: $icon-color;
   font-size: 16px;
   margin: 10px;
 }
 
-.nav--profile img {
-  /* overflow: hidden; */
+.nav--profile {
   border-radius: 100px;
-  width: 24px;
+  img {
+    border-radius: 100px;
+    width: 24px;
+  }
 }

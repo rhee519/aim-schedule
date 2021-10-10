@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { auth, db } from "../myFirebase";
 import AppRouter from "./AppRouter";
 import Loading from "./Loading";
-import "./App.css";
+import "./App.scss";
 import { doc, getDoc, setDoc } from "@firebase/firestore";
 // import NotFound from "../pages/NotFound";
 // import Login from "../pages/Login";

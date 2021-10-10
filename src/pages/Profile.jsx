@@ -1,5 +1,6 @@
 import { useHistory } from "react-router";
 import { auth } from "../myFirebase";
+import "./Profile.scss";
 
 const Profile = ({ userData }) => {
   const history = useHistory();
@@ -9,12 +10,19 @@ const Profile = ({ userData }) => {
   };
 
   return (
-    <div>
-      <h2>Profile</h2>
-      <h2>{userData.displayName}</h2>
-      <img src={userData.photoURL} alt="" />
-      <span>{userData.email}</span>
-      <button onClick={onLogOutClick}>Log Out</button>
+    <div className="profile--container">
+      <h2 className="profile--title">Profile</h2>
+      <div className="profile--content">
+        <img src={userData.photoURL} alt="" />
+        <h2 className="profile--name">{userData.displayName}</h2>
+        <span className="profile--email">{userData.email}</span>
+        <div className="button--container">
+          <button className="profile--logout-btn" onClick={onLogOutClick}>
+            <i className="material-icons">logout</i>
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

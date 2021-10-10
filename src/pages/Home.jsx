@@ -5,7 +5,7 @@ import "./Home.scss";
 const Home = ({ userData }) => {
   return (
     <div className="home--container">
-      <h2>환영합니다, {userData.displayName}님!</h2>
+      <h2 className="home--title">환영합니다, {userData.displayName}님!</h2>
       <Summary userData={userData} />
     </div>
   );

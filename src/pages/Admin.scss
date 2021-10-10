@@ -1,4 +1,7 @@
+@import "../variables.scss";
+
 .userlist--container {
+  @include container;
   background-color: aqua;
   display: flex;
   flex-direction: column;

@@ -1,7 +1,9 @@
 @import "../variables.scss";
 
 .home--container {
-  width: 80vw;
-  max-width: $inner-width;
-  background-color: lightseagreen;
+  @include container;
+}
+
+.home--title {
+  @include page-title;
 }

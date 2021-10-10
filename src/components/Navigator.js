@@ -5,8 +5,8 @@ import "./Navigator.scss";
 const Navigator = ({ userData, isAdmin }) => {
   return (
     <div className="nav--container">
-      <Link className="nav--home" to="/">
-        <span className="material-icons">home</span>{" "}
+      <Link className="nav--home" to="/" id="home">
+        <i className="material-icons">home</i>
       </Link>
 
       <div className="nav--side--menu">
@@ -22,11 +22,10 @@ const Navigator = ({ userData, isAdmin }) => {
           <i className="material-icons">event_available</i>{" "}
         </Link>
         <Link className="nav--profile" to="/profile">
-          {/* <h4>Profile</h4> */}
           {userData ? (
             <img src={userData.photoURL} alt="profile" />
           ) : (
-            <span className="material-icons">account_circle</span>
+            <i className="material-icons">account_circle</i>
           )}
         </Link>
       </div>

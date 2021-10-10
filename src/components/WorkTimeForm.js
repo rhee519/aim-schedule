@@ -39,6 +39,7 @@ const WorkTimeForm = ({ userData }) => {
   const [lastFinishedAt, setLastFinishedAt] = useState(now);
 
   const [isFolded, setIsFolded] = useState(false);
+  const [isFetched, setIsFetched] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -60,7 +61,6 @@ const WorkTimeForm = ({ userData }) => {
       if (dayDocSnap.exists()) {
         const data = dayDocSnap.data();
         setWorkTime(data.workTime);
-        // setIsWorking(data.isWorking);
         setLastStartedAt(data.lastStartedAt);
         setLastFinishedAt(data.lastFinishedAt);
       }
@@ -68,6 +68,7 @@ const WorkTimeForm = ({ userData }) => {
         const data = weekDocSnap.data();
         setWeekWorkTime(data.weekWorkTime);
       }
+      setIsFetched(true);
     } catch (error) {
       console.log("from WorkTimeForm.js");
       console.log(error);
@@ -99,14 +100,12 @@ const WorkTimeForm = ({ userData }) => {
       if (dayDocSnap.exists()) {
         updateDoc(dayDocRef, {
           workTime,
-          // isWorking,
           lastStartedAt,
           lastFinishedAt,
         });
       } else {
         setDoc(dayDocRef, {
           workTime,
-          // isWorking,
           lastStartedAt,
           lastFinishedAt,
         });
@@ -141,13 +140,16 @@ const WorkTimeForm = ({ userData }) => {
       setWorkTime(0);
       setWeekWorkTime(0);
       setIsWorking(false);
+      setIsFetched(false);
     };
   }, [fetchData]);
 
   useEffect(() => {
     // component did update
-    updateData();
-  }, [updateData]);
+    if (isFetched) {
+      updateData();
+    }
+  }, [updateData, isFetched]);
 
   const onTimeBtnClick = () => {
     if (isWorking) {
