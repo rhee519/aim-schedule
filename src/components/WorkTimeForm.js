@@ -2,7 +2,7 @@ import { doc, getDoc, setDoc, updateDoc } from "@firebase/firestore";
 import React, { useCallback, useEffect, useState } from "react";
 import { db } from "../myFirebase";
 import getWeekNumber from "./getWeekNumber";
-import WorkTimeString from "./WorkTimeString";
+// import WorkTimeString from "./WorkTimeString";
 
 import "./WorkTimeForm.scss";
 
@@ -38,7 +38,7 @@ const WorkTimeForm = ({ userData }) => {
   const [lastStartedAt, setLastStartedAt] = useState(now);
   const [lastFinishedAt, setLastFinishedAt] = useState(now);
 
-  const [isFolded, setIsFolded] = useState(false);
+  // const [isFolded, setIsFolded] = useState(false);
   const [isFetched, setIsFetched] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -163,24 +163,31 @@ const WorkTimeForm = ({ userData }) => {
     setIsWorking(!isWorking);
   };
 
-  const onFoldClick = () => {
-    setIsFolded(!isFolded);
-  };
+  // const onFoldClick = () => {
+  //   setIsFolded(!isFolded);
+  // };
+
+  const btnClassNames = `work-time--btn${isWorking ? " working" : ""}`;
 
   return (
-    <div className="work-time-form--container">
-      <button id="fold" onClick={onFoldClick}>
-        <i className="material-icons">{isFolded ? "summarize" : "remove"}</i>
+    // <div className="work-time-form--container">
+    //   <button id="fold" onClick={onFoldClick}>
+    //     <i className="material-icons">{isFolded ? "summarize" : "remove"}</i>
+    //   </button>
+    //   {!isFolded && (
+    //     <div className="work-time-form--display">
+    //       <span>{dateFormat(new Date(), "yyyy년 mm월 dd일 ddd요일")}</span>
+    //       <span>{WorkTimeString(workTime)} </span>
+    //       <button className="work-time--btn" onClick={onTimeBtnClick}>
+    //         {isWorking ? "finish" : "start"}
+    //       </button>
+    //     </div>
+    //   )}
+    // </div>
+    <div className="work-time--container">
+      <button className={btnClassNames} onClick={onTimeBtnClick}>
+        {isWorking ? "finish" : "start"}
       </button>
-      {!isFolded && (
-        <div className="work-time-form--display">
-          <span>{dateFormat(new Date(), "yyyy년 mm월 dd일 ddd요일")}</span>
-          <span>{WorkTimeString(workTime)} </span>
-          <button onClick={onTimeBtnClick}>
-            {isWorking ? "finish" : "start"}
-          </button>
-        </div>
-      )}
     </div>
   );
 };

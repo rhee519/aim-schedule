@@ -7,6 +7,7 @@ import WorkTimeString from "./WorkTimeString";
 import getWeekNumber from "./getWeekNumber";
 
 import "./Summary.scss";
+import ProgressBar from "./ProgressBar";
 
 const Summary = ({ userData }) => {
   const [todayWorkTime, setTodayWorkTime] = useState(0);
@@ -65,33 +66,19 @@ const Summary = ({ userData }) => {
         <div className="text--container">
           <span className="summary--subtitle">Today</span>
           <span className="summary--text">
-            오늘의 근로 시간: {WorkTimeString(todayWorkTime)}/8시간
+            {WorkTimeString(todayWorkTime)}/8시간
           </span>
         </div>
-        <div className="summary--progress-bar-container">
-          <div
-            className="progress-bar"
-            style={{
-              width: `${(todayWorkTime / (1000 * 60 * 60 * 8)) * 100}%`,
-            }}
-          ></div>
-        </div>
+        <ProgressBar workTime={todayWorkTime} targetTime={1000 * 60 * 60 * 8} />
       </div>
       <div className="summary--box summary-week">
         <div className="text--container">
           <span className="summary--subtitle">This Week</span>
           <span className="summary--text">
-            이번 주 근로 시간: {WorkTimeString(weekWorkTime)}/40시간
+            {WorkTimeString(weekWorkTime)}/40시간
           </span>
         </div>
-        <div className="summary--progress-bar-container">
-          <div
-            className="progress-bar"
-            style={{
-              width: `${(weekWorkTime / (1000 * 60 * 60 * 40)) * 100}%`,
-            }}
-          ></div>
-        </div>
+        <ProgressBar workTime={weekWorkTime} targetTime={100 * 60 * 60 * 40} />
       </div>
     </div>
   );

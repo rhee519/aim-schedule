@@ -2,6 +2,8 @@ import { doc, getDoc, onSnapshot, query } from "@firebase/firestore";
 import React, { useEffect, useState } from "react";
 import { db } from "../myFirebase";
 import getWeekNumber from "./getWeekNumber";
+import WorkTimeString from "./WorkTimeString";
+import "./Today.scss";
 
 const Today = ({ userData, date }) => {
   const [workTime, setWorkTime] = useState(0);
@@ -9,12 +11,13 @@ const Today = ({ userData, date }) => {
   const dateFormat = require("dateformat");
   const dateString = dateFormat(date, "yyyy-mm-dd");
   const todayString = dateFormat(new Date(), "yyyy-mm-dd");
+  const weekNum = getWeekNumber(date);
 
   useEffect(() => {
     // when this component is mounted,
     // fetch data of this date.
     const dayDocRef = doc(db, userData.uid, dateString);
-    const weekDocRef = doc(db, userData.uid, `week${getWeekNumber(date)}`);
+    const weekDocRef = doc(db, userData.uid, `week${weekNum}`);
     let isSubscribed = true;
     const fetchData = async () => {
       try {
@@ -45,14 +48,16 @@ const Today = ({ userData, date }) => {
       // setWeekWorkTime(0);
       unsubscribe();
     };
-  }, [userData.uid, dateString, todayString, date]);
+  }, [userData.uid, dateString, todayString, date, weekNum]);
 
-  console.log(weekWorkTime);
   return (
-    <>
-      <h4>{dateString} Log!</h4>
-      <span>{workTime}</span>
-    </>
+    <div className="today--container">
+      <h4 className="today--date-text">{dateString}</h4>
+      <span>일일 근로시간: {WorkTimeString(workTime)}</span>
+      <span>
+        {weekNum}주차 근로 시간: {WorkTimeString(weekWorkTime)}
+      </span>
+    </div>
   );
 };
 

@@ -33,7 +33,8 @@ const Admin = ({ userData }) => {
   }, [fetchUserList]);
 
   return (
-    <div className="userlist--container">
+    <div className="admin--container">
+      <h2 className="admin--title">Admin</h2>
       {userList.map((user, index) => (
         <Status key={index} user={user} />
       ))}

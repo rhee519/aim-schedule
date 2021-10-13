@@ -1,0 +1,17 @@
+@import "../variables.scss";
+
+.my-calendar--container {
+  @include container;
+  // background-color: aqua;
+}
+
+.my-calendar--title {
+  @include page-title;
+}
+
+.my-calendar--box {
+  @include flex--center;
+  flex-direction: column;
+  // background: blue;
+  width: 90%;
+}

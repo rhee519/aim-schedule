@@ -21,35 +21,34 @@ $delete-color: $color-darkred;
   @include flex--center;
   width: $form-width-ratio;
   margin-bottom: 20px;
+  background-color: #fff;
+  border: 2px solid $form-input-color;
+  border-radius: 15px;
+  overflow: hidden;
 }
 
 .todo-list--input {
   flex-grow: 1;
+  outline: none;
+  border: none;
   height: 30px;
-  border: 2px solid $form-input-color;
-  border-radius: 15px;
   padding-left: 2%;
-  padding-right: 11%;
+  padding-right: 5%;
   font-size: 16px;
-  &:focus {
-    outline-color: $form-input-color;
-  }
 }
 
 .todo-list--btn-add {
   background-color: $form-input-color;
+  position: relative;
   color: #fff;
-  position: absolute;
   width: 30px;
   height: 25px;
   border: 2px solid $form-input-color;
   border-radius: 13px;
-  top: 0;
   right: 2%;
   margin: 5px 0;
   &:hover {
-    background-color: transparent;
-    color: $form-input-color;
+    background-color: rgba($form-input-color, 0.8);
   }
   &:active {
     background-color: $form-input-color;

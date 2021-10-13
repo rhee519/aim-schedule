@@ -1,0 +1,13 @@
+@import "../variables.scss";
+
+.today--container {
+  @include flex--center;
+  flex-direction: column;
+  // background-color: chocolate;
+}
+
+.today--date-text {
+  margin-top: 10px;
+  font-size: 20px;
+  font-weight: 500;
+}

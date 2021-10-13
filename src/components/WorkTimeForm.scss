@@ -1,40 +1,62 @@
+@import "../variables.scss";
+
 $fold-btn-width: 50px;
 $fold-btn-height: 50px;
 $color-hover: #e3a374;
 $color-darkbrown: #2c150a;
+$btn-color--bg: rgb(96, 207, 23);
+$btn-color--bg-working: $color-darkred;
 
-.work-time-form--container {
-  position: fixed;
-  border: 1px solid #000;
-  top: 80vh;
-  left: $fold-btn-width;
-  z-index: 2;
-  background-color: yellow;
-}
+// .work-time-form--container {
+//   position: fixed;
+//   border: 1px solid #000;
+//   top: 80vh;
+//   left: $fold-btn-width;
+//   z-index: 2;
+//   background-color: yellow;
+// }
 
-#fold {
+// #fold {
+//   position: absolute;
+//   background-color: #fff;
+//   top: -$fold-btn-height/2;
+//   left: -$fold-btn-width/2;
+//   // width: $fold-btn-width;
+//   // height: $fold-btn-height;
+//   border-radius: 100px;
+//   &:hover {
+//     color: #fff;
+//     background-color: $color-hover;
+//   }
+//   &:active {
+//     background-color: $color-darkbrown;
+//   }
+// }
+
+// .work-time-form--display {
+//   padding: 10px;
+//   display: flex;
+//   flex-direction: column;
+// }
+
+.work-time--container {
   position: absolute;
-  background-color: #fff;
-  top: -$fold-btn-height/2;
-  left: -$fold-btn-width/2;
-  // width: $fold-btn-width;
-  // height: $fold-btn-height;
-  border-radius: 100px;
-  &:hover {
-    color: #fff;
-    background-color: $color-hover;
-  }
-  &:active {
-    background-color: $color-darkbrown;
-  }
+  top: $nav-height;
+  right: 0;
+  margin: 10px 10px 0 0;
 }
 
-.work-time-form--display {
-  // width: 100px;
-  padding: 10px;
-  display: flex;
-  // flex-wrap: wrap;
-  flex-direction: column;
-  // align-items: center;
-  // justify-content: center;
+.work-time--btn {
+  width: 80px;
+  padding: 5px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #fff;
+  border: none;
+  background-color: $btn-color--bg;
+  box-shadow: rgba($btn-color--bg, 0.24) 0px 3px 8px;
+  &.working {
+    background-color: $btn-color--bg-working;
+    box-shadow: rgba($btn-color--bg-working, 0.24) 0px 3px 8px;
+  }
 }

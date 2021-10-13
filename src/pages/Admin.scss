@@ -1,8 +1,11 @@
 @import "../variables.scss";
 
-.userlist--container {
+.admin--container {
   @include container;
-  background-color: aqua;
   display: flex;
   flex-direction: column;
+
+  .admin--title {
+    @include page-title;
+  }
 }

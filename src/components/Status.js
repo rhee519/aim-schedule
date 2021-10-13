@@ -3,13 +3,22 @@ import React from "react";
 import "./Status.scss";
 
 const Status = ({ user }) => {
+  const className = user.isWorking ? " status-working" : "";
   return (
     <div className="status--container">
-      <img id="status--profile" src={user.profileImageURL} alt="profile" />
-      <span id="status--name">{user.userName}</span>
-      <span id="status--position">{user.position}</span>
-      <span id="status--email">{user.email}</span>
-      <span id="status--working">{user.isWorking ? "working" : "offline"}</span>
+      <div className="status--info">
+        <img
+          className={`status--profile${className}`}
+          src={user.profileImageURL}
+          alt="profile"
+        />
+        <span id="status--name">{user.userName}</span>
+        <div id="status--position">
+          <span>{user.position}</span>
+        </div>
+        <span id="status--email">{user.email}</span>
+      </div>
+      <div className={`status--led${className}`}></div>
     </div>
   );
 };
