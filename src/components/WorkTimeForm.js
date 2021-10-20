@@ -1,12 +1,14 @@
 import { doc, getDoc, setDoc, updateDoc } from "@firebase/firestore";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
+import { UserContext } from "../contexts/Context";
 import { db } from "../myFirebase";
 import getWeekNumber from "./getWeekNumber";
 // import WorkTimeString from "./WorkTimeString";
 
 import "./WorkTimeForm.scss";
 
-const WorkTimeForm = ({ userData }) => {
+const WorkTimeForm = () => {
+  const userData = useContext(UserContext);
   const dateFormat = require("dateformat");
   dateFormat.i18n = {
     dayNames: [

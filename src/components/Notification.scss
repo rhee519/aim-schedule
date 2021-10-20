@@ -1,0 +1,21 @@
+@import "../variables.scss";
+
+.notification--box {
+  width: 100%;
+  background: #fff;
+  margin: 5px;
+  height: 40px;
+  border-radius: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notification--icon {
+  width: 25px;
+  height: 25px;
+  margin-left: 3px;
+  border-radius: 100%;
+  background-repeat: none;
+  background-size: contain;
+}

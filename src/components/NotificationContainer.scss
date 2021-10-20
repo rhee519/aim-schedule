@@ -1,0 +1,15 @@
+@import "../variables.scss";
+
+.notification--container {
+  background-color: rgba(#10293b, 0.95);
+  position: absolute;
+  top: $nav-height;
+  right: 0;
+  margin: 0;
+  width: 500px;
+  max-width: 100vw;
+  border-radius: 7px;
+  padding: 5px;
+  @include flex--center;
+  flex-direction: column;
+}

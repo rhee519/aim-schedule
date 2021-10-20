@@ -4,7 +4,7 @@ import "react-calendar/dist/Calendar.css";
 import Today from "../components/Today";
 import "./MyCalendar.scss";
 
-const MyCalendar = ({ userData }) => {
+const MyCalendar = () => {
   const [date, SetDate] = useState(new Date());
   const dateFormat = require("dateformat");
   dateFormat.i18n = {
@@ -43,7 +43,7 @@ const MyCalendar = ({ userData }) => {
           onClickWeekNumber={onClickWeek}
           formatDay={(locale, date) => dateFormat(date, "d")}
         />
-        <Today userData={userData} date={date} />
+        <Today date={date} />
       </div>
     </div>
   );

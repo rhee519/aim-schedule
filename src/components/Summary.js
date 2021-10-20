@@ -78,7 +78,7 @@ const Summary = ({ userData }) => {
             {WorkTimeString(weekWorkTime)}/40시간
           </span>
         </div>
-        <ProgressBar workTime={weekWorkTime} targetTime={100 * 60 * 60 * 40} />
+        <ProgressBar workTime={weekWorkTime} targetTime={1000 * 60 * 60 * 40} />
       </div>
     </div>
   );

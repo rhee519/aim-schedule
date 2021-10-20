@@ -5,7 +5,7 @@ import { db } from "../myFirebase";
 
 import "./Admin.scss";
 
-const Admin = ({ userData }) => {
+const Admin = () => {
   const [userList, setUserList] = useState([]);
   const fetchUserList = useCallback(async () => {
     const collectionRef = collection(db, "userlist");

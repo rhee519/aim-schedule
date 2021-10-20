@@ -5,7 +5,6 @@ $icon-color-hover: $color-darknavy-light;
 $duration: 0.2s;
 
 .nav--container {
-  // background-color: $nav-color;
   position: absolute;
   top: 0;
   z-index: 1;
@@ -28,7 +27,8 @@ $duration: 0.2s;
 .nav--todo-list,
 .nav--calendar,
 .nav--calendar,
-.nav--profile {
+.nav--profile,
+.nav--notifications {
   @include flex--center;
   background-color: transparent;
   width: 30px;
@@ -63,9 +63,11 @@ $duration: 0.2s;
 .nav--admin,
 .nav--todo-list,
 .nav--calendar,
-.nav--profile {
+.nav--profile,
+.nav--notifications {
   font-size: 16px;
-  margin: 10px;
+  margin: 5px;
+  cursor: pointer;
 }
 
 .nav--profile {
@@ -73,5 +75,16 @@ $duration: 0.2s;
   img {
     border-radius: 100px;
     width: 24px;
+  }
+}
+
+.nav--notifications {
+  border: none;
+  box-shadow: none;
+  &.show {
+    background-color: rgba($icon-color, 0.9);
+    i {
+      color: $body-color;
+    }
   }
 }

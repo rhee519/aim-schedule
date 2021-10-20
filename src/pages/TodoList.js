@@ -1,10 +1,12 @@
 import { doc, getDoc, setDoc, updateDoc } from "@firebase/firestore";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import { db } from "../myFirebase";
 import Todo from "../components/Todo";
 import "./TodoList.scss";
+import { UserContext } from "../contexts/Context";
 
-const TodoList = ({ userData }) => {
+const TodoList = () => {
+  const userData = useContext(UserContext);
   const [todo, setTodo] = useState("");
   const [todoList, setTodoList] = useState([]);
 
@@ -121,7 +123,7 @@ const TodoList = ({ userData }) => {
 
   return (
     <div className="todo-list--container">
-      <h3 className="todo-list--title">{userData.displayName}의 To-do List.</h3>
+      <h3 className="todo-list--title">{userData.userName}의 To-do List.</h3>
       <form className="todo-list--form" onSubmit={onSubmit}>
         <input
           className="todo-list--input"

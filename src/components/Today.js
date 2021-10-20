@@ -1,11 +1,13 @@
 import { doc, getDoc, onSnapshot, query } from "@firebase/firestore";
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { db } from "../myFirebase";
 import getWeekNumber from "./getWeekNumber";
 import WorkTimeString from "./WorkTimeString";
 import "./Today.scss";
+import { UserContext } from "../contexts/Context";
 
-const Today = ({ userData, date }) => {
+const Today = ({ date }) => {
+  const userData = useContext(UserContext);
   const [workTime, setWorkTime] = useState(0);
   const [weekWorkTime, setWeekWorkTime] = useState(0);
   const dateFormat = require("dateformat");
