@@ -2,7 +2,7 @@ import { useContext } from "react";
 import { useHistory } from "react-router";
 import { UserContext } from "../contexts/Context";
 import { auth } from "../myFirebase";
-import "./Profile.scss";
+import "../css/Profile.scss";
 
 const Profile = () => {
   const userData = useContext(UserContext);

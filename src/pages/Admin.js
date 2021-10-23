@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import Status from "../components/Status";
 import { db } from "../myFirebase";
 
-import "./Admin.scss";
+import "../css/Admin.scss";
 
 const Admin = () => {
   const [userList, setUserList] = useState([]);

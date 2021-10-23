@@ -12,9 +12,9 @@ import WorkTimeForm from "./WorkTimeForm";
 import QRpage from "../pages/QRpage";
 import Admin from "../pages/Admin";
 
-import "./AppRouter.scss";
+import "../css/AppRouter.scss";
 import { UserContext } from "../contexts/Context";
-import WaitingForGrant from "../pages/WaitingForGrant";
+// import WaitingForGrant from "../pages/WaitingForGrant";
 import QRReader from "./QRReader";
 
 const AppRouter = () => {
@@ -24,46 +24,45 @@ const AppRouter = () => {
       <Navigator />
       <div className="router--container">
         {userData ? (
-          userData.isGranted ? (
-            <>
-              <WorkTimeForm />
-              <Switch>
-                <Route exact path="/">
-                  <Home />
-                </Route>
-                <Route path="/profile">
-                  <Profile />
-                </Route>
-                <Route path="/calendar">
-                  <MyCalendar />
-                </Route>
-                <Route path="/todo-list">
-                  <TodoList />
-                </Route>
-                <Route path="/admin">
-                  {userData && userData.isAdmin ? <Admin /> : <NotAdmin />}
-                </Route>
-                <Route path="/qr-code">
-                  <QRpage />
-                </Route>
-                <Route path="/qr-reader">
-                  <QRReader />
-                </Route>
-                <Redirect path="/login" to="/" />
-                <Route path="*">
-                  <NotFound />
-                </Route>
-              </Switch>
-            </>
-          ) : (
-            <>
-              <Route path="/">
-                <WaitingForGrant />
+          <>
+            <WorkTimeForm />
+            <Switch>
+              <Route exact path="/">
+                <Home />
               </Route>
-              <Redirect path="*" to="/" />
-            </>
-          )
+              <Route path="/profile">
+                <Profile />
+              </Route>
+              <Route path="/calendar">
+                <MyCalendar />
+              </Route>
+              <Route path="/todo-list">
+                <TodoList />
+              </Route>
+              <Route path="/admin">
+                {userData && userData.isAdmin ? <Admin /> : <NotAdmin />}
+              </Route>
+              <Route path="/qr-code">
+                <QRpage />
+              </Route>
+              <Route path="/qr-reader">
+                <QRReader />
+              </Route>
+              <Redirect path="/login" to="/" />
+              <Route path="*">
+                <NotFound />
+              </Route>
+            </Switch>
+          </>
         ) : (
+          // ) : (
+          //   <>
+          //     <Route path="/">
+          //       <WaitingForGrant />
+          //     </Route>
+          //     <Redirect path="*" to="/" />
+          //   </>
+          // )
           <Switch>
             <Route path="/">
               <Login />

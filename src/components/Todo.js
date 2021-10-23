@@ -1,5 +1,5 @@
 import React from "react";
-import "./Todo.scss";
+import "../css/Todo.scss";
 
 const Todo = ({ text, done, id }) => {
   const classname = "todo--text " + (done ? "checked" : "unchecked");

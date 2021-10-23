@@ -10,7 +10,12 @@ import React, { useCallback, useContext, useEffect, useState } from "react";
 import { UserContext } from "../contexts/Context";
 import { db } from "../myFirebase";
 import Notification from "./Notification";
-import "./NotificationContainer.scss";
+import "../css/NotificationContainer.scss";
+
+const Error = (error) => {
+  console.log("from NotificationContainer.js");
+  console.log(error);
+};
 
 const NotificationContainer = ({ reference }) => {
   const userData = useContext(UserContext);
@@ -21,19 +26,22 @@ const NotificationContainer = ({ reference }) => {
       db,
       `userlist/${userData.uid}/notification`
     );
-    const newNotes = [];
     await getDocs(notificationCollection)
       .then((querySnap) => {
-        querySnap.forEach((doc) => newNotes.push(doc.data()));
+        const newNotes = [];
+        querySnap.forEach((doc) => {
+          newNotes.push({
+            ...doc.data(),
+            id: doc.id,
+          });
+        });
         setNotes(newNotes);
       })
-      .catch((error) => {
-        console.log("from NotificationContainer.js");
-        console.log(error);
-      });
+      .catch(Error);
   }, [userData.uid]);
 
   useEffect(() => {
+    fetchNotifications();
     const unsub = onSnapshot(
       collection(db, `userlist/${userData.uid}/notification`),
       (querySnapshot) => {
@@ -45,6 +53,7 @@ const NotificationContainer = ({ reference }) => {
       unsub();
     };
   }, [fetchNotifications, userData.uid]);
+
   return (
     <div className="notification--container" ref={reference}>
       {notes.length > 0 ? (
@@ -52,10 +61,11 @@ const NotificationContainer = ({ reference }) => {
           <Notification
             key={index}
             type={note.type}
-            content={note.content}
-            senderUid={note.senderUid}
+            data={note.data}
+            checked={note.checked}
             createdAt={note.createdAt}
-          ></Notification>
+            id={note.id}
+          />
         ))
       ) : (
         <h2>새로운 알림이 없습니다.</h2>

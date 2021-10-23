@@ -1,37 +1,59 @@
-import { doc, getDoc } from "@firebase/firestore";
-import React, { useState, useCallback } from "react";
+import { deleteDoc, doc, setDoc, updateDoc } from "@firebase/firestore";
+import React, { useState, useCallback, useEffect, useContext } from "react";
+import { UserContext } from "../contexts/Context";
 import { db } from "../myFirebase";
-import "./Notification.scss";
+import "../css/Notification.scss";
 
-const Notification = ({ type, content, senderUid, createdAt }) => {
+const Error = (error) => {
+  console.log("from Notification.js");
+  console.log(error);
+};
+
+const Notification = ({ type, checked, createdAt, data, id }) => {
   const [text, setText] = useState("");
   const [icon, setIcon] = useState("");
+  const userData = useContext(UserContext);
 
-  const fetchSenderData = useCallback(async () => {
-    const senderDocRef = doc(db, "waitinglist", senderUid);
-    await getDoc(senderDocRef)
-      .then((docSnap) => {
-        if (docSnap.exists()) {
-          const sender = docSnap.data();
-          setText(`${sender.userName}님이 회원가입을 신청했습니다.`);
-          setIcon(sender.profileImageURL);
-        }
-      })
-      .catch((error) => {
-        console.log("from Notification.js");
-        console.log(error);
-      });
-  }, [senderUid]);
+  // type === "SIGNUP_REQUEST"
+  const fetchSignUpRequest = useCallback(() => {
+    setText(`${data.userName}님이 회원가입을 신청했습니다.`);
+    setIcon(data.profileImageURL);
+  }, [data.userName, data.profileImageURL]);
 
-  switch (type) {
-    case "SIGNUP_REQUEST":
-      fetchSenderData();
-      break;
+  const checkNotification = useCallback(async () => {
+    // console.log(id);
+    const noteRef = doc(db, `userlist/${userData.uid}/notification`, id);
+    await updateDoc(noteRef, {
+      checked: true,
+    }).catch(Error);
+  }, [userData.uid, id]);
 
-    default:
-      setText(content);
-      break;
-  }
+  const onSignUpApproveClick = useCallback(async () => {
+    // approve sign-up request
+    const newUserRef = doc(db, "userlist", data.uid);
+    const waitingUserRef = doc(db, "waitinglist", data.uid);
+    await setDoc(newUserRef, { ...data }).catch(Error);
+    await deleteDoc(waitingUserRef).catch(Error);
+
+    // check notification
+    checkNotification();
+  }, [checkNotification, data]);
+
+  useEffect(() => {
+    switch (type) {
+      case "SIGNUP_REQUEST":
+        fetchSignUpRequest();
+        break;
+
+      default:
+        break;
+    }
+  }, [
+    fetchSignUpRequest,
+    // onSignUpApproveClick,
+    type,
+    // BtnsComponent,
+  ]);
 
   return (
     <div className="notification--box">
@@ -45,11 +67,22 @@ const Notification = ({ type, content, senderUid, createdAt }) => {
         <p>{text}</p>
       </div>
       <div className="notification--time"></div>
-      <div className="notification--btns">
-        <button>확인</button>
-      </div>
+      {!checked && (
+        <div className="notification--btns">
+          {SignUpBtns(onSignUpApproveClick)}
+        </div>
+      )}
     </div>
   );
 };
+
+const SignUpBtns = (onClick) => (
+  <>
+    <button className="btn--signup-approve" onClick={onClick}>
+      승인
+    </button>
+    <button className="btn--signup-deny">삭제</button>
+  </>
+);
 
 export default Notification;

@@ -1,5 +1,5 @@
 import React from "react";
-import "./ProgressBar.scss";
+import "../css/ProgressBar.scss";
 
 const ProgressBar = ({ workTime, targetTime }) => {
   const overTime = workTime >= targetTime ? workTime - targetTime : 0;

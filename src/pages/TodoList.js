@@ -1,8 +1,18 @@
-import { doc, getDoc, setDoc, updateDoc } from "@firebase/firestore";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  onSnapshot,
+  orderBy,
+  query,
+  updateDoc,
+} from "@firebase/firestore";
 import React, { useCallback, useContext, useEffect, useState } from "react";
 import { db } from "../myFirebase";
 import Todo from "../components/Todo";
-import "./TodoList.scss";
+import "../css/TodoList.scss";
 import { UserContext } from "../contexts/Context";
 
 const TodoList = () => {
@@ -11,16 +21,14 @@ const TodoList = () => {
   const [todoList, setTodoList] = useState([]);
 
   const fetchData = useCallback(async () => {
-    // let fetchSubscribe = true;
-    const docRef = doc(db, userData.uid, "todo-list");
-    // if (fetchSubscribe)
-    await getDoc(docRef)
-      .then((docSnap) => {
-        if (docSnap.exists()) {
-          setTodoList(docSnap.data().todoList);
-        } else {
-          setTodoList([]);
-        }
+    const todoCollection = collection(db, `userlist/${userData.uid}/todo-list`);
+    await getDocs(query(todoCollection, orderBy("createdAt", "desc")))
+      .then((querySnap) => {
+        const todoFetched = [];
+        querySnap.forEach((doc) => {
+          todoFetched.push({ ...doc.data(), id: doc.id });
+        });
+        setTodoList(todoFetched);
       })
       .catch((error) => {
         console.log("from TodoList.js");
@@ -28,21 +36,14 @@ const TodoList = () => {
       });
   }, [userData.uid]);
 
-  const updateData = useCallback(
-    async (newTodoList) => {
-      const docRef = doc(db, userData.uid, "todo-list");
-      await getDoc(docRef)
-        .then((docSnap) => {
-          if (docSnap.exists()) {
-            updateDoc(docRef, {
-              todoList: newTodoList,
-            });
-          } else {
-            setDoc(docRef, {
-              todoList: newTodoList,
-            });
-          }
-        })
+  const uploadTodo = useCallback(
+    async (newTodo) => {
+      const todoCollection = collection(
+        db,
+        `userlist/${userData.uid}/todo-list`
+      );
+      await addDoc(todoCollection, newTodo)
+        .then()
         .catch((error) => {
           console.log(error);
         });
@@ -50,14 +51,23 @@ const TodoList = () => {
     [userData.uid]
   );
 
+  // const sortByCreatedAt = useCallback(() => {
+  //   todoList.sort((a, b) => b.createdAt - a.createdAt);
+  // }, [todoList]);
+
   useEffect(() => {
-    // component did mount
+    // component did mount & update
     fetchData();
+    const q = query(collection(db, `userlist/${userData.uid}/todo-list`));
+    const unsub = onSnapshot(q, (querySnapshot) => {
+      fetchData();
+    });
     return () => {
       setTodo("");
       setTodoList([]);
+      unsub();
     };
-  }, [fetchData]);
+  }, [fetchData, userData.uid]);
 
   const onChange = (event) => {
     const {
@@ -70,44 +80,32 @@ const TodoList = () => {
     event.preventDefault();
     if (todo === "") return;
     const timeNow = new Date().getTime();
-    const newTodoList = [
-      ...todoList,
-      { text: todo, done: false, createdAt: timeNow, modifiedAt: timeNow },
-    ];
-
+    const newTodo = {
+      text: todo,
+      done: false,
+      createdAt: timeNow,
+      modifiedAt: timeNow,
+    };
     // update database
-    updateData(newTodoList);
+    uploadTodo(newTodo);
 
-    setTodoList(newTodoList);
+    setTodoList([...todoList, newTodo]);
     setTodo("");
   };
-
-  // const onClick = (event) => {
-  //   const {
-  //     target: { name, id },
-  //   } = event;
-  //   const newTodoList = [...todoList];
-  //   if (name === "done") {
-  //     newTodoList[id].done = !newTodoList[id].done;
-  //   } else if (name === "delete") {
-  //     newTodoList.splice(id, 1);
-  //   }
-
-  //   setTodoList(newTodoList);
-
-  //   // update database
-  //   updateData(newTodoList);
-  // };
 
   const onTodoCheckClick = (event) => {
     const {
       target: { id },
     } = event;
     const newTodoList = [...todoList];
+    const docId = newTodoList[id].id;
     newTodoList[id].done = !newTodoList[id].done;
     setTodoList(newTodoList);
     // update database
-    updateData(newTodoList);
+    const docRef = doc(db, `userlist/${userData.uid}/todo-list`, docId);
+    updateDoc(docRef, {
+      done: newTodoList[id].done,
+    });
   };
 
   const onTodoDeleteClick = (event) => {
@@ -115,10 +113,12 @@ const TodoList = () => {
       target: { id },
     } = event;
     const newTodoList = [...todoList];
+    const docId = newTodoList[id].id;
     newTodoList.splice(id, 1);
     setTodoList(newTodoList);
     // update database
-    updateData(newTodoList);
+    const docRef = doc(db, `userlist/${userData.uid}/todo-list`, docId);
+    deleteDoc(docRef);
   };
 
   return (
@@ -167,13 +167,6 @@ const TodoList = () => {
                 delete_forever
               </i>
             </button>
-            {/* <input
-              type="button"
-              id={index}
-              name="delete"
-              value="del"
-              onClick={onClick}
-            /> */}
           </div>
         ))}
       </div>

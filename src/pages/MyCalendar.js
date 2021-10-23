@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import Today from "../components/Today";
-import "./MyCalendar.scss";
+import "../css/MyCalendar.scss";
 
 const MyCalendar = () => {
   const [date, SetDate] = useState(new Date());

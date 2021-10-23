@@ -1,6 +1,6 @@
 import React from "react";
 
-import "./Status.scss";
+import "../css/Status.scss";
 
 const Status = ({ user }) => {
   const className = user.isWorking ? " status-working" : "";

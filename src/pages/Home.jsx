@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 import Summary from "../components/Summary";
 import { UserContext } from "../contexts/Context";
-import "./Home.scss";
+import "../css/Home.scss";
 
 const Home = () => {
   const userData = useContext(UserContext);

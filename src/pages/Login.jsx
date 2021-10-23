@@ -7,7 +7,7 @@ import {
 // import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
 import { auth } from "../myFirebase";
-import "./Login.scss";
+import "../css/Login.scss";
 
 const Login = () => {
   const onGoogleLoginClick = (event) => {

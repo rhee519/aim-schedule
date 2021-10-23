@@ -1,20 +1,26 @@
 import { collection, addDoc } from "@firebase/firestore";
 import { db } from "../myFirebase";
 
-const SendNotification = async (senderUid, recieverUid, content, type) => {
+const SendNotification = async ({
+  receiverUid,
+  type,
+  checked,
+  createdAt,
+  data,
+}) => {
   const notificationCollection = collection(
     db,
-    `userlist/${recieverUid}/notification`
+    `userlist/${receiverUid}/notification`
   );
   await addDoc(notificationCollection, {
-    senderUid,
-    content,
     type,
-    createdAt: new Date().getTime(),
+    checked,
+    createdAt,
+    data,
   })
-    .then((docSnap) => {
-      console.log(docSnap);
-    })
+    // .then((docSnap) => {
+    //   console.log(docSnap);
+    // })
     .catch((error) => {
       console.log("from SendNotification.js");
       console.log(error);

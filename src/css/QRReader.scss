@@ -1,0 +1,14 @@
+@import "./variables.scss";
+
+.qr-reader--container {
+  background-color: chartreuse;
+  @include flex--center;
+}
+
+.qr-reader--camera {
+  background-color: chocolate;
+}
+
+.qr-reader--view-finder {
+  border-radius: 100px;
+}

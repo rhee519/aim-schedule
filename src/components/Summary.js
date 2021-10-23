@@ -6,7 +6,7 @@ import { db } from "../myFirebase";
 import WorkTimeString from "./WorkTimeString";
 import getWeekNumber from "./getWeekNumber";
 
-import "./Summary.scss";
+import "../css/Summary.scss";
 import ProgressBar from "./ProgressBar";
 
 const Summary = ({ userData }) => {

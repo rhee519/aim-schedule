@@ -1,10 +1,15 @@
 import { doc, getDoc, onSnapshot, query } from "@firebase/firestore";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import { db } from "../myFirebase";
 import getWeekNumber from "./getWeekNumber";
 import WorkTimeString from "./WorkTimeString";
-import "./Today.scss";
+import "../css/Today.scss";
 import { UserContext } from "../contexts/Context";
+
+const Error = (error) => {
+  console.log("from Today.js");
+  console.log(error);
+};
 
 const Today = ({ date }) => {
   const userData = useContext(UserContext);
@@ -13,44 +18,44 @@ const Today = ({ date }) => {
   const dateFormat = require("dateformat");
   const dateString = dateFormat(date, "yyyy-mm-dd");
   const todayString = dateFormat(new Date(), "yyyy-mm-dd");
-  const weekNum = getWeekNumber(date);
+  const weekNum = getWeekNumber(date); // 수정 필요
+
+  const fetchData = useCallback(async () => {
+    const dayRef = doc(db, `userlist/${userData.uid}/daily`, dateString);
+    const weekRef = doc(
+      db,
+      `userlist/${userData.uid}/weekly`,
+      `week${weekNum}`
+    );
+    await getDoc(dayRef)
+      .then((docSnap) => {
+        if (docSnap.exists()) setWorkTime(docSnap.data().workTime);
+      })
+      .catch(Error);
+    await getDoc(weekRef)
+      .then((docSnap) => {
+        if (docSnap.exists()) setWeekWorkTime(docSnap.data().workTime);
+      })
+      .catch(Error);
+  }, [userData.uid, dateString, weekNum]);
 
   useEffect(() => {
     // when this component is mounted,
     // fetch data of this date.
-    const dayDocRef = doc(db, userData.uid, dateString);
-    const weekDocRef = doc(db, userData.uid, `week${weekNum}`);
-    let isSubscribed = true;
-    const fetchData = async () => {
-      try {
-        const dayDocSnap = await getDoc(dayDocRef);
-        const weekDocSnap = await getDoc(weekDocRef);
-        if (dayDocSnap.exists()) {
-          if (isSubscribed) setWorkTime(dayDocSnap.data().workTime);
-        }
-        if (weekDocSnap.exists()) {
-          if (isSubscribed) setWeekWorkTime(weekDocSnap.data().weekWorkTime);
-        }
-      } catch (error) {
-        console.log("from Today.js");
-        console.log(error);
-      }
-    };
     fetchData();
 
     // listener
-    // const q = query(dayDocRef);
-    const unsubscribe = onSnapshot(query(dayDocRef), (snapshot) => {
+    const q = query(doc(db, `userlist/${userData.uid}/daily`, dateString));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       if (dateString === todayString) fetchData();
     });
 
     return () => {
-      isSubscribed = false;
       // setWorkTime(0);
       // setWeekWorkTime(0);
       unsubscribe();
     };
-  }, [userData.uid, dateString, todayString, date, weekNum]);
+  }, [userData.uid, dateString, todayString, fetchData]);
 
   return (
     <div className="today--container">

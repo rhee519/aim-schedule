@@ -2,7 +2,7 @@ import React, { useState, useRef, useContext } from "react";
 import { Link } from "react-router-dom";
 import Notifications from "./NotificationContainer";
 import useOutsideClick from "../useOutsideClick";
-import "./Navigator.scss";
+import "../css/Navigator.scss";
 import { UserContext } from "../contexts/Context";
 
 const Navigator = () => {
@@ -25,7 +25,7 @@ const Navigator = () => {
         <i className="material-icons">home</i>
       </Link>
 
-      {userData && userData.isGranted && (
+      {userData && (
         <div className="nav--side--menu">
           {userData.isAdmin && (
             <Link className="nav--admin" to="/admin">
