@@ -15,7 +15,7 @@ import {
   // where,
 } from "@firebase/firestore";
 import { UserContext } from "../contexts/Context";
-import SendNotification from "./SendNotification";
+import { SendAdminNotification } from "./Notification";
 // import NotFound from "../pages/NotFound";
 // import Login from "../pages/Login";
 
@@ -61,11 +61,9 @@ function App() {
                   isGranted: false,
                 })
                   .then(() => {
-                    SendNotification({
-                      receiverUid: "dxiH3BGEonbTQctCYC8L5OZoO5m1",
+                    SendAdminNotification({
+                      // receiverUid: "dxiH3BGEonbTQctCYC8L5OZoO5m1",
                       type: "SIGNUP_REQUEST",
-                      checked: false,
-                      createdAt: new Date().getTime(),
                       data: {
                         uid: user.uid,
                         email: user.email,

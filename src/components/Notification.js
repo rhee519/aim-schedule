@@ -1,4 +1,11 @@
-import { deleteDoc, doc, setDoc, updateDoc } from "@firebase/firestore";
+import {
+  deleteDoc,
+  doc,
+  setDoc,
+  updateDoc,
+  collection,
+  addDoc,
+} from "@firebase/firestore";
 import React, { useState, useCallback, useEffect, useContext } from "react";
 import { UserContext } from "../contexts/Context";
 import { db } from "../myFirebase";
@@ -9,7 +16,7 @@ const Error = (error) => {
   console.log(error);
 };
 
-const Notification = ({ type, checked, createdAt, data, id }) => {
+const Notification = ({ type, checked, createdAt, data, id, admin }) => {
   const [text, setText] = useState("");
   const [icon, setIcon] = useState("");
   const userData = useContext(UserContext);
@@ -20,40 +27,59 @@ const Notification = ({ type, checked, createdAt, data, id }) => {
     setIcon(data.profileImageURL);
   }, [data.userName, data.profileImageURL]);
 
+  const fetchSignUpComplete = useCallback(() => {
+    setText(`${data.userName}님의 회원가입이 승인되었습니다!`);
+    setIcon(data.profileImageURL);
+  }, [data.userName, data.profileImageURL]);
+
   const checkNotification = useCallback(async () => {
-    // console.log(id);
-    const noteRef = doc(db, `userlist/${userData.uid}/notification`, id);
+    const noteRef = admin
+      ? doc(db, "admin-notification", id)
+      : doc(db, `userlist/${userData.uid}/notification`, id);
     await updateDoc(noteRef, {
       checked: true,
     }).catch(Error);
-  }, [userData.uid, id]);
+  }, [userData.uid, id, admin]);
 
   const onSignUpApproveClick = useCallback(async () => {
     // approve sign-up request
     const newUserRef = doc(db, "userlist", data.uid);
-    const waitingUserRef = doc(db, "waitinglist", data.uid);
     await setDoc(newUserRef, { ...data }).catch(Error);
+
+    // delete new user from waiting list
+    const waitingUserRef = doc(db, "waitinglist", data.uid);
     await deleteDoc(waitingUserRef).catch(Error);
+
+    // update request
+    const requestRef = doc(db, "admin-notification", id);
+    await updateDoc(requestRef, {
+      type: "SIGNUP_COMPLETE",
+      checked: true,
+    });
 
     // check notification
     checkNotification();
-  }, [checkNotification, data]);
+  }, [checkNotification, data, id]);
+
+  const onDeleteClick = useCallback(async () => {
+    const noteRef = admin
+      ? doc(db, "admin-notification", id)
+      : doc(db, `userlist/${userData.uid}/notification`, id);
+    await deleteDoc(noteRef).catch(Error);
+  }, [userData.uid, id, admin]);
 
   useEffect(() => {
     switch (type) {
       case "SIGNUP_REQUEST":
         fetchSignUpRequest();
         break;
-
+      case "SIGNUP_COMPLETE":
+        fetchSignUpComplete();
+        break;
       default:
         break;
     }
-  }, [
-    fetchSignUpRequest,
-    // onSignUpApproveClick,
-    type,
-    // BtnsComponent,
-  ]);
+  }, [fetchSignUpRequest, fetchSignUpComplete, type]);
 
   return (
     <div className="notification--box">
@@ -69,20 +95,53 @@ const Notification = ({ type, checked, createdAt, data, id }) => {
       <div className="notification--time"></div>
       {!checked && (
         <div className="notification--btns">
-          {SignUpBtns(onSignUpApproveClick)}
+          {SignUpRequestBtns({
+            onSignUpApproveClick,
+            onDeleteClick,
+          })}
         </div>
       )}
     </div>
   );
 };
 
-const SignUpBtns = (onClick) => (
+const SignUpRequestBtns = ({ onSignUpApproveClick, onDeleteClick }) => (
   <>
-    <button className="btn--signup-approve" onClick={onClick}>
+    <button className="btn--signup-approve" onClick={onSignUpApproveClick}>
       승인
     </button>
-    <button className="btn--signup-deny">삭제</button>
+    <button className="btn--signup-deny" onClick={onDeleteClick}>
+      삭제
+    </button>
   </>
 );
 
+const SendNotification = async ({ receiverUid, type, data }) => {
+  const notificationCollection = collection(
+    db,
+    `userlist/${receiverUid}/notification`
+  );
+  await addDoc(notificationCollection, {
+    type,
+    data,
+    checked: false,
+    createdAt: new Date().getTime(),
+  })
+    // .then((docSnap) => {
+    //   console.log(docSnap);
+    // })
+    .catch(Error);
+};
+
+const SendAdminNotification = async ({ type, data }) => {
+  const adminCollection = collection(db, "admin-notification");
+  await addDoc(adminCollection, {
+    type,
+    data,
+    checked: false,
+    createdAt: new Date().getTime(),
+  }).catch(Error);
+};
+
 export default Notification;
+export { SendNotification, SendAdminNotification };
