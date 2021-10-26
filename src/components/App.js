@@ -31,6 +31,11 @@ function App() {
   );
   // const [isWaitingUser, setIsWaitingUser] = useState(false);
   const fetchUserData = useCallback(async (user) => {
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+
     const userDocRef = doc(db, "userlist", user.uid);
     await getDoc(userDocRef)
       .then(async (docSnap) => {
@@ -95,8 +100,8 @@ function App() {
     // component did mount
     onAuthStateChanged(auth, (user) => {
       // console.log(user);
+      fetchUserData(user);
       if (user) {
-        fetchUserData(user);
         // if (isWaitingUser) auth.signOut();
       } else {
         setUserData(null);

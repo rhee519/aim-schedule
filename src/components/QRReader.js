@@ -7,6 +7,8 @@ import moment from "moment";
 
 // Scan한 QR 데이터를 얼마나 유지할 것인가?
 const durationTime = 5000;
+// QR code의 유효시간?
+const validTime = 30000;
 
 const Error = (error) => {
   console.log("from QRReader.js");
@@ -27,10 +29,6 @@ const QRReader = () => {
     console.log(scannedData);
   }, [scannedData]);
 
-  // useEffect(() => {
-  //   console.log(isLoading);
-  // }, [isLoading]);
-
   const clearData = useCallback(() => {
     // n초 동안 현재 userData를 유지한다.
     // n초 뒤에 null로 clear하여 새로운 QR scan을 기다린다.
@@ -42,35 +40,35 @@ const QRReader = () => {
 
   const handleScan = (data) => {
     if (data && data !== scannedData) {
-      // setIsLoading(true);
       setScannedData(data);
     }
-    // clearData();
   };
 
   const cameraChange = () => {
     setMode(!mode);
   };
 
-  // parse scanned data
-  useEffect(() => {
-    if (scannedData) {
-      setIsLoading(true);
-      // setText("Loading...");
-      // setParsedData(JSON.parse(scannedData));
-    }
-  }, [scannedData]);
-
   // process parsed data
   const processData = useCallback(async () => {
     if (!scannedData) return;
-    const parsedData = JSON.parse(scannedData);
+    const { uid, createdAt } = JSON.parse(scannedData);
+    if (new Date().getTime() - createdAt > validTime) {
+      // QR의 유효시간이 만료됨
+      console.log(
+        "QR의 유효시간이 만료되었습니다. 새로고침하여 새 QR코드를 발급받으세요."
+      );
+      return;
+    }
 
-    const userRef = doc(db, "userlist", parsedData.uid);
-    const dailyRef = doc(db, `userlist/${parsedData.uid}/daily`, today);
+    setIsLoading(true);
+    const userRef = doc(db, "userlist", uid);
+    const dailyRef = doc(db, `userlist/${uid}/daily`, today);
+
+    // DB에서 이 uid를 가진 user를 찾아본다.
     await getDoc(userRef)
       .then(async (userSnap) => {
         if (userSnap.exists()) {
+          // uid is valid
           const { userName, isWorking } = userSnap.data();
           const now = new Date().getTime();
           if (isWorking) {

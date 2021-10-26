@@ -27,10 +27,13 @@ const Navigator = () => {
 
       {userData && (
         <div className="nav--side--menu">
+          <Link className="nav--qr-code" to="/qr-code">
+            <i className="material-icons">qr_code</i>
+          </Link>
           {userData.isAdmin && (
             <>
               <Link className="nav--qr-reader" to="/qr-reader">
-                QR Reader
+                <i className="material-icons">qr_code_scanner</i>
               </Link>
               <Link className="nav--admin" to="/admin">
                 <i className="material-icons">admin_panel_settings</i>
