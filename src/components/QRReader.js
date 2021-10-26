@@ -16,7 +16,7 @@ const Error = (error) => {
 const QRReader = () => {
   const [scannedData, setScannedData] = useState(null);
   // const [parsedData, setParsedData] = useState(null);
-  // const [mode, setMode] = useState(true);
+  const [mode, setMode] = useState(true);
   const [text, setText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const today = moment().format("YYYY-MM-DD");
@@ -48,9 +48,9 @@ const QRReader = () => {
     // clearData();
   };
 
-  // const cameraChange = () => {
-  //   setMode(!mode);
-  // };
+  const cameraChange = () => {
+    setMode(!mode);
+  };
 
   // parse scanned data
   useEffect(() => {
@@ -140,8 +140,8 @@ const QRReader = () => {
         onScan={handleScan}
         onError={(error) => console.log(error)}
         // onLoad={() => console.log("loaded")}
-        // facingMode={mode ? "user" : "environment"}
-        facingMode="user"
+        facingMode={mode ? "user" : "environment"}
+        // facingMode="user"
         delay={2000}
         // showViewFinder={false}
         style={{
@@ -149,7 +149,7 @@ const QRReader = () => {
           height: 320,
         }}
       />
-      {/* <button onClick={cameraChange}>카메라 전환</button> */}
+      <button onClick={cameraChange}>카메라 전환</button>
       {scannedData && (
         <>
           <p>{isLoading ? "Loading..." : text}</p>

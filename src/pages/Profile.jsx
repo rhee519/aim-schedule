@@ -7,9 +7,11 @@ import "../css/Profile.scss";
 const Profile = () => {
   const userData = useContext(UserContext);
   const history = useHistory();
-  const onLogOutClick = () => {
-    auth.signOut();
-    history.push("/");
+  const onLogOutClick = async () => {
+    await auth.signOut().then(() => {
+      // back to sign-in page
+      history.push("/");
+    });
   };
 
   return (

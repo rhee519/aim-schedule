@@ -83,81 +83,10 @@ function App() {
               }
             })
             .catch(Error);
-
-          // const waitCollection = collection(db, "waitinglist");
-          // const q = query(waitCollection, where("uid", "==", user.uid));
-          // await getDocs(q)
-          //   .then(async (querySnap) => {
-          //     if (querySnap.docs.length === 0) {
-          //       // sign-up request of new user
-          //       const waitDocRef = doc(waitCollection);
-          //       await setDoc(waitDocRef, {
-          //         uid: user.uid,
-          //         email: user.email,
-          //         profileImageURL: user.photoURL,
-          //         userName: user.displayName,
-          //       })
-          //         .then(() => {
-          //           SendNotification({
-          //             type: "SIGNUP_REQUEST",
-          //             checked: false,
-          //             createdAt: new Date().getTime(),
-          //           });
-          //           alert(
-          //             "가입이 정상적으로 신청되었습니다. 관리자 승인 이후 서비스를 정상적으로 이용하실 수 있습니다."
-          //           );
-          //         })
-          //         .catch(Error);
-          //     } else {
-          //       // user already requested
-          //       alert(
-          //         "관리자의 가입 승인을 기다리는 중입니다. 관리자 승인 이후 서비스를 정상적으로 이용하실 수 있습니다."
-          //       );
-          //     }
-          //     auth.signOut();
-          //   })
-          //   .catch(Error);
-
-          // await getDoc(waitingDocRef)
-          //   .then((docSnap) => {
-          //     if (docSnap.exists()) {
-          //       // this user is in waiting-list
-          //       alert(
-          //         "관리자의 가입 승인을 기다리는 중입니다. 관리자 승인 이후 서비스를 정상적으로 이용하실 수 있습니다."
-          //       );
-          //     } else {
-          //       setDoc(waitingDocRef, {
-          //         uid: user.uid,
-          //         email: user.email,
-          //         profileImageURL: user.photoURL,
-          //         userName: user.displayName,
-          //       });
-          //       SendNotification(
-          //         user.uid,
-          //         "dxiH3BGEonbTQctCYC8L5OZoO5m1",
-          //         "",
-          //         "SIGNUP_REQUEST"
-          //       );
-          //       alert(
-          //         "가입 신청이 완료되었습니다. 관리자가 승인하면 서비스를 정상적으로 이용하실 수 있습니다."
-          //       );
-          //     }
-          //     setIsWaitingUser(true);
-          //   })
-          //   .catch(Error);
-          // processedUserData = {
-          //   uid: user.uid,
-          //   email: user.email,
-          //   userName: user.displayName,
-          //   isAdmin: false,
-          //   isWorking: false,
-          //   profileImageURL: user.photoURL,
-          //   lastLoginAt: new Date().getTime(),
-          //   position: "사원",
-          //   isGranted: false,
-          // };
-          // setDoc(userDocRef, processedUserData);
         }
+      })
+      .then(() => {
+        setIsLoading(false);
       })
       .catch(Error);
   }, []);
@@ -174,7 +103,7 @@ function App() {
         // setIsWaitingUser(false);
         localStorage.removeItem("currentUser");
       }
-      setIsLoading(false);
+      // setIsLoading(false);
     });
     return () => {
       setUserData(null);
