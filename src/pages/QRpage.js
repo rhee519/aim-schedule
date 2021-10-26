@@ -7,15 +7,12 @@ const QRpage = () => {
   // userData.userName 은 한글 인코딩 문제때문에 QR 코드 생성은 되지만
   // scan할 때 문제가 발생하므로 QR code value에 넣지 말 것!
   const userData = useContext(UserContext);
-  return (
-    <QRCode
-      value={JSON.stringify({
-        uid: userData.uid,
-        time: new Date().getTime(),
-        // userName: userData.userName,
-      })}
-    />
-  );
+  const data = {
+    uid: userData.uid,
+    createdAt: new Date().getTime(),
+  };
+
+  return <QRCode value={JSON.stringify(data)} />;
 };
 
 export default QRpage;

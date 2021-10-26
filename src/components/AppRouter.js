@@ -8,7 +8,7 @@ import Navigator from "./Navigator";
 import MyCalendar from "../pages/MyCalendar";
 import TodoList from "../pages/TodoList";
 import NotAdmin from "../pages/NotAdmin";
-import WorkTimeForm from "./WorkTimeForm";
+import WorkIndicator from "./WorkIndicator";
 import QRpage from "../pages/QRpage";
 import Admin from "../pages/Admin";
 
@@ -25,7 +25,7 @@ const AppRouter = () => {
       <div className="router--container">
         {userData ? (
           <>
-            <WorkTimeForm />
+            <WorkIndicator />
             <Switch>
               <Route exact path="/">
                 <Home />

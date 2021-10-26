@@ -4,7 +4,7 @@ $fold-btn-width: 50px;
 $fold-btn-height: 50px;
 $color-hover: #e3a374;
 $color-darkbrown: #2c150a;
-$btn-color--bg: rgb(96, 207, 23);
+$color-lightgreen: rgb(96, 207, 23);
 $btn-color--bg-working: $color-darkred;
 
 // .work-time-form--container {
@@ -39,24 +39,26 @@ $btn-color--bg-working: $color-darkred;
 //   flex-direction: column;
 // }
 
-.work-time--container {
+.work-indicator--container {
   position: absolute;
   top: $nav-height;
   right: 0;
   margin: 10px 10px 0 0;
 }
 
-.work-time--btn {
+.work-indicator--box {
   width: 80px;
   padding: 5px;
   text-transform: uppercase;
   font-weight: 700;
   color: #fff;
   border: none;
-  background-color: $btn-color--bg;
-  box-shadow: rgba($btn-color--bg, 0.24) 0px 3px 8px;
+  &.offline {
+    background-color: $color-darkred;
+    box-shadow: rgba($color-darkred, 0.24) 0px 3px 8px;
+  }
   &.working {
-    background-color: $btn-color--bg-working;
-    box-shadow: rgba($btn-color--bg-working, 0.24) 0px 3px 8px;
+    background-color: $color-lightgreen;
+    box-shadow: rgba($color-lightgreen, 0.24) 0px 3px 8px;
   }
 }

@@ -28,9 +28,14 @@ const Navigator = () => {
       {userData && (
         <div className="nav--side--menu">
           {userData.isAdmin && (
-            <Link className="nav--admin" to="/admin">
-              <i className="material-icons">admin_panel_settings</i>
-            </Link>
+            <>
+              <Link className="nav--qr-reader" to="/qr-reader">
+                QR Reader
+              </Link>
+              <Link className="nav--admin" to="/admin">
+                <i className="material-icons">admin_panel_settings</i>
+              </Link>
+            </>
           )}
           <Link className="nav--todo-list" to="/todo-list">
             <i className="material-icons">format_list_bulleted</i>
