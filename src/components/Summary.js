@@ -1,6 +1,6 @@
 import { doc, getDoc, onSnapshot, query } from "@firebase/firestore";
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import dateFormat from "dateformat";
+import React, { useState, useEffect, useCallback } from "react";
+import moment from "moment";
 
 import { db } from "../myFirebase";
 import WorkTimeString from "./WorkTimeString";
@@ -12,20 +12,19 @@ import ProgressBar from "./ProgressBar";
 const Summary = ({ userData }) => {
   const [todayWorkTime, setTodayWorkTime] = useState(0);
   const [weekWorkTime, setWeekWorkTime] = useState(0);
-  const todayString = dateFormat(new Date(), "yyyy-mm-dd");
-  const isMounted = useRef(false);
+  const today = moment().format("YYYY-MM-DD");
 
   const fetchData = useCallback(async () => {
-    const dayDocRef = doc(db, userData.uid, todayString);
+    const dayDocRef = doc(db, `userlist/${userData.uid}/daily`, today);
     const weekDocRef = doc(
       db,
-      userData.uid,
+      `userlist/${userData.uid}/weekly`,
       `week${getWeekNumber(new Date())}`
     );
     await getDoc(dayDocRef)
       .then((docSnap) => {
         if (docSnap.exists()) {
-          if (isMounted.current) setTodayWorkTime(docSnap.data().workTime);
+          setTodayWorkTime(docSnap.data().workTime);
         }
       })
       .catch((error) => {
@@ -35,29 +34,27 @@ const Summary = ({ userData }) => {
     await getDoc(weekDocRef)
       .then((docSnap) => {
         if (docSnap.exists()) {
-          if (isMounted.current) setWeekWorkTime(docSnap.data().weekWorkTime);
+          setWeekWorkTime(docSnap.data().workTime);
         }
       })
       .catch((error) => {
         console.log("from Summary.js");
         console.log(error);
       });
-  }, [todayString, userData.uid]);
+  }, [today, userData.uid]);
 
   useEffect(() => {
-    isMounted.current = true;
     fetchData();
 
-    const q = query(doc(db, userData.uid, todayString));
+    const q = query(doc(db, userData.uid, today));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       fetchData();
     });
 
     return () => {
-      isMounted.current = false;
       unsubscribe();
     };
-  }, [userData.uid, todayString, fetchData]);
+  }, [userData.uid, today, fetchData]);
 
   return (
     <div className="summary--container">

@@ -1,8 +1,8 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 // import QRCode from "qrcode.react";
 import QRCode from "react-qr-code";
 import { UserContext } from "../contexts/Context";
-
+import "../css/QRpage.scss";
 // QR code의 새로고침 주기
 const refreshTime = 30;
 
@@ -16,23 +16,32 @@ const QRpage = () => {
     createdAt: new Date().getTime(),
   });
 
+  const refresh = useCallback(() => {
+    setRemainTime(refreshTime);
+    setData({ uid: userData.uid, createdAt: new Date().getTime() });
+  }, [userData.uid]);
+
   useEffect(() => {
     // refresh QR code periodically
     const interval = setInterval(() => {
       if (remainTime === 0) {
-        setRemainTime(refreshTime);
-        setData({ uid: userData.uid, createdAt: new Date().getTime() });
+        refresh();
       } else setRemainTime(remainTime - 1);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [remainTime, userData.uid]);
+  }, [remainTime, userData.uid, refresh]);
+
+  const onRefreshClick = () => {
+    refresh();
+  };
 
   return (
-    <>
+    <div className="qr-code--container">
       <QRCode value={JSON.stringify(data)} />
+      <button onClick={onRefreshClick}>refresh</button>
       <p>남은 시간: {remainTime}초</p>
-    </>
+    </div>
   );
 };
 

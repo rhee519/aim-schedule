@@ -1,0 +1,6 @@
+@import "./variables.scss";
+
+.qr-code--container {
+  @include flex--center;
+  flex-direction: column;
+}

@@ -3,6 +3,7 @@
 .qr-reader--container {
   background-color: chartreuse;
   @include flex--center;
+  flex-direction: column;
 }
 
 .qr-reader--camera {
