@@ -1,8 +1,13 @@
-import { doc, getDoc, updateDoc } from "@firebase/firestore";
+import {
+  doc,
+  getDoc,
+  // setDoc, updateDoc
+} from "@firebase/firestore";
 import React, { useCallback, useEffect, useState } from "react";
+// import moment from "moment";
 import QrReader from "react-qr-reader";
 import { db } from "../myFirebase";
-import moment from "moment";
+import { finishWork, startWork } from "./WorkTime";
 // import "../css/QRReader.scss";
 
 // Scan한 QR 데이터를 얼마나 유지할 것인가?
@@ -17,11 +22,9 @@ const Error = (error) => {
 
 const QRReader = () => {
   const [scannedData, setScannedData] = useState(null);
-  // const [parsedData, setParsedData] = useState(null);
   const [mode, setMode] = useState(true);
   const [text, setText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const today = moment().format("YYYY-MM-DD");
   // const week;
 
   useEffect(() => {
@@ -62,57 +65,69 @@ const QRReader = () => {
 
     setIsLoading(true);
     const userRef = doc(db, "userlist", uid);
-    const dailyRef = doc(db, `userlist/${uid}/daily`, today);
 
     // DB에서 이 uid를 가진 user를 찾아본다.
     await getDoc(userRef)
       .then(async (userSnap) => {
         if (userSnap.exists()) {
           // uid is valid
-          const { userName, isWorking } = userSnap.data();
-          const now = new Date().getTime();
+          const { userName, isWorking, lastLoginAt } = userSnap.data();
           if (isWorking) {
             // finish working
-            await getDoc(dailyRef)
-              .then(async (dailySnap) => {
-                if (dailySnap.exists()) {
-                  const { workTime, lastStartedAt } = dailySnap.data();
-                  await updateDoc(dailyRef, {
-                    workTime: workTime + now - lastStartedAt,
-                    lastFinishedAt: now,
-                  })
-                    .then(async () => {
-                      await updateDoc(userRef, {
-                        isWorking: false,
-                      }).catch(Error);
-                    })
-                    .catch(Error);
-                }
-              })
-              .then(() => {
-                setText(`${userName}님 퇴근!`);
-              })
-              .catch(Error);
+            finishWork({ uid, lastLoginAt });
+            setText(`${userName}님 퇴근!`);
           } else {
             // start working
-            await getDoc(dailyRef)
-              .then(async (dailySnap) => {
-                if (dailySnap.exists()) {
-                  await updateDoc(dailyRef, {
-                    lastStartedAt: now,
-                  }).catch(Error);
-                }
-              })
-              .then(async () => {
-                await updateDoc(userRef, {
-                  isWorking: true,
-                }).catch(Error);
-              })
-              .then(() => {
-                setText(`${userName}님 출근!`);
-              })
-              .catch(Error);
+            startWork({ uid });
+            setText(`${userName}님 출근!`);
           }
+          //   const now = new Date().getTime();
+          //   if (isWorking) {
+          //     // finish working
+          //     await getDoc(dailyRef)
+          //       .then(async (dailySnap) => {
+          //         if (dailySnap.exists()) {
+          //           const { workTime, lastStartedAt } = dailySnap.data();
+          //           await updateDoc(dailyRef, {
+          //             workTime: workTime + now - lastStartedAt,
+          //             lastFinishedAt: now,
+          //           })
+          //             .then(async () => {
+          //               await updateDoc(userRef, {
+          //                 isWorking: false,
+          //               }).catch(Error);
+          //             })
+          //             .catch(Error);
+          //         }
+          //       })
+          //       .then(() => {
+          //         setText(`${userName}님 퇴근!`);
+          //       })
+          //       .catch(Error);
+          //   } else {
+          //     // start working
+          //     await getDoc(dailyRef)
+          //       .then(async (dailySnap) => {
+          //         if (dailySnap.exists()) {
+          //           await updateDoc(dailyRef, {
+          //             lastStartedAt: now,
+          //           }).catch(Error);
+          //         } else {
+          //           await setDoc(dailyRef, {
+          //             lastStartedAt: now,
+          //           }).catch(Error);
+          //         }
+          //       })
+          //       .then(async () => {
+          //         await updateDoc(userRef, {
+          //           isWorking: true,
+          //         }).catch(Error);
+          //       })
+          //       .then(() => {
+          //         setText(`${userName}님 출근!`);
+          //       })
+          //       .catch(Error);
+          //   }
         }
       })
       .then(() => {
@@ -120,7 +135,7 @@ const QRReader = () => {
         setIsLoading(false);
       })
       .catch(Error);
-  }, [scannedData, today, clearData]);
+  }, [scannedData, clearData]);
 
   useEffect(() => {
     processData();

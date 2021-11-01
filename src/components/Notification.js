@@ -6,20 +6,66 @@ import {
   collection,
   addDoc,
 } from "@firebase/firestore";
+import { MenuItem } from "@mui/material";
 import React, { useState, useCallback, useEffect, useContext } from "react";
 import { UserContext } from "../contexts/Context";
 import { db } from "../myFirebase";
-import "../css/Notification.scss";
+// import "../css/Notification.scss";
 
 const Error = (error) => {
   console.log("from Notification.js");
   console.log(error);
 };
 
-const Notification = ({ type, checked, createdAt, data, id, admin }) => {
+const SignUpRequestBtns = ({ onSignUpApproveClick, onDeleteClick }) => (
+  <>
+    <button className="btn--signup-approve" onClick={onSignUpApproveClick}>
+      승인
+    </button>
+    <button className="btn--signup-deny" onClick={onDeleteClick}>
+      삭제
+    </button>
+  </>
+);
+
+const SendNotification = async ({ receiverUid, type, data }) => {
+  const notificationCollection = collection(
+    db,
+    `userlist/${receiverUid}/notification`
+  );
+  await addDoc(notificationCollection, {
+    type,
+    data,
+    checked: false,
+    createdAt: new Date().getTime(),
+  })
+    // .then((docSnap) => {
+    //   console.log(docSnap);
+    // })
+    .catch(Error);
+};
+
+const SendAdminNotification = async ({ type, data }) => {
+  const adminCollection = collection(db, "admin-notification");
+  await addDoc(adminCollection, {
+    type,
+    data,
+    checked: false,
+    createdAt: new Date().getTime(),
+  }).catch(Error);
+};
+
+const Notification = ({ note, admin }) => {
   const [text, setText] = useState("");
   const [icon, setIcon] = useState("");
   const userData = useContext(UserContext);
+  const {
+    type,
+    checked,
+    // createdAt,
+    data,
+    id,
+  } = note;
 
   // type === "SIGNUP_REQUEST"
   const fetchSignUpRequest = useCallback(() => {
@@ -82,13 +128,19 @@ const Notification = ({ type, checked, createdAt, data, id, admin }) => {
   }, [fetchSignUpRequest, fetchSignUpComplete, type]);
 
   return (
-    <div className="notification--box">
+    <MenuItem className="notification--box">
       <div
         className="notification--icon"
         style={{
           backgroundImage: `url(${icon})`,
+          backgroundSize: "contain",
+          backgroundRepeat: "none",
+          borderRadius: 100,
+          width: 24,
+          height: 24,
+          marginRight: 3,
         }}
-      ></div>
+      />
       <div className="notification--content">
         <p>{text}</p>
       </div>
@@ -101,46 +153,8 @@ const Notification = ({ type, checked, createdAt, data, id, admin }) => {
           })}
         </div>
       )}
-    </div>
+    </MenuItem>
   );
-};
-
-const SignUpRequestBtns = ({ onSignUpApproveClick, onDeleteClick }) => (
-  <>
-    <button className="btn--signup-approve" onClick={onSignUpApproveClick}>
-      승인
-    </button>
-    <button className="btn--signup-deny" onClick={onDeleteClick}>
-      삭제
-    </button>
-  </>
-);
-
-const SendNotification = async ({ receiverUid, type, data }) => {
-  const notificationCollection = collection(
-    db,
-    `userlist/${receiverUid}/notification`
-  );
-  await addDoc(notificationCollection, {
-    type,
-    data,
-    checked: false,
-    createdAt: new Date().getTime(),
-  })
-    // .then((docSnap) => {
-    //   console.log(docSnap);
-    // })
-    .catch(Error);
-};
-
-const SendAdminNotification = async ({ type, data }) => {
-  const adminCollection = collection(db, "admin-notification");
-  await addDoc(adminCollection, {
-    type,
-    data,
-    checked: false,
-    createdAt: new Date().getTime(),
-  }).catch(Error);
 };
 
 export default Notification;

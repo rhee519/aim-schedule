@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { auth, db } from "../myFirebase";
 import AppRouter from "./AppRouter";
 import Loading from "./Loading";
-import "../css/App.scss";
+// import "../css/App.scss";
 import {
   // addDoc,
   // collection,
@@ -35,7 +35,6 @@ function App() {
       setIsLoading(false);
       return;
     }
-
     const userDocRef = doc(db, "userlist", user.uid);
     await getDoc(userDocRef)
       .then(async (docSnap) => {
@@ -59,7 +58,6 @@ function App() {
                 alert(
                   "관리자의 가입 승인을 기다리는 중입니다. 관리자 승인 이후 서비스를 정상적으로 이용하실 수 있습니다."
                 );
-                auth.signOut();
               } else {
                 // 해당 user는 회원가입 신청을 처음 하는 것!
                 await setDoc(waitDocRef, {
@@ -78,6 +76,7 @@ function App() {
                         isAdmin: false,
                         isWorking: false,
                         lastLoginAt: new Date().getTime(),
+                        lastLogoutAt: new Date().getTime(),
                       },
                     });
                     alert(
@@ -87,6 +86,7 @@ function App() {
                   .catch(Error);
               }
             })
+            .then(() => auth.signOut())
             .catch(Error);
         }
       })

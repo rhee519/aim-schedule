@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { Switch, Route, Redirect } from "react-router-dom";
+import { Switch, Route, Redirect, useLocation } from "react-router-dom";
 import Home from "../pages/Home";
 import Login from "../pages/Login";
 import NotFound from "../pages/NotFound";
@@ -19,54 +19,32 @@ import QRReader from "./QRReader";
 
 const AppRouter = () => {
   const userData = useContext(UserContext);
+  const location = useLocation();
   return (
     <>
-      <Navigator />
       <div className="router--container">
         {userData ? (
           <>
+            <Navigator location={location} />
             <WorkIndicator />
             <Switch>
-              <Route exact path="/">
-                <Home />
-              </Route>
-              <Route path="/profile">
-                <Profile />
-              </Route>
-              <Route path="/calendar">
-                <MyCalendar />
-              </Route>
-              <Route path="/todo-list">
-                <TodoList />
-              </Route>
-              <Route path="/admin">
-                {userData && userData.isAdmin ? <Admin /> : <NotAdmin />}
-              </Route>
-              <Route path="/qr-code">
-                <QRpage />
-              </Route>
-              <Route path="/qr-reader">
-                <QRReader />
-              </Route>
+              <Route exact path="/" component={Home} />
+              <Route path="/profile" component={Profile} />
+              <Route path="/calendar" component={MyCalendar} />
+              <Route path="/todo-list" component={TodoList} />
+              <Route
+                path="/admin"
+                component={userData && userData.isAdmin ? Admin : NotAdmin}
+              />
+              <Route path="/qr-code" component={QRpage} />
+              <Route path="/qr-reader" component={QRReader} />
               <Redirect path="/login" to="/" />
-              <Route path="*">
-                <NotFound />
-              </Route>
+              <Route path="*" component={NotFound} />
             </Switch>
           </>
         ) : (
-          // ) : (
-          //   <>
-          //     <Route path="/">
-          //       <WaitingForGrant />
-          //     </Route>
-          //     <Redirect path="*" to="/" />
-          //   </>
-          // )
           <Switch>
-            <Route path="/">
-              <Login />
-            </Route>
+            <Route path="/" component={Login} />
             <Redirect path="*" to="/" />
           </Switch>
         )}
