@@ -14,11 +14,13 @@ import { db } from "../myFirebase";
 import Todo from "../components/Todo";
 import "../css/TodoList.scss";
 import { UserContext } from "../contexts/Context";
+import Loading from "../components/Loading";
 
 const TodoList = () => {
   const userData = useContext(UserContext);
   const [todo, setTodo] = useState("");
   const [todoList, setTodoList] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     const todoCollection = collection(db, `userlist/${userData.uid}/todo-list`);
@@ -30,6 +32,7 @@ const TodoList = () => {
         });
         setTodoList(todoFetched);
       })
+      .then(() => setLoading(false))
       .catch((error) => {
         console.log("from TodoList.js");
         console.log(error);
@@ -50,10 +53,6 @@ const TodoList = () => {
     },
     [userData.uid]
   );
-
-  // const sortByCreatedAt = useCallback(() => {
-  //   todoList.sort((a, b) => b.createdAt - a.createdAt);
-  // }, [todoList]);
 
   useEffect(() => {
     // component did mount & update
@@ -89,7 +88,7 @@ const TodoList = () => {
     // update database
     uploadTodo(newTodo);
 
-    setTodoList([...todoList, newTodo]);
+    // setTodoList([...todoList, newTodo]);
     setTodo("");
   };
 
@@ -100,7 +99,8 @@ const TodoList = () => {
     const newTodoList = [...todoList];
     const docId = newTodoList[id].id;
     newTodoList[id].done = !newTodoList[id].done;
-    setTodoList(newTodoList);
+    // setTodoList(newTodoList);
+
     // update database
     const docRef = doc(db, `userlist/${userData.uid}/todo-list`, docId);
     updateDoc(docRef, {
@@ -138,37 +138,41 @@ const TodoList = () => {
         {/* <input className="todo-list--btn-add" type="submit" value="add" /> */}
       </form>
       <div className="todo-list--todos">
-        {todoList.map((todoEl, index) => (
-          <div className="todo-list--todo" key={index}>
-            <button
-              className={
-                "todo--btn todo--btn-check" + (todoEl.done ? " checked" : "")
-              }
-              onClick={onTodoCheckClick}
-              id={index}
-            >
-              <i className="material-icons check" id={index}>
-                {todoEl.done ? "undo" : "done"}
-              </i>
-            </button>
-            <Todo
-              className="todo--text"
-              text={todoEl.text}
-              done={todoEl.done}
-              id={index}
-            />
+        {loading ? (
+          <Loading />
+        ) : (
+          todoList.map((todoEl, index) => (
+            <div className="todo-list--todo" key={index}>
+              <button
+                className={
+                  "todo--btn todo--btn-check" + (todoEl.done ? " checked" : "")
+                }
+                onClick={onTodoCheckClick}
+                id={index}
+              >
+                <i className="material-icons check" id={index}>
+                  {todoEl.done ? "undo" : "done"}
+                </i>
+              </button>
+              <Todo
+                className="todo--text"
+                text={todoEl.text}
+                done={todoEl.done}
+                id={index}
+              />
 
-            <button
-              className="todo--btn todo--btn-delete"
-              onClick={onTodoDeleteClick}
-              id={index}
-            >
-              <i className="material-icons delete" id={index}>
-                delete_forever
-              </i>
-            </button>
-          </div>
-        ))}
+              <button
+                className="todo--btn todo--btn-delete"
+                onClick={onTodoDeleteClick}
+                id={index}
+              >
+                <i className="material-icons delete" id={index}>
+                  delete_forever
+                </i>
+              </button>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

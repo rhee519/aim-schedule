@@ -5,8 +5,14 @@ import React, {
 } from "react";
 // import moment from "moment";
 
-import { TextField } from "@mui/material";
-import { LocalizationProvider, DatePicker } from "@mui/lab";
+import { TextField, Box, Tab } from "@mui/material";
+import {
+  TabList,
+  TabPanel,
+  TabContext,
+  LocalizationProvider,
+  DatePicker,
+} from "@mui/lab";
 import AdapterMoment from "@mui/lab/AdapterMoment";
 // import { db } from "../myFirebase";
 // import getWeekNumber from "./getWeekNumber";
@@ -21,6 +27,10 @@ const Error = (error) => {
 
 const Summary = () => {
   const [date, setDate] = useState(new Date());
+  const [view, setView] = useState("week");
+  const onViewChange = (event, newView) => {
+    setView(newView);
+  };
   // const [todayWorkTime, setTodayWorkTime] = useState(0);
   // const [weekWorkTime, setWeekWorkTime] = useState(0);
   // const today = moment().format("YYYY-MM-DD");
@@ -62,16 +72,39 @@ const Summary = () => {
   // }, [userData.uid, today, fetchData]);
 
   return (
-    <LocalizationProvider dateAdapter={AdapterMoment}>
-      <DatePicker
-        label="Choose Date"
-        value={date}
-        onChange={(newDate) => setDate(newDate)}
-        renderInput={(params) => <TextField {...params} />}
-      />
-      <MyWeekView date={date} />
-    </LocalizationProvider>
-
+    <>
+      <LocalizationProvider dateAdapter={AdapterMoment}>
+        <DatePicker
+          label="Choose Date"
+          value={date}
+          onChange={(newDate) => setDate(newDate)}
+          renderInput={(params) => <TextField {...params} />}
+        />
+        <Box
+        //  sx={{ width: '100%', typography: 'body1' }}
+        >
+          <TabContext value={view}>
+            <Box
+            // sx={{ borderBottom: 1, borderColor: 'divider' }}
+            >
+              <TabList
+                onChange={onViewChange}
+                aria-label="lab API tabs example"
+              >
+                <Tab label="DAY" value="day" />
+                <Tab label="WEEK" value="week" />
+                <Tab label="MONTH" value="month" />
+              </TabList>
+            </Box>
+            <TabPanel value="day">Day View 준비중</TabPanel>
+            <TabPanel value="week">
+              <MyWeekView date={date} />
+            </TabPanel>
+            <TabPanel value="month">Month View 준비중</TabPanel>
+          </TabContext>
+        </Box>
+      </LocalizationProvider>
+    </>
     // <div className="summary--container">
     //   <h2 className="summary--title">WorkTime Summary</h2>
     //   <div className="summary--box summary-today">

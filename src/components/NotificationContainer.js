@@ -7,12 +7,13 @@ import {
   // setDoc, updateDoc
 } from "@firebase/firestore";
 import React, { useCallback, useContext, useEffect, useState } from "react";
-import { Menu, IconButton, Badge, MenuItem } from "@mui/material";
+import { Menu, IconButton, Badge } from "@mui/material";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import { UserContext } from "../contexts/Context";
 import { db } from "../myFirebase";
 import Notification from "./Notification";
 import "../css/NotificationContainer.scss";
+import Loading from "./Loading";
 
 const Error = (error) => {
   console.log("from NotificationContainer.js");
@@ -121,7 +122,7 @@ const NotificationContainer = () => {
         onClose={handleClose}
       >
         {loading || adminLoading ? (
-          <MenuItem onClick={handleClose}>loading...</MenuItem>
+          <Loading />
         ) : (
           <div>
             {adminNotes.map((note, index) => (
@@ -134,49 +135,6 @@ const NotificationContainer = () => {
         )}
       </Menu>
     </>
-    // <Menu
-    //   className="notification--container"
-    //   open={open}
-    //   onClick={onClick}
-    //   onClose={onClose}
-    //   anchorEl={anchorEl}
-    // >
-    //   {userData.isAdmin ? (
-    //     adminNotes.length > 0 ? (
-    //       adminNotes.map((note, index) => (
-    //         <Notification
-    //           key={index}
-    //           type={note.type}
-    //           data={note.data}
-    //           checked={note.checked}
-    //           createdAt={note.createdAt}
-    //           id={note.id}
-    //           admin={true}
-    //         />
-    //       ))
-    //     ) : (
-    //       <h2>새로운 관리자 알림이 없습니다.</h2>
-    //     )
-    //   ) : (
-    //     // not admin
-    //     <></>
-    //   )}
-    //   {notes.length > 0 ? (
-    //     notes.map((note, index) => (
-    //       <Notification
-    //         key={index}
-    //         type={note.type}
-    //         data={note.data}
-    //         checked={note.checked}
-    //         createdAt={note.createdAt}
-    //         id={note.id}
-    //         admin={false}
-    //       />
-    //     ))
-    //   ) : (
-    //     <h2>새로운 알림이 없습니다.</h2>
-    //   )}
-    // </Menu>
   );
 };
 

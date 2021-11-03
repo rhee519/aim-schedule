@@ -11,6 +11,7 @@ import NotAdmin from "../pages/NotAdmin";
 import WorkIndicator from "./WorkIndicator";
 import QRpage from "../pages/QRpage";
 import Admin from "../pages/Admin";
+import Schedule from "./Schedule";
 
 import "../css/AppRouter.scss";
 import { UserContext } from "../contexts/Context";
@@ -38,6 +39,7 @@ const AppRouter = () => {
               />
               <Route path="/qr-code" component={QRpage} />
               <Route path="/qr-reader" component={QRReader} />
+              <Route path="/schedule" component={Schedule} />
               <Redirect path="/login" to="/" />
               <Route path="*" component={NotFound} />
             </Switch>

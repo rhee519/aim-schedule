@@ -1,5 +1,6 @@
 import React, {
-  // useState, useRef,
+  useState,
+  //  useRef,
   useContext,
 } from "react";
 import { Link } from "react-router-dom";
@@ -12,9 +13,11 @@ import {
   Toolbar,
   IconButton,
   Typography,
+  Avatar,
+  // Drawer,
   // Badge,
 } from "@mui/material";
-// import MenuIcon from "@mui/icons-material/Menu";
+import MenuIcon from "@mui/icons-material/Menu";
 import AccountCircle from "@mui/icons-material/AccountCircle";
 import StickyNote2Icon from "@mui/icons-material/StickyNote2";
 import HomeIcon from "@mui/icons-material/Home";
@@ -23,10 +26,13 @@ import CropFreeIcon from "@mui/icons-material/CropFree";
 // import NotificationsIcon from "@mui/icons-material/Notifications";
 
 import NotificationContainer from "./NotificationContainer";
+import Sidebar from "./Sidebar";
 // import "../css/Navigator.scss";
 
 const Navigator = ({ location }) => {
   const userData = useContext(UserContext);
+  const [open, setOpen] = useState(false);
+  const toggleDrawer = () => setOpen((open) => !open);
 
   return (
     <>
@@ -39,18 +45,23 @@ const Navigator = ({ location }) => {
               edge="start"
               color="inherit"
               aria-label="menu"
-              sx={{ mr: 2 }} // mr: margin-right
+              onClick={toggleDrawer}
+              // sx={{ mr: 2 }}
             >
-              {/* {location.pathname === "/" ? <MenuIcon /> : <HomeIcon />} */}
-              <Link
-                to="/"
-                style={{
-                  display: "flex",
-                }}
-              >
-                <HomeIcon />
-              </Link>
+              <MenuIcon />
             </IconButton>
+            <Link to="/">
+              <IconButton
+                size="large"
+                edge="start"
+                color="inherit"
+                aria-label="menu"
+                sx={{ mr: 2 }} // mr: margin-right
+              >
+                {/* {location.pathname === "/" ? <MenuIcon /> : <HomeIcon />} */}
+                <HomeIcon />
+              </IconButton>
+            </Link>
 
             {/* Page Name */}
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
@@ -59,98 +70,105 @@ const Navigator = ({ location }) => {
 
             {/* QR Reader */}
             {userData && userData.isAdmin && (
+              <Link
+                className="nav--menu nav--qr-reader"
+                to="/qr-reader"
+                // style={{
+                //   displey: "flex",
+                //   width: 24,
+                //   height: 24,
+                // }}
+              >
+                <IconButton
+                  size="large"
+                  edge="start"
+                  color="inherit"
+                  aria-label="qr-reader"
+                >
+                  <CropFreeIcon />
+                </IconButton>
+              </Link>
+            )}
+
+            {/* QR Code */}
+            <Link
+              className="nav--menu nav--qr-code"
+              to="/qr-code"
+              // style={{
+              //   displey: "flex",
+              //   width: 24,
+              //   height: 24,
+              // }}
+            >
               <IconButton
                 size="large"
                 edge="start"
                 color="inherit"
-                aria-label="qr-reader"
-              >
-                <Link
-                  className="nav--menu nav--qr-reader"
-                  to="/qr-reader"
-                  style={{
-                    displey: "flex",
-                    width: 24,
-                    height: 24,
-                  }}
-                >
-                  <CropFreeIcon />
-                </Link>
-              </IconButton>
-            )}
-
-            {/* QR Code */}
-            <IconButton
-              size="large"
-              edge="start"
-              color="inherit"
-              aria-label="qr-code"
-            >
-              <Link
-                className="nav--menu nav--qr-code"
-                to="/qr-code"
-                style={{
-                  displey: "flex",
-                  width: 24,
-                  height: 24,
-                }}
+                aria-label="qr-code"
               >
                 <QrCode2Icon />
-              </Link>
-            </IconButton>
+              </IconButton>
+            </Link>
 
             {/* To-do list */}
-            <IconButton
-              size="large"
-              edge="start"
-              color="inherit"
-              aria-label="todo-list"
+            <Link
+              className="nav--menu nav--todo-list"
+              to="/todo-list"
+              // style={{
+              //   displey: "flex",
+              //   width: 24,
+              //   height: 24,
+              // }}
             >
-              <Link
-                className="nav--menu nav--todo-list"
-                to="/todo-list"
-                style={{
-                  displey: "flex",
-                  width: 24,
-                  height: 24,
-                }}
+              <IconButton
+                size="large"
+                edge="start"
+                color="inherit"
+                aria-label="todo-list"
               >
                 <StickyNote2Icon />
-              </Link>
-            </IconButton>
+              </IconButton>
+            </Link>
 
             {/* Notification */}
             <NotificationContainer />
 
             {/* Profile */}
-            <IconButton
-              size="large"
-              edge="start"
-              color="inherit"
-              aria-label="profile"
-            >
-              {userData ? (
-                <Link
-                  className="nav--menu nav--profile"
-                  to="/profile"
-                  style={{
-                    display: "flex",
-                  }}
+            {userData ? (
+              <Link
+                className="nav--menu nav--profile"
+                to="/profile"
+                // style={{
+                //   display: "flex",
+                // }}
+              >
+                <IconButton
+                  size="large"
+                  edge="start"
+                  color="inherit"
+                  aria-label="profile"
                 >
-                  <img
+                  <Avatar
                     src={userData.profileImageURL}
-                    alt="profile"
-                    style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: 100,
+                    alt={userData.userName}
+                    sx={{
+                      width: 25,
+                      height: 25,
+                      // borderRadius: 100,
                     }}
                   />
-                </Link>
-              ) : (
+                </IconButton>
+              </Link>
+            ) : (
+              <IconButton
+                size="large"
+                edge="start"
+                color="inherit"
+                aria-label="profile"
+              >
                 <AccountCircle />
-              )}
-            </IconButton>
+              </IconButton>
+            )}
             {/* <IconButton
             size="large"
             edge="start"
@@ -161,6 +179,7 @@ const Navigator = ({ location }) => {
           </IconButton> */}
           </Toolbar>
         </AppBar>
+        <Sidebar open={open} onClose={toggleDrawer} />
       </Box>
     </>
     // <>
