@@ -8,7 +8,6 @@ import Navigator from "./Navigator";
 import MyCalendar from "../pages/MyCalendar";
 import TodoList from "../pages/TodoList";
 import NotAdmin from "../pages/NotAdmin";
-import WorkIndicator from "./WorkIndicator";
 import QRpage from "../pages/QRpage";
 import Admin from "../pages/Admin";
 import Schedule from "./Schedule";
@@ -27,7 +26,7 @@ const AppRouter = () => {
         {userData ? (
           <>
             <Navigator location={location} />
-            <WorkIndicator />
+            {/* <WorkIndicator /> */}
             <Switch>
               <Route exact path="/" component={Home} />
               <Route path="/profile" component={Profile} />
