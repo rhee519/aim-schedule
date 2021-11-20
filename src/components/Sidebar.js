@@ -1,33 +1,29 @@
 import {
+  Button,
   Drawer,
   IconButton,
   List,
   ListItem,
   ListItemButton,
+  Typography,
 } from "@mui/material";
 import { Box } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import HomeIcon from "@mui/icons-material/Home";
 
 import React from "react";
 import { Link } from "react-router-dom";
 
-const Sidebar = ({ open, onClose }) => {
+const Sidebar = ({ open, onClose, width }) => {
   return (
     <Box
       sx={{
         bgcolor: "background.paper",
+        width,
       }}
     >
-      <Drawer
-        anchor="left"
-        open={open}
-        sx={{
-          width: 200,
-        }}
-        onClose={onClose}
-      >
+      <Drawer variant="permanent" anchor="left" open={open} onClose={onClose}>
         <List>
+          {/* HOME */}
           <IconButton
             size="large"
             edge="start"
@@ -41,19 +37,38 @@ const Sidebar = ({ open, onClose }) => {
             <MenuIcon />
           </IconButton>
           <Link to="/">
-            <IconButton
-              size="large"
-              edge="start"
-              color="inherit"
-              onClick={onClose}
-            >
-              <HomeIcon />
-            </IconButton>
+            <Button color="inherit" sx={{ mr: 2 }} onClick={onClose}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                }}
+              >
+                AIM-SCHEDULE
+              </Typography>
+            </Button>
           </Link>
+
+          {/* DASHBOARD */}
           <ListItem>
-            <Link to="/schedule">
+            <ListItemButton>Dashboard</ListItemButton>
+          </ListItem>
+
+          {/* MY SCHEDULE */}
+          <Link to="/schedule">
+            <ListItem>
               <ListItemButton onClick={onClose}>My Schedule</ListItemButton>
-            </Link>
+            </ListItem>
+          </Link>
+
+          {/* NOTIFICATION */}
+          <ListItem>
+            <ListItemButton>Notification</ListItemButton>
+          </ListItem>
+
+          {/* ADMIN */}
+          <ListItem>
+            <ListItemButton>Admin</ListItemButton>
           </ListItem>
         </List>
       </Drawer>

@@ -1,9 +1,10 @@
 import { collection, getDocs, onSnapshot } from "@firebase/firestore";
 import React, { useCallback, useEffect, useState } from "react";
+import { Box, Grid, List, Paper } from "@mui/material";
 import Status from "../components/Status";
 import { db } from "../myFirebase";
 
-import "../css/Admin.scss";
+// import "../css/Admin.scss";
 
 const Admin = () => {
   const [userList, setUserList] = useState([]);
@@ -33,12 +34,20 @@ const Admin = () => {
   }, [fetchUserList]);
 
   return (
-    <div className="admin--container">
-      <h2 className="admin--title">Admin</h2>
-      {userList.map((user, index) => (
-        <Status key={index} user={user} />
-      ))}
-    </div>
+    <Box className="admin--container">
+      <List>
+        <Grid container columns={12} spacing={1}>
+          <Grid item xs={12} md={6}>
+            {userList.map((user, index) => (
+              <Status key={index} user={user} />
+            ))}
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Paper>Admin Notification</Paper>
+          </Grid>
+        </Grid>
+      </List>
+    </Box>
   );
 };
 

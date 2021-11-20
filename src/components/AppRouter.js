@@ -1,56 +1,54 @@
 import React, { useContext } from "react";
-import { Switch, Route, Redirect, useLocation } from "react-router-dom";
+import { Switch, Route, Redirect } from "react-router-dom";
+import { UserContext } from "../contexts/Context";
 import Home from "../pages/Home";
 import Login from "../pages/Login";
 import NotFound from "../pages/NotFound";
 import Profile from "../pages/Profile";
 import Navigator from "./Navigator";
-import MyCalendar from "../pages/MyCalendar";
+// import MyCalendar from "../pages/MyCalendar";
 import TodoList from "../pages/TodoList";
 import NotAdmin from "../pages/NotAdmin";
-import QRpage from "../pages/QRpage";
 import Admin from "../pages/Admin";
 import Schedule from "./Schedule";
+import { QRreader } from "./QR";
 
-import "../css/AppRouter.scss";
-import { UserContext } from "../contexts/Context";
-// import WaitingForGrant from "../pages/WaitingForGrant";
-import QRReader from "./QRReader";
+// import "../css/AppRouter.scss";
+import { Box } from "@mui/material";
+
+const drawerWidth = 240;
 
 const AppRouter = () => {
   const userData = useContext(UserContext);
-  const location = useLocation();
   return (
-    <>
-      <div className="router--container">
-        {userData ? (
-          <>
-            <Navigator location={location} />
-            {/* <WorkIndicator /> */}
+    <Box className="router--container">
+      {userData ? (
+        <Box>
+          <Navigator drawerWidth={drawerWidth}>
             <Switch>
               <Route exact path="/" component={Home} />
               <Route path="/profile" component={Profile} />
-              <Route path="/calendar" component={MyCalendar} />
+              <Route path="/schedule" component={Schedule} />
               <Route path="/todo-list" component={TodoList} />
               <Route
                 path="/admin"
                 component={userData && userData.isAdmin ? Admin : NotAdmin}
               />
-              <Route path="/qr-code" component={QRpage} />
-              <Route path="/qr-reader" component={QRReader} />
+              {/* <Route path="/qr-code" component={QRpage} /> */}
+              <Route path="/qr-reader" component={QRreader} />
               <Route path="/schedule" component={Schedule} />
               <Redirect path="/login" to="/" />
               <Route path="*" component={NotFound} />
             </Switch>
-          </>
-        ) : (
-          <Switch>
-            <Route path="/" component={Login} />
-            <Redirect path="*" to="/" />
-          </Switch>
-        )}
-      </div>
-    </>
+          </Navigator>
+        </Box>
+      ) : (
+        <Switch>
+          <Route path="/" component={Login} />
+          <Redirect path="*" to="/" />
+        </Switch>
+      )}
+    </Box>
   );
 };
 

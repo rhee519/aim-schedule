@@ -105,13 +105,13 @@ const NotificationContainer = () => {
   return (
     <>
       <IconButton
-        size="large"
+        size="small"
         edge="start"
         color="inherit"
         aria-label="badge"
         onClick={handleClick}
       >
-        <Badge color="error" variant="dot">
+        <Badge color="error" variant="dot" badgeContent={0}>
           <NotificationsIcon />
         </Badge>
       </IconButton>

@@ -81,53 +81,6 @@ const QRReader = () => {
             startWork({ uid });
             setText(`${userName}님 출근!`);
           }
-          //   const now = new Date().getTime();
-          //   if (isWorking) {
-          //     // finish working
-          //     await getDoc(dailyRef)
-          //       .then(async (dailySnap) => {
-          //         if (dailySnap.exists()) {
-          //           const { workTime, lastStartedAt } = dailySnap.data();
-          //           await updateDoc(dailyRef, {
-          //             workTime: workTime + now - lastStartedAt,
-          //             lastFinishedAt: now,
-          //           })
-          //             .then(async () => {
-          //               await updateDoc(userRef, {
-          //                 isWorking: false,
-          //               }).catch(Error);
-          //             })
-          //             .catch(Error);
-          //         }
-          //       })
-          //       .then(() => {
-          //         setText(`${userName}님 퇴근!`);
-          //       })
-          //       .catch(Error);
-          //   } else {
-          //     // start working
-          //     await getDoc(dailyRef)
-          //       .then(async (dailySnap) => {
-          //         if (dailySnap.exists()) {
-          //           await updateDoc(dailyRef, {
-          //             lastStartedAt: now,
-          //           }).catch(Error);
-          //         } else {
-          //           await setDoc(dailyRef, {
-          //             lastStartedAt: now,
-          //           }).catch(Error);
-          //         }
-          //       })
-          //       .then(async () => {
-          //         await updateDoc(userRef, {
-          //           isWorking: true,
-          //         }).catch(Error);
-          //       })
-          //       .then(() => {
-          //         setText(`${userName}님 출근!`);
-          //       })
-          //       .catch(Error);
-          //   }
         }
       })
       .then(() => {

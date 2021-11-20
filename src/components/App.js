@@ -29,8 +29,6 @@ function App() {
   const [userData, setUserData] = useState(
     JSON.parse(localStorage.getItem("currentUser"))
   );
-  console.log(userData);
-  // const [isWaitingUser, setIsWaitingUser] = useState(false);
   const fetchUserData = useCallback(async (user) => {
     if (!user) {
       setIsLoading(false);
