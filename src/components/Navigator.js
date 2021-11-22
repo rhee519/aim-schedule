@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   AppBar,
@@ -30,6 +30,7 @@ import PropTypes from "prop-types";
 import { ProfileAvatar } from "../pages/Profile";
 import { QRcode } from "./QR";
 import NotificationContainer from "./NotificationContainer";
+import { UserContext } from "../contexts/Context";
 
 const ExpandMore = styled((props) => {
   const { expand, ...other } = props;
@@ -43,6 +44,7 @@ const ExpandMore = styled((props) => {
 }));
 
 const Navigator = (props) => {
+  const user = useContext(UserContext);
   const { window, drawerWidth, children } = props;
   const [mobileOpen, setMobileOpen] = useState(false);
   const [QROpen, setQROpen] = useState(false);
@@ -122,7 +124,6 @@ const Navigator = (props) => {
             <EventAvailableIcon />
           </ListItemIcon>
           <ListItemText primary="My Schedule" />
-          {/* </Accordion> */}
           <ExpandMore expand={scheduleExpand} onClick={handleExpandClick}>
             <ExpandMoreIcon />
           </ExpandMore>
@@ -177,14 +178,16 @@ const Navigator = (props) => {
         </ListItem>
 
         {/* ADMIN */}
-        <Link to="/admin" onClick={handleDrawerClose}>
-          <ListItem button>
-            <ListItemIcon>
-              <AdminPanelSettingsIcon />
-            </ListItemIcon>
-            <ListItemText primary="Admin" />
-          </ListItem>
-        </Link>
+        {user && user.isAdmin && (
+          <Link to="/admin" onClick={handleDrawerClose}>
+            <ListItem button>
+              <ListItemIcon>
+                <AdminPanelSettingsIcon />
+              </ListItemIcon>
+              <ListItemText primary="Admin" />
+            </ListItem>
+          </Link>
+        )}
       </List>
       {/* <Divider /> */}
       {/* <List></List> */}

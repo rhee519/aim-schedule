@@ -101,22 +101,24 @@ const WeekWrapper = () => {
   );
 };
 
-export const getMonthRange = () => {
+export const getMonthRange = (date) => {
   // 오늘을 포함하는 25일 ~ 24일 범위를 return!
+  const dateClone = moment(date);
   const startDate =
-    moment().date() < 25
-      ? moment().subtract(1, "month").date(25)
-      : moment().date(25);
+    dateClone.date() < 25
+      ? dateClone.subtract(1, "month").date(25)
+      : dateClone.date(25);
   const endDate = moment(startDate).add(1, "month").date(24);
   return { startDate, endDate };
 };
 
-export const getNextMonthRange = () => {
+export const getNextMonthRange = (date) => {
   // 다음 25일 ~ 24일 범위를 return!
+  const dateClone = moment(date);
   const startDate =
-    moment().date() < 25
-      ? moment().date(25)
-      : moment().endOf("month").add(25, "d");
+    dateClone.date() < 25
+      ? dateClone.date(25)
+      : dateClone.endOf("month").add(25, "d");
   const endDate = moment(startDate).add(1, "month").date(24).endOf("day");
   return { startDate, endDate };
 };

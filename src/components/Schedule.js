@@ -20,6 +20,7 @@ import {
   Tooltip,
   Typography,
   Slider,
+  Button,
 } from "@mui/material";
 import moment from "moment";
 import { getNextMonthRange } from "./CustomCalendar";
@@ -112,7 +113,7 @@ const CustomStaticCalendar = ({ match }) => {
           await setDoc(docRef, defaultDayInfo);
         }
         newData.info = {
-          confirmed: false,
+          type: "created",
           worktime: workdays(startDate, endDate) * 8 * 60 * 60 * 1000,
           worked: 0,
         };
@@ -192,6 +193,7 @@ const CustomStaticCalendar = ({ match }) => {
               />
             </Grid>
           </LocalizationProvider>
+          <Button variant="contained">submit</Button>
         </Route>
         <Route
           path={`${match.path}/:date`}
@@ -209,7 +211,7 @@ const CustomStaticCalendar = ({ match }) => {
   );
 };
 
-const isBetween = (startDate, endDate, date) => {
+export const isBetween = (startDate, endDate, date) => {
   return (
     moment(date).isSameOrAfter(startDate.startOf("day")) &&
     moment(date).isSameOrBefore(endDate.endOf("day"))
@@ -361,7 +363,7 @@ const SelectedDateDisplay = (props) => {
   return (
     <>
       <Grid item xs={12}>
-        <Typography variant="h4">{moment(date).format("M/D")}</Typography>
+        <Typography variant="h4">{moment(date).format("M/D ddd")}</Typography>
       </Grid>
       {!isHoliday(date) ? (
         <>
