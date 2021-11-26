@@ -11,9 +11,8 @@ import { doc, getDoc, setDoc, updateDoc } from "@firebase/firestore";
 import { Box, Paper, Button, Typography } from "@mui/material";
 import { db } from "../myFirebase";
 import { UserContext } from "../contexts/Context";
-// import { finishWork, startWork } from "./WorkTime";
-import { getMonthRange } from "./CustomCalendar";
 import moment from "moment";
+import { dayDocRef, initialDailyData } from "../docFunctions";
 
 // QR code의 새로고침 주기
 const refreshTime = 30;
@@ -27,28 +26,32 @@ const QRcode = () => {
   // scan할 때 문제가 발생하므로 QR code value에 넣지 말 것!
   const userData = useContext(UserContext);
   const [remainTime, setRemainTime] = useState(refreshTime);
+  const [lastCreated, setLastCreated] = useState(new Date());
   const [data, setData] = useState({
     uid: userData.uid,
-    createdAt: new Date().getTime(),
+    createdAt: lastCreated,
   });
 
   const timer = useRef(null);
 
   const refresh = useCallback(() => {
-    setRemainTime(refreshTime);
-    setData({ uid: userData.uid, createdAt: new Date().getTime() });
+    const time = new Date();
+    setLastCreated(time);
+    setData({ uid: userData.uid, createdAt: time });
+    setRemainTime(Math.ceil(validTime / 1000));
   }, [userData.uid]);
 
   useEffect(() => {
     // refresh QR code periodically
     timer.current = setInterval(() => {
-      if (remainTime === 0) {
+      const gap = new Date().getTime() - lastCreated.getTime();
+      if (gap > validTime) {
         refresh();
-      } else setRemainTime(remainTime - 1);
+      } else setRemainTime(Math.ceil((validTime - gap) / 1000));
     }, 1000);
 
     return () => clearInterval(timer.current);
-  }, [remainTime, userData.uid, refresh]);
+  }, [lastCreated, userData.uid, refresh]);
 
   const onRefreshClick = () => {
     refresh();
@@ -83,15 +86,15 @@ const QRcode = () => {
 
 const QRreader = () => {
   const [scannedData, setScannedData] = useState(null);
-  const [mode, setMode] = useState(true);
+  const [mode, setMode] = useState(true); // 전면, 후면 카메라 선택
   const [text, setText] = useState("");
+  const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  // const week;
 
-  useEffect(() => {
-    // print userData when QR is scanned
-    console.log(scannedData);
-  }, [scannedData]);
+  // useEffect(() => {
+  //   // print userData when QR is scanned
+  //   console.log(scannedData);
+  // }, [scannedData]);
 
   const clearData = useCallback(() => {
     // n초 동안 현재 userData를 유지한다.
@@ -99,6 +102,7 @@ const QRreader = () => {
     // 실수로 한 명의 QR이 중복 스캔되는 것을 방지하기 위함!
     setTimeout(() => {
       setScannedData(null);
+      setError(null);
     }, durationTime);
   }, []);
 
@@ -116,50 +120,50 @@ const QRreader = () => {
   const processData = useCallback(async () => {
     if (!scannedData) return;
     const { uid, createdAt } = JSON.parse(scannedData);
-    if (new Date().getTime() - createdAt > validTime) {
+    if (new Date().getTime() - new Date(createdAt).getTime() > validTime) {
       // QR의 유효시간이 만료됨
       setText(
         "QR의 유효시간이 만료되었습니다. 새로고침하여 새 QR코드를 발급받으세요."
       );
+      setError(true);
       return;
     }
-
     setIsLoading(true);
-    const userRef = doc(db, "userlist", uid);
 
     // DB에서 이 uid를 가진 user를 찾아본다.
+    const userRef = doc(db, "userlist", uid);
     await getDoc(userRef)
       .then(async (userSnap) => {
         if (userSnap.exists()) {
-          // uid is valid
-          const {
-            userName,
-            isWorking,
-            // lastLoginAt
-          } = userSnap.data();
+          // 사용자 정보가 유효함
+          const { userName, isWorking } = userSnap.data();
           if (isWorking) {
-            // finish working
-            // finishWork({ uid, lastLoginAt });
+            // 퇴근
             CheckOut(uid);
             updateDoc(userRef, { isWorking: false });
             setText(`${userName}님 퇴근!`);
           } else {
-            // start working
-            // startWork({ uid });
+            // 출근
             CheckIn(uid);
             updateDoc(userRef, { isWorking: true });
             setText(`${userName}님 출근!`);
           }
         } else {
-          // uid is invaild
-          setText("Error: uid invaild");
+          // 사용자 정보가 유효하지 않음
+          setText("사용자의 정보가 존재하지 않습니다. 관리자에게 문의하세요.");
+          throw new Error();
         }
       })
       .then(() => {
         clearData();
         setIsLoading(false);
+        setError(false);
       })
-      .catch(Error);
+      .catch((error) => {
+        console.log(error);
+        setError(true);
+        clearData();
+      });
   }, [scannedData, clearData]);
 
   useEffect(() => {
@@ -174,11 +178,22 @@ const QRreader = () => {
   return (
     <Box
       sx={{
+        position: "relative",
         display: "flex",
-        flexDirection: "column",
+        // flexDirection: "column",
         alignItems: "center",
-        // justifyContent: "center",
-        // bgcolor: "#333333",
+        justifyContent: "center",
+        bgcolor: "#333333",
+        border: "2px solid",
+        borderColor:
+          error === null
+            ? "transparent"
+            : error
+            ? "error.main"
+            : "success.main",
+        width: 400,
+        height: 400,
+        overflow: "none",
       }}
     >
       <QrReader
@@ -187,15 +202,24 @@ const QRreader = () => {
         onError={(error) => console.log(error)}
         // onLoad={() => console.log("loaded")}
         facingMode={mode ? "user" : "environment"}
-        // facingMode="user"
         delay={2000}
-        // showViewFinder={false}
         style={{
-          width: 320,
-          height: 320,
+          display: "block",
+          width: "100%",
+          // height: 320,
         }}
       />
-      <Button variant="contained" onClick={cameraChange}>
+      <Button
+        variant="contained"
+        color="success"
+        onClick={cameraChange}
+        sx={{
+          position: "absolute",
+          zIndex: 1,
+          top: 0,
+          right: 0,
+        }}
+      >
         카메라 전환
       </Button>
       {scannedData && (
@@ -206,47 +230,43 @@ const QRreader = () => {
 };
 
 const CheckIn = async (uid) => {
-  const { startDate, endDate } = getMonthRange();
-  const docRef = doc(
-    db,
-    `userlist/${uid}/schedule/${moment(endDate).year()}/${moment(
-      startDate
-    ).format("YYYYMMDD")}-${moment(endDate).format("YYYYMMDD")}`,
-    moment().format("YYYYMMDD")
-  );
+  const docRef = dayDocRef(uid, moment());
   await getDoc(docRef).then(async (docSnap) => {
+    const time = new Date();
     if (docSnap.exists()) {
-      const { log } = docSnap.data() || [];
-      log.push({ time: new Date(), type: "IN" });
+      const data = docSnap.data();
+      // const { started } = data || time;
+      // const { log } = data || [];
+      const started = data.started || time;
+      const log = data.log || time;
+      log.push({ time, type: "in" });
       await updateDoc(docRef, {
+        started,
         log,
       });
     } else {
+      const log = [];
+      log.push({ time, type: "in" });
       await setDoc(docRef, {
-        start: moment().startOf("day").hour(9).toDate(),
-        finish: moment().startOf("day").hour(18).toDate(),
-        started: new Date(),
-        log: [{ time: new Date(), type: "IN" }],
+        ...initialDailyData(time),
+        started: time,
+        log,
       });
     }
   });
 };
 
 const CheckOut = async (uid) => {
-  const { startDate, endDate } = getMonthRange();
-  const docRef = doc(
-    db,
-    `userlist/${uid}/schedule/${moment(endDate).year()}/${moment(
-      startDate
-    ).format("YYYYMMDD")}-${moment(endDate).format("YYYYMMDD")}`,
-    moment().format("YYYYMMDD")
-  );
+  const docRef = dayDocRef(uid, moment());
   await getDoc(docRef).then(async (docSnap) => {
     if (docSnap.exists()) {
-      const { log } = docSnap.data() || [];
-      log.push({ time: new Date(), type: "OUT" });
+      // const { log } = docSnap.data() || [];
+      const data = docSnap.data();
+      const log = data.log || [];
+      const time = new Date();
+      log.push({ time, type: "out" });
       await updateDoc(docRef, {
-        finished: new Date(),
+        finished: time,
         log,
       });
     } else {

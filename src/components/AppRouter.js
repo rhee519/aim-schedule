@@ -16,7 +16,7 @@ import { QRreader } from "./QR";
 // import "../css/AppRouter.scss";
 import { Box } from "@mui/material";
 
-const drawerWidth = 240;
+const drawerWidth = 200;
 
 const AppRouter = () => {
   const userData = useContext(UserContext);

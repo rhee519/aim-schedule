@@ -5,7 +5,6 @@ import React, {
   useMemo,
   useState,
 } from "react";
-// import { ApplicationCalendar } from "./CustomCalendar";
 import { Link, Route } from "react-router-dom";
 import { LocalizationProvider, PickersDay, StaticDatePicker } from "@mui/lab";
 import AdapterMoment from "@mui/lab/AdapterMoment";
@@ -21,9 +20,18 @@ import {
   Typography,
   Slider,
   Button,
+  Stack,
+  IconButton,
+  Paper as MuiPaper,
+  experimentalStyled as styled,
 } from "@mui/material";
 import moment from "moment";
-import { getNextMonthRange } from "./CustomCalendar";
+import CustomRangeCalendar, {
+  getMonthRange,
+  getNextMonthRange,
+  isHoliday,
+  workdays,
+} from "./CustomRangeCalendar";
 import { UserContext } from "../contexts/Context";
 import {
   collection,
@@ -35,39 +43,294 @@ import {
   updateDoc,
 } from "@firebase/firestore";
 import { db } from "../myFirebase";
+import Loading from "./Loading";
+import { fetchMonthData } from "../docFunctions";
 
-const { startDate, endDate } = getNextMonthRange();
-const isHoliday = (date) => {
-  // 추후에 한국 공휴일 API 긁어와서 포함시키자!
-  return moment(date).day() === 0 || moment(date).day() === 6;
-};
+const { startDate, endDate } = getMonthRange(moment());
+const { nextStartDate, nextEndDate } = getNextMonthRange(moment());
 
-const workdays = (startDate, endDate) => {
-  // 해당 기간의 실제 근로일수
-  // 추후에 한국 공휴일 API 긁어와서 적용시켜야 함!!!
-  let count = 0;
-  for (
-    let date = moment(startDate);
-    date.isSameOrBefore(endDate.endOf("day"));
-    date.add(1, "d")
-  ) {
-    if (!isHoliday(date)) count++;
-  }
-  return count;
-};
+const Paper = styled(MuiPaper)(({ theme }) => ({
+  ...theme.typography.body2,
+  padding: theme.spacing(2),
+  // textAlign: "center",
+  color: theme.palette.text.primary,
+  height: "100%",
+}));
 
-const Schedule = ({ match }) => {
+const Schedule = () => {
+  const [date1, setDate1] = useState(moment(startDate));
+  const [date2, setDate2] = useState(moment(nextStartDate));
+  // const user = useContext(UserContext);
+  // const [data, setData] = useState();
+  // const [date, setDate] = useState(moment());
+  // useEffect(() => {
+  //   fetchDayData(user.uid, date).then((doc) => setData(doc.data()));
+  // }, [user.uid, date]);
+  // console.log(data);
+
   return (
-    <>
-      <Route path={`${match.path}/check`} />
-      <Route
-        path={`${match.path}/application`}
-        component={CustomStaticCalendar}
-      />
-    </>
+    <Grid container columns={12} spacing={1}>
+      {/* <Grid item xs={12}>
+        <Paper>
+          <CustomRangeCalendar
+            calendarStart={moment(new Date("2021-01-01"))}
+            calendarEnd={moment(new Date("2021-12-31"))}
+            value={date}
+            onChange={(value) => setDate(value)}
+            dayComponent={InfiniteDayComponent}
+          />
+        </Paper>
+      </Grid> */}
+      <Grid item xs={12} md={6}>
+        <Paper>
+          <Stack spacing={1}>
+            <Typography>This Month</Typography>
+            <CustomRangeCalendar
+              calendarStart={startDate}
+              calendarEnd={endDate}
+              value={date1}
+              onChange={(value) => setDate1(value)}
+              dayComponent={ApplicationDayComponent}
+            />
+          </Stack>
+        </Paper>
+      </Grid>
+      <Grid item xs={12} md={6}>
+        <Paper>
+          <Stack spacing={1}>
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <Typography>Next Month</Typography>
+              <Button size="small" variant="contained">
+                Submit
+              </Button>
+            </Box>
+            <CustomRangeCalendar
+              calendarStart={nextStartDate}
+              calendarEnd={nextEndDate}
+              value={date2}
+              onChange={(value) => setDate2(value)}
+              dayComponent={ApplicationDayComponent}
+            />
+          </Stack>
+        </Paper>
+      </Grid>
+      <Grid item xs={6}>
+        <DayDisplayThisMonth date={date1} />
+      </Grid>
+      <Grid item xs={6}>
+        <DayDisplayNextMonth date={date2} />
+      </Grid>
+    </Grid>
   );
 };
 
+// const InfiniteDayComponent = (props) => {
+//   const { value, today, outOfRange, selected, onClick } = props;
+//   // console.log(value.toDate());
+//   const showMonth =
+//     moment(value).month() !== moment(value).subtract(1, "d").month();
+//   return (
+//     <ButtonBase sx={{ width: "100%", height: 50 }} onClick={onClick}>
+//       <Typography
+//         variant="body2"
+//         textAlign="right"
+//         sx={{ width: "100%", height: "100%" }}
+//       >
+//         {showMonth && (
+//           <Typography variant="caption">
+//             {moment(value).format("MMM")}{" "}
+//           </Typography>
+//         )}
+//         {moment(value).format("D")}
+//       </Typography>
+//     </ButtonBase>
+//   );
+// };
+
+const DayDisplayThisMonth = (props) => {
+  const { date } = props;
+  const [data, setData] = useState(undefined);
+  const user = useContext(UserContext);
+  useEffect(() => {
+    fetchMonthData(user.uid, startDate, endDate).then((fetchedData) =>
+      setData(fetchedData)
+    );
+    return () => {
+      setData(undefined);
+    };
+  }, [user.uid]);
+  const dailyData = data ? data[date.format("YYYYMMDD")] : undefined;
+  return (
+    <Paper>
+      <Typography>{date.format("M월 D일")}</Typography>
+      {dailyData && (
+        <Box>
+          {!dailyData.holiday ? (
+            <Box>
+              <Typography>
+                출근시각: {moment(dailyData.start.toDate()).format("HH:mm")}
+              </Typography>
+              <Typography>
+                퇴근시각: {moment(dailyData.finish.toDate()).format("HH:mm")}
+              </Typography>
+              <Typography>
+                실제 출근시각:{" "}
+                {dailyData.started
+                  ? moment(dailyData.started.toDate()).format("HH:mm")
+                  : "출근 안 함"}
+              </Typography>
+              <Typography>
+                실제 퇴근시각:{" "}
+                {dailyData.finished
+                  ? moment(dailyData.finished.toDate()).format("HH:mm")
+                  : "퇴근 안 함"}
+              </Typography>
+            </Box>
+          ) : (
+            <Typography>휴일입니다.</Typography>
+          )}
+        </Box>
+      )}
+    </Paper>
+  );
+};
+
+const DayDisplayNextMonth = (props) => {
+  const { date } = props;
+  const [data, setData] = useState();
+  const user = useContext(UserContext);
+
+  useEffect(() => {
+    fetchMonthData(user.uid, nextStartDate, nextEndDate).then((fetchedData) =>
+      setData(fetchedData)
+    );
+  }, [user.uid]);
+  console.log(data);
+  return <Paper>{date.format("M월 D일")}</Paper>;
+};
+
+const ApplicationDayComponent = (props) => {
+  const { value, today, outOfRange, selected, onClick } = props;
+  const showMonth = value.month() !== moment(value).subtract(1, "d").month();
+  const showYear = value.year() !== moment(value).subtract(1, "d").year();
+  return (
+    <IconButton
+      size="small"
+      sx={{
+        width: 36,
+        height: 36,
+        bgcolor: selected ? "primary.main" : "none",
+        "&:hover": {
+          bgcolor: selected ? "primary.main" : "",
+        },
+      }}
+      disabled={outOfRange}
+      onClick={onClick}
+    >
+      <Box>
+        <Stack spacing={-0.25}>
+          <Typography
+            variant="body2"
+            fontSize={8}
+            color={selected ? "background.paper" : "inherit"}
+          >
+            {showMonth && value.format("MMM")}
+          </Typography>
+          <Typography
+            variant="body2"
+            display={outOfRange ? "none" : "inline"}
+            color={
+              selected
+                ? "background.paper"
+                : value.day() === 0
+                ? "error.main"
+                : value.day() === 6
+                ? "primary.main"
+                : "text.primary"
+            }
+            fontSize={11}
+            fontWeight={selected ? 700 : 400}
+            textDecoration={today ? "underline" : "none"}
+          >
+            {value.format("D")}
+          </Typography>
+          <Typography
+            variant="body2"
+            fontSize={8}
+            color={selected ? "background.paper" : "inherit"}
+          >
+            {showYear && value.year()}
+          </Typography>
+        </Stack>
+      </Box>
+    </IconButton>
+  );
+};
+
+// eslint-disable-next-line
+const CheckSchedule = () => {
+  const user = useContext(UserContext);
+  const [thisMonth, setThisMonth] = useState({});
+  const [loading, setLoading] = useState(true);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    const collectionRef = collection(
+      db,
+      `userlist/${user.uid}/schedule/${moment(endDate).year()}/${moment(
+        startDate
+      ).format("YYYYMMDD")}-${moment(endDate).format("YYYYMMDD")}`
+    );
+    await getDocs(collectionRef)
+      .then(async (querySnap) => {
+        const data = {};
+        querySnap.forEach((doc) => {
+          data[doc.id] = doc.data();
+        });
+        // 정보가 없는 날은 새로 기본값 데이터를 생성하여 DB에 저장한다.
+        for (
+          let i = moment(startDate);
+          i.isSameOrBefore(endDate);
+          i.add(1, "d")
+        ) {
+          if (data[i.format("YYYYMMDD")]) continue;
+          const defaultDayInfo = {
+            start: moment(i).hour(9).minute(0).second(0).toDate(),
+            started: null,
+            finish: moment(i).hour(18).minute(0).second(0).toDate(),
+            finished: null,
+            log: [],
+            type: "0",
+            holiday: isHoliday(i),
+          };
+          data[i.format("YYYYMMDD")] = defaultDayInfo;
+          const docRef = doc(collectionRef, moment(i).format("YYYYMMDD"));
+          await setDoc(docRef, defaultDayInfo);
+        }
+        data.info = {
+          type: "created",
+          worktime: workdays(startDate, endDate) * 8 * 60 * 60 * 1000,
+          worked: 0,
+        };
+        await setDoc(doc(collectionRef, "info"), data.info);
+
+        setThisMonth(data);
+      })
+      .then(() => setLoading(false));
+  }, [user.uid]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  console.log(thisMonth);
+  return loading ? <Loading /> : <>fetched!</>;
+};
+
+// eslint-disable-next-line
 const CustomStaticCalendar = ({ match }) => {
   const [thisDate, setThisDate] = useState(null);
   const [nextDate, setNextDate] = useState(null);
@@ -122,6 +385,12 @@ const CustomStaticCalendar = ({ match }) => {
       setMonthData(newData);
     });
   }, [collectionRef]);
+
+  const handleSubmit = async () => {
+    const { info } = monthData;
+    info.type = "submitted";
+    await updateDoc(doc(collectionRef, "info"), info);
+  };
 
   useEffect(() => {
     fetchMonthData();
@@ -193,7 +462,9 @@ const CustomStaticCalendar = ({ match }) => {
               />
             </Grid>
           </LocalizationProvider>
-          <Button variant="contained">submit</Button>
+          <Button variant="contained" onClick={handleSubmit}>
+            submit
+          </Button>
         </Route>
         <Route
           path={`${match.path}/:date`}

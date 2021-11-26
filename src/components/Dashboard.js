@@ -1,237 +1,211 @@
-import React, { useContext, useMemo, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import {
   Box,
-  Divider,
   Grid,
-  IconButton,
-  Paper,
+  Paper as MuiPaper,
   Typography,
+  experimentalStyled as styled,
+  IconButton,
+  LinearProgress,
+  Stack,
 } from "@mui/material";
-import { experimentalStyled as styled } from "@mui/material";
 import { UserContext } from "../contexts/Context";
-import {
-  // CustomCalendar,
-  getMonthRange,
-} from "./CustomCalendar";
 import moment from "moment";
-// import { LocalizationProvider, PickersDay, StaticDatePicker } from "@mui/lab";
-// import AdapterMoment from "@mui/lab/AdapterMoment";
+import { collection, doc, getDocs } from "@firebase/firestore";
+import { db } from "../myFirebase";
+import CustomRangeCalendar, {
+  CustomDayComponent,
+  DayComponentText,
+  getMonthRange,
+} from "./CustomRangeCalendar";
 
-const Item = styled(Paper)(({ theme }) => ({
+const Paper = styled(MuiPaper)(({ theme }) => ({
   ...theme.typography.body2,
   padding: theme.spacing(2),
   textAlign: "center",
   color: theme.palette.text.primary,
+  height: "100%",
 }));
 
 const { startDate, endDate } = getMonthRange();
 
 const Dashboard = () => {
   const userData = useContext(UserContext);
-  console.log(userData);
+  const [date, setDate] = useState(moment());
+  const [monthData, setMonthData] = useState({});
+
+  const handleChange = (value) => setDate(value);
+
+  const fetchData = useCallback(async () => {
+    const docRef = doc(
+      db,
+      `userlist/${userData.uid}/schedule/${endDate.year()}`
+    );
+    const collectionRef = collection(
+      docRef,
+      `${startDate.format("YYYYMMDD")}-${endDate.format("YYYYMMDD")}`
+    );
+    await getDocs(collectionRef).then((querySnap) => {
+      const data = {};
+      querySnap.forEach((doc) => {
+        data[doc.id] = doc.data();
+      });
+      setMonthData(data);
+    });
+  }, [userData.uid]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <Grid
-        container
-        columns={
-          { xs: 8, sm: 8, md: 12 }
-          // 12
-        }
-        spacing={1}
-      >
+      <Grid container columns={{ xs: 8, sm: 8, md: 12 }} spacing={1}>
         <Grid item xs={12} sm={12} md={12}>
-          <Item>
-            <WeekSummary />
-          </Item>
+          <Paper>
+            <WeekSummary
+              value={date}
+              onChange={handleChange}
+              data={monthData}
+            />
+          </Paper>
         </Grid>
         <Grid item xs={12} sm={12} md={6}>
-          <Item>Day</Item>
+          <Paper>
+            <DaySummary value={date} data={monthData} />
+          </Paper>
         </Grid>
         <Grid item xs={12} sm={12} md={6}>
-          <Item>
-            <MonthSummary />
-          </Item>
+          <Paper>
+            <MonthSummary
+              value={date}
+              onChange={handleChange}
+              data={monthData}
+            />
+          </Paper>
         </Grid>
       </Grid>
     </Box>
   );
 };
 
-const WeekSummary = () => {
+const DaySummary = (props) => {
+  const { value, data } = props;
+  const dailyData = data ? data[moment(value).format("YYYYMMDD")] : undefined;
+  return dailyData ? (
+    <>
+      <Box display="flex">
+        <Typography variant="body2">{value.month() + 1}</Typography>
+        <Typography variant="body2">월</Typography>
+        <Typography variant="body2">{value.date()}</Typography>
+        <Typography variant="body2">일</Typography>
+      </Box>
+      {dailyData.started ? (
+        <Typography>
+          출근 시간: {moment(dailyData.start.toDate()).format("HH:mm")}
+        </Typography>
+      ) : (
+        <Typography>아직 출근을 안 했어요.</Typography>
+      )}
+      {/* <Typography>
+        출근 시간: {moment(dailyData.start.toDate()).format("HH:mm")}
+      </Typography>
+      <Typography>
+        퇴근 시간: {moment(dailyData.finish.toDate()).format("HH:mm")}
+      </Typography> */}
+      <Box sx={{ width: "100%" }}>
+        <Stack>
+          <LinearProgress variant="determinate" value={30} />
+          <Box display="flex" justifyContent="space-between">
+            <Typography>09:00</Typography>
+            <Typography>18:00</Typography>
+          </Box>
+        </Stack>
+      </Box>
+    </>
+  ) : (
+    <>loading...</>
+  );
+};
+
+const WeekSummary = (props) => {
+  const { value, onChange } = props;
   const startDate = moment().startOf("week");
   const endDate = moment().endOf("week");
   return (
     <>
-      {/* <Typography variant="h6">{`${moment(startDate).format(
-        "YYYY년 MM월 DD일"
-      )} ~ ${moment(endDate).format("YYYY년 MM월 DD일")}`}</Typography> */}
+      <CalendarLabel calendarStart={startDate} calendarEnd={endDate} />
       <CustomRangeCalendar
         calendarStart={startDate}
         calendarEnd={endDate}
-        onChange={() => {}}
+        value={value}
+        onChange={onChange}
+        dayComponent={DayComponentProgress}
+      />
+      <p>주간 정보 표시</p>
+    </>
+  );
+};
+
+const DayComponentProgress = (props) => {
+  const { value, today, outOfRange, selected, onClick } = props;
+
+  return (
+    <Box>
+      <IconButton
+        size="small"
+        sx={{
+          width: 36,
+          height: 36,
+          bgcolor: selected ? "primary.main" : "none",
+          "&:hover": {
+            bgcolor: selected ? "primary.main" : "",
+          },
+        }}
+        disabled={outOfRange}
+        onClick={onClick}
+      >
+        <DayComponentText
+          value={value}
+          today={today}
+          outOfRange={outOfRange}
+          selected={selected}
+        />
+      </IconButton>
+    </Box>
+  );
+};
+
+const MonthSummary = (props) => {
+  const { value, onChange } = props;
+  return (
+    <>
+      <CalendarLabel calendarStart={startDate} calendarEnd={endDate} />
+      <CustomRangeCalendar
+        calendarStart={moment(startDate)}
+        calendarEnd={moment(endDate)}
+        value={value}
+        onChange={onChange}
+        dayComponent={CustomDayComponent}
       />
     </>
   );
 };
 
-const MonthSummary = () => {
-  // const today = new Date();
-  const [date, setDate] = useState();
-  // const startDate =
-  //   today.getDate() < 25
-  //     ? moment(today).startOf("month").subtract(1, "M").date(25)
-  //     : moment(today).date(25);
-  // const endDate = moment(startDate).endOf("month").add(24, "d");
-  return (
-    <CustomRangeCalendar
-      calendarStart={moment(startDate)}
-      calendarEnd={moment(endDate)}
-      value={date}
-      onChange={(value) => setDate(value)}
-    />
-    // <LocalizationProvider dateAdapter={AdapterMoment}>
-    //   <StaticDatePicker
-    //     displayStaticWrapperAs="desktop"
-    //     value={date1}
-    //     onChange={(value) => {
-    //       setDate1(value);
-    //       setDate2(null);
-    //     }}
-    //     defaultCalendarMonth={startDate}
-    //     minDate={startDate}
-    //     maxDate={moment(startDate).endOf("month")}
-    //     renderInput={(props) => null}
-    //   />
-    //   <StaticDatePicker
-    //     displayStaticWrapperAs="desktop"
-    //     value={date2}
-    //     onChange={(value) => {
-    //       setDate2(value);
-    //       setDate1(null);
-    //     }}
-    //     minDate={moment(endDate).startOf("month")}
-    //     maxDate={endDate}
-    //     renderInput={(props) => null}
-    //   />
-    // </LocalizationProvider>
-  );
-};
-
-const CustomRangeCalendar = (props) => {
-  const { calendarStart, calendarEnd, value, onChange } = props;
-  const range = useMemo(() => {
-    const r = [];
-    for (
-      let date = moment(calendarStart).startOf("week");
-      date.isSameOrBefore(moment(calendarEnd).endOf("week"));
-      date.add(1, "d")
-    ) {
-      r.push(moment(date));
-    }
-    return r;
-  }, [calendarStart, calendarEnd]);
-  return (
-    <>
-      <Box sx={{ display: "flex", alignItems: "flex-end", mb: 1 }}>
-        <Typography variant="subtitle2" mr={0.5}>
-          {calendarStart.format("MMMM")}
-        </Typography>
-        <Typography variant="caption">{calendarStart.format("Do")}</Typography>
-        <Typography variant="body1" ml={1} mr={1} fontSize={12}>
-          ~
-        </Typography>
-        <Typography variant="subtitle2" mr={0.5}>
-          {calendarEnd.format("MMMM")}
-        </Typography>
-        <Typography variant="caption">{calendarEnd.format("Do")}</Typography>
-      </Box>
-
-      <WeekWrapper />
-      <Divider />
-      <Grid container columns={7}>
-        {range.map((date, index, array) => (
-          <Grid item xs={1} key={index}>
-            <CustomDayComponent
-              value={date}
-              today={moment().format("YMD") === date.format("YMD")}
-              outOfRange={
-                date.isBefore(calendarStart.startOf("day")) ||
-                date.isAfter(calendarEnd.endOf("day"))
-              }
-              selected={value && value.format("YMD") === date.format("YMD")}
-              onClick={() => onChange(date)}
-            />
-          </Grid>
-        ))}
-      </Grid>
-    </>
-  );
-};
-
-const weekdays = ["S", "M", "T", "W", "T", "F", "S"];
-const CustomDayComponent = (props) => {
-  const { value, today, outOfRange, selected, onClick } = props;
-  return (
-    <IconButton
-      size="small"
-      sx={{
-        width: 36,
-        height: 36,
-        bgcolor: selected ? "primary.main" : "none",
-        "&:hover": {
-          bgcolor: selected ? "primary.main" : "",
-        },
-      }}
-      disabled={outOfRange}
-      onClick={onClick}
-    >
-      <Box>
-        <Typography
-          variant="body2"
-          sx={{
-            color: outOfRange
-              ? "text.disabled"
-              : selected
-              ? "background.paper"
-              : value.day() === 0
-              ? "error.main"
-              : value.day() === 6
-              ? "primary.main"
-              : "text.primary",
-            fontSize: 11,
-            fontWeight: selected ? 700 : 400,
-            textDecoration: today ? "underline" : "none",
-          }}
-        >
-          {value.format("D")}
-        </Typography>
-      </Box>
-    </IconButton>
-  );
-};
-const WeekWrapper = () => {
-  return (
-    <Grid container columns={7}>
-      {weekdays.map((value, index) => (
-        <Grid item xs={1} key={index}>
-          <Typography
-            variant="body2"
-            sx={{
-              color:
-                index === 0
-                  ? "error.main"
-                  : index === 6
-                  ? "primary.main"
-                  : "text.secondary",
-              fontSize: 12,
-            }}
-          >
-            {value}
-          </Typography>
-        </Grid>
-      ))}
-    </Grid>
-  );
-};
+const CalendarLabel = ({ calendarStart, calendarEnd }) => (
+  <Box sx={{ display: "flex", alignItems: "flex-end", mb: 1 }}>
+    <Typography variant="subtitle2" mr={0.5}>
+      {calendarStart.format("MMMM")}
+    </Typography>
+    <Typography variant="caption">{calendarStart.format("Do")}</Typography>
+    <Typography variant="body1" ml={1} mr={1} fontSize={12}>
+      ~
+    </Typography>
+    <Typography variant="subtitle2" mr={0.5}>
+      {calendarEnd.format("MMMM")}
+    </Typography>
+    <Typography variant="caption">{calendarEnd.format("Do")}</Typography>
+  </Box>
+);
 
 export default Dashboard;

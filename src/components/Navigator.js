@@ -14,10 +14,7 @@ import {
   Drawer,
   Backdrop,
   Divider,
-  Collapse,
-  Icon,
 } from "@mui/material";
-import { styled } from "@mui/material/styles";
 import MenuIcon from "@mui/icons-material/Menu";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import EventAvailableIcon from "@mui/icons-material/EventAvailable";
@@ -25,23 +22,22 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import QrCode2Icon from "@mui/icons-material/QrCode2";
 import CropFreeIcon from "@mui/icons-material/CropFree";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import PropTypes from "prop-types";
 import { ProfileAvatar } from "../pages/Profile";
 import { QRcode } from "./QR";
 import NotificationContainer from "./NotificationContainer";
 import { UserContext } from "../contexts/Context";
 
-const ExpandMore = styled((props) => {
-  const { expand, ...other } = props;
-  return <Icon {...other} />;
-})(({ theme, expand }) => ({
-  transform: !expand ? "rotate(0deg)" : "rotate(180deg)",
-  marginLeft: "auto",
-  transition: theme.transitions.create("transform", {
-    duration: theme.transitions.duration.shortest,
-  }),
-}));
+// const ExpandMore = styled((props) => {
+//   const { expand, ...other } = props;
+//   return <Icon {...other} />;
+// })(({ theme, expand }) => ({
+//   transform: !expand ? "rotate(0deg)" : "rotate(180deg)",
+//   marginLeft: "auto",
+//   transition: theme.transitions.create("transform", {
+//     duration: theme.transitions.duration.shortest,
+//   }),
+// }));
 
 const Navigator = (props) => {
   const user = useContext(UserContext);
@@ -49,9 +45,9 @@ const Navigator = (props) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [QROpen, setQROpen] = useState(false);
   const [title, setTitle] = useState();
-  const [scheduleExpand, setScheduleExpand] = useState(false);
+  // const [scheduleExpand, setScheduleExpand] = useState(false);
 
-  const handleExpandClick = () => setScheduleExpand(!scheduleExpand);
+  // const handleExpandClick = () => setScheduleExpand(!scheduleExpand);
 
   const location = useLocation();
   useEffect(() => {
@@ -111,37 +107,65 @@ const Navigator = (props) => {
         <Link to="/" onClick={handleDrawerClose}>
           <ListItem button>
             <ListItemIcon>
-              <DashboardIcon />
+              <DashboardIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText primary="Dashboard" />
+            <ListItemText
+              primary="Dashboard"
+              sx={{ ml: -1 }}
+              primaryTypographyProps={{ sx: { fontSize: 15 } }}
+            />
           </ListItem>
         </Link>
 
         {/* SCHEDULE */}
-        <ListItem button onClick={handleExpandClick}>
-          {/* <Accordion> */}
+        <Link to="/schedule" onClick={handleDrawerClose}>
+          <ListItem button>
+            <ListItemIcon>
+              <EventAvailableIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText
+              primary="My Schedule"
+              sx={{ ml: -1 }}
+              primaryTypographyProps={{ sx: { fontSize: 15 } }}
+            ></ListItemText>
+          </ListItem>
+        </Link>
+        {/* <ListItem button onClick={handleExpandClick}>
           <ListItemIcon>
-            <EventAvailableIcon />
+            <EventAvailableIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText primary="My Schedule" />
+          <ListItemText
+            primary="My Schedule"
+            sx={{ ml: -1 }}
+            primaryTypographyProps={{ sx: { fontSize: 15 } }}
+          />
           <ExpandMore expand={scheduleExpand} onClick={handleExpandClick}>
-            <ExpandMoreIcon />
+            <ExpandMoreIcon fontSize="small" />
           </ExpandMore>
         </ListItem>
         <Collapse in={scheduleExpand} timeout="auto" unmountOnExit>
-          <List>
+          <List
+            sx={{
+              mt: -1,
+              mb: -1,
+            }}
+          >
             <Link to="/schedule/check" onClick={handleDrawerClose}>
               <ListItem button sx={{ justifyContent: "flex-end" }}>
-                <Typography variant="caption">Check My Schedule</Typography>
+                <Typography variant="caption" fontSize={11}>
+                  Check My Schedule
+                </Typography>
               </ListItem>
             </Link>
             <Link to="/schedule/application" onClick={handleDrawerClose}>
               <ListItem button sx={{ justifyContent: "flex-end" }}>
-                <Typography variant="caption">Schedule Application</Typography>
+                <Typography variant="caption" fontSize={11}>
+                  Schedule Application
+                </Typography>
               </ListItem>
             </Link>
           </List>
-        </Collapse>
+        </Collapse> */}
 
         {/* NOTIFICATION */}
         {/* <ListItem button>
@@ -154,27 +178,41 @@ const Navigator = (props) => {
         {/* QR Code */}
         <ListItem button onClick={handleQRToggle}>
           <ListItemIcon>
-            <QrCode2Icon />
+            <QrCode2Icon fontSize="small" />
           </ListItemIcon>
-          <ListItemText primary="QR Code" />
+          <ListItemText
+            primary="QR Code"
+            sx={{ ml: -1 }}
+            primaryTypographyProps={{ sx: { fontSize: 15 } }}
+          />
         </ListItem>
 
         {/* QR Scanner */}
-        <Link to="/qr-reader" onClick={handleDrawerClose}>
-          <ListItem button>
-            <ListItemIcon>
-              <CropFreeIcon />
-            </ListItemIcon>
-            <ListItemText primary="QR Reader" />
-          </ListItem>
-        </Link>
+        {user && user.isAdmin && (
+          <Link to="/qr-reader" onClick={handleDrawerClose}>
+            <ListItem button>
+              <ListItemIcon>
+                <CropFreeIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText
+                primary="QR Reader"
+                sx={{ ml: -1 }}
+                primaryTypographyProps={{ sx: { fontSize: 15 } }}
+              />
+            </ListItem>
+          </Link>
+        )}
 
         {/* SETTING */}
         <ListItem button>
           <ListItemIcon>
-            <SettingsIcon />
+            <SettingsIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText primary="Setting" />
+          <ListItemText
+            primary="Setting"
+            sx={{ ml: -1 }}
+            primaryTypographyProps={{ sx: { fontSize: 15 } }}
+          />
         </ListItem>
 
         {/* ADMIN */}
@@ -182,9 +220,13 @@ const Navigator = (props) => {
           <Link to="/admin" onClick={handleDrawerClose}>
             <ListItem button>
               <ListItemIcon>
-                <AdminPanelSettingsIcon />
+                <AdminPanelSettingsIcon fontSize="small" />
               </ListItemIcon>
-              <ListItemText primary="Admin" />
+              <ListItemText
+                primary="Admin"
+                sx={{ ml: -1 }}
+                primaryTypographyProps={{ sx: { fontSize: 15 } }}
+              />
             </ListItem>
           </Link>
         )}

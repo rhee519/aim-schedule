@@ -25,8 +25,6 @@ import {
 } from "@firebase/firestore";
 import { db } from "../myFirebase";
 import { UserContext } from "../contexts/Context";
-// import { LocalizationProvider, StaticDatePicker } from "@mui/lab";
-// import AdapterMoment from "@mui/lab/AdapterMoment";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 
