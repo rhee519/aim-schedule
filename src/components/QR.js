@@ -62,10 +62,10 @@ const QRcode = () => {
       sx={{
         display: "flex",
         flexDirection: "column",
-        p: 1,
+        p: 3,
       }}
     >
-      <QRCode value={JSON.stringify(data)} size={400} />
+      <QRCode value={JSON.stringify(data)} size={256} />
       <Typography variant="body1" textAlign="center">
         남은 시간: {remainTime}초
       </Typography>
@@ -74,9 +74,7 @@ const QRcode = () => {
         fullWidth
         id="btn--refresh"
         onClick={onRefreshClick}
-        sx={{
-          mt: 1,
-        }}
+        sx={{ mt: 1 }}
       >
         refresh
       </Button>
@@ -90,11 +88,6 @@ const QRreader = () => {
   const [text, setText] = useState("");
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-
-  // useEffect(() => {
-  //   // print userData when QR is scanned
-  //   console.log(scannedData);
-  // }, [scannedData]);
 
   const clearData = useCallback(() => {
     // n초 동안 현재 userData를 유지한다.
@@ -136,16 +129,50 @@ const QRreader = () => {
       .then(async (userSnap) => {
         if (userSnap.exists()) {
           // 사용자 정보가 유효함
-          const { userName, isWorking } = userSnap.data();
+          const { uid, userName, isWorking, lastLoginAt } = userSnap.data();
           if (isWorking) {
+            const lastLoginDate = lastLoginAt.toDate();
+            if (
+              moment(lastLoginDate).format("YMD") !== moment().format("YMD")
+            ) {
+              // 전날 퇴근을 안 찍은 것!
+              const docRef = dayDocRef(uid, lastLoginDate);
+              await getDoc(docRef)
+                .then((docSnap) => {
+                  if (docSnap.exists()) return docSnap.data();
+                  else return undefined;
+                })
+                .then((data) => {
+                  if (data) {
+                    // 마지막으로 login한 날짜의 퇴근 시각에 퇴근한 것으로 처리한다.
+                    const { finish, log } = data;
+                    log.push({ time: finish, type: "out" });
+                    updateDoc(docRef, { finished: finish, log });
+                    CheckIn(uid);
+                    updateDoc(userRef, { lastLoginAt: new Date() });
+                    setText(
+                      `${userName}님 출근! 오늘은 퇴근할 때 잊지 말고 QR체크 부탁드려요.`
+                    );
+                  } else {
+                    // 에러: 마지막으로 login한 날짜의 데이터를 찾을 수 없다.
+                    // 일단 퇴근 처리 후 다시 QR스캔하라고 안내한다.
+                    updateDoc(userRef, { isWorking: false });
+                    setText(
+                      "알 수 없는 에러로 지난 퇴근처리가 되지 않았어요. QR코드를 다시 스캔해주세요."
+                    );
+                    setError(true);
+                  }
+                });
+              return;
+            }
             // 퇴근
             CheckOut(uid);
-            updateDoc(userRef, { isWorking: false });
+            updateDoc(userRef, { isWorking: false, lastLogoutAt: new Date() });
             setText(`${userName}님 퇴근!`);
           } else {
             // 출근
             CheckIn(uid);
-            updateDoc(userRef, { isWorking: true });
+            updateDoc(userRef, { isWorking: true, lastLoginAt: new Date() });
             setText(`${userName}님 출근!`);
           }
         } else {
@@ -192,7 +219,7 @@ const QRreader = () => {
             ? "error.main"
             : "success.main",
         width: 400,
-        height: 400,
+        height: "95vh",
         overflow: "none",
       }}
     >
@@ -213,6 +240,7 @@ const QRreader = () => {
         variant="contained"
         color="success"
         onClick={cameraChange}
+        id="btn--camera-change"
         sx={{
           position: "absolute",
           zIndex: 1,
@@ -222,9 +250,13 @@ const QRreader = () => {
       >
         카메라 전환
       </Button>
-      {scannedData && (
-        <Typography>{isLoading ? "Loading..." : text}</Typography>
-      )}
+      <Paper sx={{ position: "absolute", bottom: 0, m: 2 }}>
+        {scannedData && (
+          <Typography variant="h6" sx={{ m: 1 }}>
+            {isLoading ? "Loading..." : text}
+          </Typography>
+        )}
+      </Paper>
     </Box>
   );
 };
@@ -240,18 +272,11 @@ const CheckIn = async (uid) => {
       const started = data.started || time;
       const log = data.log || time;
       log.push({ time, type: "in" });
-      await updateDoc(docRef, {
-        started,
-        log,
-      });
+      await updateDoc(docRef, { started, log });
     } else {
       const log = [];
       log.push({ time, type: "in" });
-      await setDoc(docRef, {
-        ...initialDailyData(time),
-        started: time,
-        log,
-      });
+      await setDoc(docRef, { ...initialDailyData(time), started: time, log });
     }
   });
 };
@@ -265,10 +290,7 @@ const CheckOut = async (uid) => {
       const log = data.log || [];
       const time = new Date();
       log.push({ time, type: "out" });
-      await updateDoc(docRef, {
-        finished: time,
-        log,
-      });
+      await updateDoc(docRef, { finished: time, log });
     } else {
       console.log("Error: no data today");
     }

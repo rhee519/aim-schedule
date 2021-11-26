@@ -20,7 +20,7 @@ export const fetchDayData = async (uid, date) => {
 };
 
 export const dayDocRef = (uid, date) => {
-  return doc(db, `userlist/${uid}/schedule/${date.format("YYYYMMDD")}`);
+  return doc(db, `userlist/${uid}/schedule/${moment(date).format("YYYYMMDD")}`);
 };
 
 export const monthCollectionRef = (uid, startDate, endDate) => {

@@ -24,7 +24,7 @@ import QrCode2Icon from "@mui/icons-material/QrCode2";
 import CropFreeIcon from "@mui/icons-material/CropFree";
 import PropTypes from "prop-types";
 import { ProfileAvatar } from "../pages/Profile";
-import { QRcode } from "./QR";
+import { QRcode, QRreader } from "./QR";
 import NotificationContainer from "./NotificationContainer";
 import { UserContext } from "../contexts/Context";
 
@@ -39,58 +39,73 @@ import { UserContext } from "../contexts/Context";
 //   }),
 // }));
 
+const getPageTitle = (location) => {
+  let title = "";
+  const path = location.pathname.split("/");
+  switch (path[1]) {
+    case "":
+      title = "Dashboard";
+      // setTitle("Dashboard");
+      break;
+    case "schedule":
+      title = "My Schedule";
+      // setTitle("My Schedule");
+      break;
+    case "profile":
+      title = "Profile";
+      // setTitle("Profile");
+      break;
+    // case "qr-reader":
+    //   setTitle("QR Reader");
+    //   break;
+    case "admin":
+      title = "Admin";
+      // setTitle("Admin");
+      break;
+    default:
+      break;
+  }
+  return title;
+};
+
 const Navigator = (props) => {
   const user = useContext(UserContext);
   const { window, drawerWidth, children } = props;
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [QROpen, setQROpen] = useState(false);
-  const [title, setTitle] = useState();
+  const [QRCodeOpen, setQRCodeOpen] = useState(false);
+  const [QRReaderOpen, setQRReaderOpen] = useState(false);
+  const [pageTitle, setPageTitle] = useState();
   // const [scheduleExpand, setScheduleExpand] = useState(false);
-
   // const handleExpandClick = () => setScheduleExpand(!scheduleExpand);
-
   const location = useLocation();
   useEffect(() => {
-    const path = location.pathname.split("/");
-    switch (path[1]) {
-      case "":
-        setTitle("Dashboard");
-        break;
-      case "schedule":
-        setTitle("My Schedule");
-        break;
-      case "profile":
-        setTitle("Profile");
-        break;
-      case "qr-reader":
-        setTitle("QR Reader");
-        break;
-      case "admin":
-        setTitle("Admin");
-        break;
-      default:
-        break;
-    }
-  }, [location.pathname]);
+    setPageTitle(getPageTitle(location));
+  }, [location]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
-
   const handleDrawerClose = () => {
     setMobileOpen(false);
   };
-
-  const handleQRClose = (event) => {
+  const handleQRCodeClose = (event) => {
     const {
       target: { id },
     } = event;
-    if (id !== "btn--refresh") setQROpen(false);
+    if (id !== "btn--refresh") {
+      setQRCodeOpen(false);
+    }
   };
-
-  const handleQRToggle = () => {
-    setQROpen(!QROpen);
+  const handleQRReaderClose = (event) => {
+    const {
+      target: { id },
+    } = event;
+    if (id !== "btn--camera-change") {
+      setQRReaderOpen(false);
+    }
   };
+  const handleQRCodeToggle = () => setQRCodeOpen(!QRCodeOpen);
+  const handleQRReaderToggle = () => setQRReaderOpen(!QRReaderOpen);
 
   const drawer = (
     <div>
@@ -176,7 +191,7 @@ const Navigator = (props) => {
         </ListItem> */}
 
         {/* QR Code */}
-        <ListItem button onClick={handleQRToggle}>
+        <ListItem button onClick={handleQRCodeToggle}>
           <ListItemIcon>
             <QrCode2Icon fontSize="small" />
           </ListItemIcon>
@@ -187,20 +202,18 @@ const Navigator = (props) => {
           />
         </ListItem>
 
-        {/* QR Scanner */}
+        {/* QR Reader */}
         {user && user.isAdmin && (
-          <Link to="/qr-reader" onClick={handleDrawerClose}>
-            <ListItem button>
-              <ListItemIcon>
-                <CropFreeIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText
-                primary="QR Reader"
-                sx={{ ml: -1 }}
-                primaryTypographyProps={{ sx: { fontSize: 15 } }}
-              />
-            </ListItem>
-          </Link>
+          <ListItem button onClick={handleQRReaderToggle}>
+            <ListItemIcon>
+              <CropFreeIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText
+              primary="QR Reader"
+              sx={{ ml: -1 }}
+              primaryTypographyProps={{ sx: { fontSize: 15 } }}
+            />
+          </ListItem>
         )}
 
         {/* SETTING */}
@@ -241,16 +254,29 @@ const Navigator = (props) => {
 
   return (
     <Box sx={{ display: "flex" }}>
+      {/* QR Code Modal */}
       <Backdrop
-        open={QROpen}
-        onClick={handleQRClose}
+        open={QRCodeOpen}
+        onClick={handleQRCodeClose}
         sx={{
           zIndex: (theme) => theme.zIndex.drawer + 1,
         }}
       >
         {/* QR code를 누를 때 새로 render되도록 한다. */}
-        {QROpen && <QRcode />}
+        {QRCodeOpen && <QRcode />}
       </Backdrop>
+
+      {/* QR Reader Modal */}
+      <Backdrop
+        open={QRReaderOpen}
+        onClick={handleQRReaderClose}
+        sx={{
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+        }}
+      >
+        {QRReaderOpen && <QRreader />}
+      </Backdrop>
+
       <CssBaseline />
       <AppBar
         position="fixed"
@@ -280,7 +306,7 @@ const Navigator = (props) => {
               flexGrow: 1,
             }}
           >
-            {title}
+            {pageTitle}
           </Typography>
 
           {/* NOTIFICATION */}
