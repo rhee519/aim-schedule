@@ -17,6 +17,7 @@ import {
   List,
   ListItem,
   ListItemText,
+  Typography,
 } from "@mui/material";
 import moment from "moment";
 import { dayDocRef, fetchPayday, initialDailyData } from "../docFunctions";
@@ -62,8 +63,9 @@ const Schedule = () => {
             </FormGroup>
             <Paper
               sx={{
-                maxWidth: { xs: "100%", md: 320 },
-                height: 360,
+                width: { xs: "100%", md: 320 },
+                height: 330,
+                overflowY: "hidden",
               }}
             >
               <StaticDatePicker
@@ -81,8 +83,8 @@ const Schedule = () => {
           </Stack>
           <Paper
             sx={{
-              display: showNextMonth ? "flex" : "none",
-              flexGrow: 1,
+              display: showNextMonth ? "block" : "none",
+              width: { xs: "100%", md: 320 },
               height: "100%",
               overflowY: "scroll",
             }}
@@ -99,8 +101,6 @@ const Schedule = () => {
     </PaydayContext.Provider>
   );
 };
-
-// const SelectedDatePanel = { uid };
 
 const ApplicationDisplay = () => {
   // payday.history.at(-1) == 최근 정산일
@@ -167,67 +167,93 @@ const ApplicationDisplay = () => {
     await updateDoc(docRef, newData);
   };
 
+  const handleTypeChange = async (event, date) => {
+    const docRef = dayDocRef(user.uid, date);
+    const type = event.target.value;
+    const newData = { ...data[date], type };
+    setData((prev) => ({ ...prev, [date]: newData }));
+    await updateDoc(docRef, newData);
+  };
+
   return loading ? (
     <>loading...</>
   ) : (
-    <List width="100%">
-      {data &&
-        Object.keys(data).map((date, index) => (
-          <Box key={index} width="100%">
-            <ListItem display="flex">
-              <ListItemText variant="body2">
-                {moment(date).format("M월 D일")}
-              </ListItemText>
-              <FormControl variant="standard">
-                <InputLabel>출근</InputLabel>
-                <Select
-                  value={data[date].start.toDate().getHours()}
-                  label="출근"
-                  onChange={(event) => handleStartChange(event, date)}
-                >
-                  <MenuItem value={9}>9시</MenuItem>
-                  <MenuItem value={10}>10시</MenuItem>
-                  <MenuItem value={11}>11시</MenuItem>
-                  <MenuItem value={12}>12시</MenuItem>
-                  <MenuItem value={13}>13시</MenuItem>
-                  <MenuItem value={14}>14시</MenuItem>
-                  <MenuItem value={15}>15시</MenuItem>
-                  <MenuItem value={16}>16시</MenuItem>
-                  <MenuItem value={17}>17시</MenuItem>
-                  <MenuItem value={18}>18시</MenuItem>
-                  <MenuItem value={19}>19시</MenuItem>
-                  <MenuItem value={20}>20시</MenuItem>
-                  <MenuItem value={21}>21시</MenuItem>
-                  <MenuItem value={22}>22시</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl variant="standard">
-                <InputLabel>퇴근</InputLabel>
-                <Select
-                  value={data[date].finish.toDate().getHours()}
-                  label="퇴근"
-                  onChange={(event) => handleFinishChange(event, date)}
-                >
-                  <MenuItem value={9}>9시</MenuItem>
-                  <MenuItem value={10}>10시</MenuItem>
-                  <MenuItem value={11}>11시</MenuItem>
-                  <MenuItem value={12}>12시</MenuItem>
-                  <MenuItem value={13}>13시</MenuItem>
-                  <MenuItem value={14}>14시</MenuItem>
-                  <MenuItem value={15}>15시</MenuItem>
-                  <MenuItem value={16}>16시</MenuItem>
-                  <MenuItem value={17}>17시</MenuItem>
-                  <MenuItem value={18}>18시</MenuItem>
-                  <MenuItem value={19}>19시</MenuItem>
-                  <MenuItem value={20}>20시</MenuItem>
-                  <MenuItem value={21}>21시</MenuItem>
-                  <MenuItem value={22}>22시</MenuItem>
-                </Select>
-              </FormControl>
-            </ListItem>
-            <Divider variant="fullWidth" />
-          </Box>
-        ))}
+    <List>
+      <Typography variant="body1">{`${moment(payday.next[0].toDate()).format(
+        "Y년 M월 D일"
+      )} ~ ${moment(payday.next[1].toDate())
+        .subtract(1, "d")
+        .format("Y년 M월 D일")}`}</Typography>
+      {Object.keys(data).map((date, index) => (
+        <Box key={index}>
+          <ListItem>
+            <ListItemText variant="body2">
+              {moment(date).format("M월 D일")}
+            </ListItemText>
+            <FormControl variant="standard">
+              <InputLabel>근로 형태</InputLabel>
+              <Select
+                value={data[date].type}
+                onChange={(event) => handleTypeChange(event, date)}
+              >
+                <MenuItem value="work">근로</MenuItem>
+                <MenuItem value="annual">연차</MenuItem>
+                <MenuItem value="half">반차</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl variant="standard">
+              <InputLabel>출근</InputLabel>
+              <Select
+                value={data[date].start.toDate().getHours()}
+                label="출근"
+                onChange={(event) => handleStartChange(event, date)}
+                disabled={data[date].type === "annual"}
+              >
+                <MenuItem value={9}>9시</MenuItem>
+                <MenuItem value={10}>10시</MenuItem>
+                <MenuItem value={11}>11시</MenuItem>
+                <MenuItem value={12}>12시</MenuItem>
+                <MenuItem value={13}>13시</MenuItem>
+                <MenuItem value={14}>14시</MenuItem>
+                <MenuItem value={15}>15시</MenuItem>
+                <MenuItem value={16}>16시</MenuItem>
+                <MenuItem value={17}>17시</MenuItem>
+                <MenuItem value={18}>18시</MenuItem>
+                <MenuItem value={19}>19시</MenuItem>
+                <MenuItem value={20}>20시</MenuItem>
+                <MenuItem value={21}>21시</MenuItem>
+                <MenuItem value={22}>22시</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl variant="standard">
+              <InputLabel>퇴근</InputLabel>
+              <Select
+                value={data[date].finish.toDate().getHours()}
+                label="퇴근"
+                onChange={(event) => handleFinishChange(event, date)}
+                disabled={data[date].type === "annual"}
+              >
+                <MenuItem value={9}>9시</MenuItem>
+                <MenuItem value={10}>10시</MenuItem>
+                <MenuItem value={11}>11시</MenuItem>
+                <MenuItem value={12}>12시</MenuItem>
+                <MenuItem value={13}>13시</MenuItem>
+                <MenuItem value={14}>14시</MenuItem>
+                <MenuItem value={15}>15시</MenuItem>
+                <MenuItem value={16}>16시</MenuItem>
+                <MenuItem value={17}>17시</MenuItem>
+                <MenuItem value={18}>18시</MenuItem>
+                <MenuItem value={19}>19시</MenuItem>
+                <MenuItem value={20}>20시</MenuItem>
+                <MenuItem value={21}>21시</MenuItem>
+                <MenuItem value={22}>22시</MenuItem>
+              </Select>
+            </FormControl>
+          </ListItem>
+          <Divider variant="fullWidth" />
+        </Box>
+      ))}
     </List>
   );
 };
