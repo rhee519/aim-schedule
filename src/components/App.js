@@ -3,21 +3,10 @@ import React, { useCallback, useEffect, useState } from "react";
 import { auth, db } from "../myFirebase";
 import AppRouter from "./AppRouter";
 import Loading from "./Loading";
-// import "../css/App.scss";
-import {
-  // addDoc,
-  // collection,
-  doc,
-  getDoc,
-  // getDocs,
-  // query,
-  setDoc,
-  // where,
-} from "@firebase/firestore";
+import { doc, getDoc, setDoc } from "@firebase/firestore";
 import { UserContext } from "../contexts/Context";
 import { SendAdminNotification } from "./Notification";
-// import NotFound from "../pages/NotFound";
-// import Login from "../pages/Login";
+import { Box } from "@mui/material";
 
 const Error = (error) => {
   console.log("from App.js");
@@ -120,10 +109,10 @@ function App() {
 
   return (
     <UserContext.Provider value={userData}>
-      <div className="app-container">
+      <Box position="relative">
         {isLoading ? <Loading /> : <AppRouter />}
         {/* <AppRouter /> */}
-      </div>
+      </Box>
     </UserContext.Provider>
   );
 }

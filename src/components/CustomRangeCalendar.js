@@ -55,15 +55,7 @@ const CustomRangeCalendar = (props) => {
     <>
       <WeekWrapper />
       <Divider light sx={{ mb: 0.5 }} />
-      <Grid
-        container
-        columns={7}
-        sx={{
-          minHeight: 500,
-          height: "40vh",
-          overflowY: "scroll",
-        }}
-      >
+      <Grid container columns={7}>
         {range.map((date, index, array) => (
           <Grid
             item
@@ -72,8 +64,6 @@ const CustomRangeCalendar = (props) => {
             sx={{
               display: "flex",
               justifyContent: "center",
-              // borderCollapse: "collapse",
-              // border: "1px solid #000",
             }}
           >
             {DayComponent && (
