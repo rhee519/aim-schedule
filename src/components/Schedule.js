@@ -1,114 +1,226 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { LocalizationProvider, StaticDatePicker } from "@mui/lab";
+import {
+  CalendarPickerSkeleton,
+  LocalizationProvider,
+  StaticDatePicker,
+} from "@mui/lab";
 import AdapterMoment from "@mui/lab/AdapterMoment";
 import {
   Box,
   TextField,
   MenuItem,
   Paper,
-  Switch,
   Select,
   InputLabel,
-  FormGroup,
   FormControl,
-  FormControlLabel,
   Stack,
   Divider,
   List,
   ListItem,
   ListItemText,
   Typography,
+  Grid,
+  Button,
+  ListSubheader,
+  Modal,
 } from "@mui/material";
 import moment from "moment";
-import { dayDocRef, fetchPayday, initialDailyData } from "../docFunctions";
+import {
+  dayRef,
+  fetchCalendarEvents,
+  fetchMonthData,
+  initialDailyData,
+} from "../docFunctions";
 import { UserContext } from "../contexts/Context";
-import { query, setDoc, getDoc, updateDoc } from "@firebase/firestore";
+import {
+  query,
+  setDoc,
+  getDoc,
+  updateDoc,
+  Timestamp,
+} from "@firebase/firestore";
 
 // 현재 @mui/lab 버전에서는 MonthPicker 에러때문에 월 선택창을 띄우는 것이 불가능!
 // 기능은 정상이지만, 에러 메시지가 계속 출력됨.
 // 주기적으로 확인 필요
 
 // /schedule 접속 시 fetch하는 정산일 정보를 context에 저장
-const PaydayContext = createContext();
+const EventsContext = createContext();
 
 const Schedule = () => {
-  const [showNextMonth, setShowNextMonth] = useState(true);
+  const user = useContext(UserContext);
+  const [open, setOpen] = useState(false);
   const [date, setDate] = useState(moment()); // 선택된 날짜
-  const [payday, setPayday] = useState(); // 정산
-
+  const [monthData, setMonthData] = useState({}); // 선택된 월의 데이터
+  const [loading, setLoading] = useState(true); // monthData fetch 여부
+  const [events, setEvents] = useState({}); // 휴무, 공휴일, 행사, 정산 일정
   // payday 문서 fetch
   useEffect(() => {
-    fetchPayday().then((docSnap) => {
-      setPayday(docSnap.data());
+    fetchCalendarEvents().then((snapshot) => {
+      const e = {};
+      snapshot.forEach((doc) => (e[doc.id] = doc.data()));
+      setEvents(e);
     });
+    return () => {
+      setEvents();
+    };
   }, []);
 
-  // 정산 기록 문서 fetch, 없으면 새로 생성
+  // 최초 월 단위 데이터 fetch
+  useEffect(() => {
+    fetchMonthData(user.uid, moment())
+      .then((snapshot) => {
+        const data = {};
+        snapshot.forEach(
+          (doc) => (data[moment().date(doc.id).format("YYYYMMDD")] = doc.data())
+        );
+        setMonthData(data);
+      })
+      .then(() => setLoading(false));
+
+    return () => {
+      setLoading(true);
+      setMonthData();
+    };
+  }, [user.uid]);
+
+  // 달력 넘어갈 때마다 월 단위 데이터 fetch
+  // 만약 해당 월에 데이터가 존재하지 않으면 데이터는 갱신되지 않음.
+  const handleMonthChange = async (date) => {
+    setLoading(true);
+    fetchMonthData(user.uid, date)
+      .then((snapshot) => {
+        const data = {};
+        snapshot.forEach(
+          (doc) =>
+            (data[moment(date).date(doc.id).format("YYYYMMDD")] = doc.data())
+        );
+        setMonthData(data);
+      })
+      .then(() => setLoading(false));
+  };
+
+  const handleClose = (event) => setOpen(false);
 
   return (
-    <PaydayContext.Provider value={payday}>
+    <EventsContext.Provider value={events}>
       <LocalizationProvider dateAdapter={AdapterMoment}>
-        <Box display={{ xs: "block", md: "flex" }} height={500}>
-          <Stack>
-            <FormGroup>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={showNextMonth}
-                    onChange={(event) => setShowNextMonth(event.target.checked)}
-                  />
-                }
-                label="다음 달 근무 신청하기"
-              />
-            </FormGroup>
-            <Paper
-              sx={{
-                width: { xs: "100%", md: 320 },
-                height: 330,
-                overflowY: "hidden",
-              }}
-            >
-              <StaticDatePicker
-                displayStaticWrapperAs="desktop"
-                showDaysOutsideCurrentMonth
-                minDate={moment("2021-01-01")}
-                value={date}
-                onChange={(newValue) => setDate(newValue)}
-                renderInput={(params) => (
-                  <TextField {...params} helperText={"날짜를 입력하세요"} />
-                )}
-                showTodayButton={true}
-              />
-            </Paper>
-          </Stack>
+        <Modal
+          sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+          open={open}
+          onClose={handleClose}
+        >
           <Paper
             sx={{
-              display: showNextMonth ? "block" : "none",
-              width: { xs: "100%", md: 320 },
-              height: "100%",
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: "80%",
+              height: "80%",
               overflowY: "scroll",
             }}
           >
-            {payday && (
-              <ApplicationDisplay
-                selectedDate={date}
-                showComponent={showNextMonth}
-              />
+            {events && events.payday && (
+              <ApplicationDisplay onClose={handleClose} />
             )}
           </Paper>
-        </Box>
+        </Modal>
+        <Grid container spacing={1} columns={12}>
+          <Grid item xs={12}>
+            <Stack spacing={1}>
+              <Paper
+                sx={{
+                  position: "relative",
+                  width: { xs: "100%", md: 320 },
+                  height: 340,
+                  overflowY: "hidden",
+                }}
+              >
+                {/* <FormGroup>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={showNextMonth}
+                        onChange={(event) =>
+                          setShowNextMonth(event.target.checked)
+                        }
+                      />
+                    }
+                    label="다음 달 근무 신청하기"
+                  />
+                </FormGroup> */}
+                <StaticDatePicker
+                  displayStaticWrapperAs="desktop"
+                  // showDaysOutsideCurrentMonth
+                  loading={loading}
+                  minDate={moment("2021-01-01")}
+                  value={date}
+                  onChange={(newValue) => setDate(newValue)}
+                  renderLoading={() => <CalendarPickerSkeleton />}
+                  renderInput={(params) => (
+                    <TextField {...params} helperText={"날짜를 입력하세요"} />
+                  )}
+                  onMonthChange={handleMonthChange}
+                  showTodayButton={true}
+                />
+                <Button
+                  onClick={() => setOpen(true)}
+                  variant="text"
+                  sx={{
+                    position: "absolute",
+                    right: 0,
+                    bottom: 0,
+                  }}
+                >
+                  <Typography variant="subtitle2">
+                    다음 달 근로 신청하기
+                  </Typography>
+                </Button>
+              </Paper>
+              <Paper>
+                {monthData && (
+                  <SelectedDayDisplay
+                    date={date}
+                    data={monthData[date.format("YYYYMMDD")]}
+                  />
+                )}
+              </Paper>
+            </Stack>
+          </Grid>
+        </Grid>
       </LocalizationProvider>
-    </PaydayContext.Provider>
+    </EventsContext.Provider>
   );
 };
 
-const ApplicationDisplay = () => {
+const SelectedDayDisplay = ({ date, data }) => {
+  return (
+    <Box>
+      <Typography variant="h6">{date.format("M/D")}</Typography>
+      {data ? (
+        <>
+          <Typography variant="body1">
+            출근: {moment(data.start.toDate()).format("HH:mm")}
+          </Typography>
+          <Typography variant="body1">
+            퇴근: {moment(data.finish.toDate()).format("HH:mm")}
+          </Typography>
+        </>
+      ) : (
+        <>해당 날짜의 근로 데이터가 없어요!</>
+      )}
+    </Box>
+  );
+};
+
+const ApplicationDisplay = ({ onClose }) => {
   // payday.history.at(-1) == 최근 정산일
   // payday.next[0] == 다음 정산 예정일
   // payday.next[1] == 다다음 정산 예정일
   // const [dates, setDates] = useState([]);
   const user = useContext(UserContext);
-  const payday = useContext(PaydayContext);
+  const events = useContext(EventsContext);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState();
 
@@ -116,7 +228,7 @@ const ApplicationDisplay = () => {
     const fetchData = async (date) => {
       // setLoading(true);
       const key = moment(date).format("YYYYMMDD");
-      const q = query(dayDocRef(user.uid, moment(date)));
+      const q = query(dayRef(user.uid, moment(date)));
       await getDoc(q).then(async (doc) => {
         if (doc.exists()) {
           setData((prev) => ({ ...prev, [key]: doc.data() }));
@@ -128,9 +240,9 @@ const ApplicationDisplay = () => {
       });
     };
 
-    if (payday && payday.next) {
-      const startDate = payday.next[0].toDate();
-      const finishDate = payday.next[1].toDate();
+    if (events && events.payday && events.payday.next) {
+      const startDate = events.payday.next[0].toDate();
+      const finishDate = events.payday.next[1].toDate();
       for (
         let d = moment(startDate);
         d.isBefore(moment(finishDate));
@@ -143,32 +255,35 @@ const ApplicationDisplay = () => {
         });
       }
     } else setLoading(false);
-  }, [user.uid, payday]);
+
+    return () => {
+      setLoading(true);
+      setData();
+    };
+  }, [user.uid, events]);
 
   const handleStartChange = async (event, date) => {
-    const docRef = dayDocRef(user.uid, date);
-    const startTime =
-      moment(date).startOf("d").hour(event.target.value).toDate().getTime() /
-      1000;
-    const newData = { ...data[date] };
-    newData.start.seconds = startTime;
+    const docRef = dayRef(user.uid, date);
+    const start = Timestamp.fromDate(
+      moment(date).startOf("d").hour(event.target.value).toDate()
+    );
+    const newData = { ...data[date], start };
     setData((prev) => ({ ...prev, [date]: newData }));
     await updateDoc(docRef, newData);
   };
 
   const handleFinishChange = async (event, date) => {
-    const docRef = dayDocRef(user.uid, date);
-    const finishTime =
-      moment(date).startOf("d").hour(event.target.value).toDate().getTime() /
-      1000;
-    const newData = { ...data[date] };
-    newData.finish.seconds = finishTime;
+    const docRef = dayRef(user.uid, date);
+    const finish = Timestamp.fromDate(
+      moment(date).startOf("d").hour(event.target.value).toDate()
+    );
+    const newData = { ...data[date], finish };
     setData((prev) => ({ ...prev, [date]: newData }));
     await updateDoc(docRef, newData);
   };
 
   const handleTypeChange = async (event, date) => {
-    const docRef = dayDocRef(user.uid, date);
+    const docRef = dayRef(user.uid, date);
     const type = event.target.value;
     const newData = { ...data[date], type };
     setData((prev) => ({ ...prev, [date]: newData }));
@@ -179,11 +294,20 @@ const ApplicationDisplay = () => {
     <>loading...</>
   ) : (
     <List>
-      <Typography variant="body1">{`${moment(payday.next[0].toDate()).format(
-        "Y년 M월 D일"
-      )} ~ ${moment(payday.next[1].toDate())
-        .subtract(1, "d")
-        .format("Y년 M월 D일")}`}</Typography>
+      <ListSubheader
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <Typography variant="body1">{`${moment(
+          events.payday.next[0].toDate()
+        ).format("Y년 M월 D일")} ~ ${moment(events.payday.next[1].toDate())
+          .subtract(1, "d")
+          .format("Y년 M월 D일")}`}</Typography>
+        <Button onClick={onClose}>OK</Button>
+      </ListSubheader>
       {Object.keys(data).map((date, index) => (
         <Box key={index}>
           <ListItem>

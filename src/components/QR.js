@@ -12,7 +12,7 @@ import { Box, Paper, Button, Typography } from "@mui/material";
 import { db } from "../myFirebase";
 import { UserContext } from "../contexts/Context";
 import moment from "moment";
-import { dayDocRef, initialDailyData } from "../docFunctions";
+import { dayRef, initialDailyData } from "../docFunctions";
 
 // QR code의 새로고침 주기
 const refreshTime = 30;
@@ -136,7 +136,7 @@ const QRreader = () => {
               moment(lastLoginDate).format("YMD") !== moment().format("YMD")
             ) {
               // 전날 퇴근을 안 찍은 것!
-              const docRef = dayDocRef(uid, lastLoginDate);
+              const docRef = dayRef(uid, lastLoginDate);
               await getDoc(docRef)
                 .then((docSnap) => {
                   if (docSnap.exists()) return docSnap.data();
@@ -262,7 +262,7 @@ const QRreader = () => {
 };
 
 const CheckIn = async (uid) => {
-  const docRef = dayDocRef(uid, moment());
+  const docRef = dayRef(uid, moment());
   await getDoc(docRef).then(async (docSnap) => {
     const time = new Date();
     if (docSnap.exists()) {
@@ -282,7 +282,7 @@ const CheckIn = async (uid) => {
 };
 
 const CheckOut = async (uid) => {
-  const docRef = dayDocRef(uid, moment());
+  const docRef = dayRef(uid, moment());
   await getDoc(docRef).then(async (docSnap) => {
     if (docSnap.exists()) {
       // const { log } = docSnap.data() || [];

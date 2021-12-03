@@ -1,4 +1,10 @@
-import { doc, getDoc } from "@firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  Timestamp,
+} from "@firebase/firestore";
 import moment from "moment";
 import { db } from "./myFirebase";
 
@@ -6,27 +12,53 @@ import { db } from "./myFirebase";
 export const fetchUser = async (uid) => await getDoc(db, `userlist/${uid}`);
 
 // 일간 근로 데이터 생성할 때 기본값
+// 날짜값은 Google Firebase에서 제공하는 class Timestamp 타입으로 저장!
+// 그래야 생성할 때와 fetch할 때 type 차이에서 오는 오류를 방지할 수 있음!
 export const initialDailyData = (date) => ({
-  start: moment(date).startOf("d").hour(9).toDate(),
+  start: Timestamp.fromDate(moment(date).startOf("d").hour(9).toDate()),
   started: null,
-  finish: moment(date).startOf("d").hour(18).toDate(),
+  finish: Timestamp.fromDate(moment(date).startOf("d").hour(18).toDate()),
   finished: null,
   log: [],
   type: "work",
 });
 
+// user의 월간 근로데이터 collection 레퍼런스
+export const monthDocRef = (uid, yearMonth) => {
+  const date = moment(yearMonth, "YYYYMM");
+  const year = date.format("YYYY");
+  const month = date.format("MM");
+  return collection(db, `userlist/${uid}/schedule/${year}/${month}`);
+};
+
 // user의 일간 근로 데이터 doc 레퍼런스
-export const dayDocRef = (uid, date) => {
-  return doc(db, `userlist/${uid}/schedule/${moment(date).format("YYYYMMDD")}`);
+export const dayRef = (uid, date) => {
+  const d = moment(date);
+  const year = d.format("YYYY");
+  const month = d.format("MM");
+  const dateNumber = d.format("DD");
+  return doc(db, `userlist/${uid}/schedule/${year}/${month}/${dateNumber}`);
 };
 
 // user의 해당 날짜의 일간 근로데이터 불러오기
 export const fetchDayData = async (uid, date) => {
-  return await getDoc(dayDocRef(uid, date));
+  return await getDoc(dayRef(uid, date));
+};
+
+// user의 월간 근로데이터 불러오기
+export const fetchMonthData = async (uid, yearMonth) => {
+  return await getDocs(monthDocRef(uid, yearMonth));
+};
+
+// 사내 휴무, 행사, 정산 일정 모두 불러오기
+// return: Promise<Array<doc>>
+// fulfilled 이후 data: event(doc), holiday(doc), vacation(doc), payday(doc)
+export const fetchCalendarEvents = async () => {
+  return await getDocs(collection(db, "calendar"));
 };
 
 // 정산 일정 모두 불러오기
-// return: Promise<object>
+// return: Promise<Array<doc>>
 // 실제 return data : {history: Array<Date>, next: Date}
 export const fetchPayday = async () => {
   return await getDoc(doc(db, "calendar/payday"));
@@ -74,11 +106,3 @@ export const getPaydayPeriod = (payday, date) => {
   }
   return period;
 };
-
-export const dateRangeDocRef = (uid, startDate, finishDate) =>
-  doc(
-    db,
-    `userlist/${uid}/${moment(startDate).format("YYYYMMDD")}-${moment(
-      finishDate
-    ).format("YYYYMMDD")}`
-  );
