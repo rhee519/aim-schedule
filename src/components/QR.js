@@ -131,10 +131,9 @@ const QRreader = () => {
           // 사용자 정보가 유효함
           const { uid, userName, isWorking, lastLoginAt } = userSnap.data();
           if (isWorking) {
+            // 퇴근
             const lastLoginDate = lastLoginAt.toDate();
-            if (
-              moment(lastLoginDate).format("YMD") !== moment().format("YMD")
-            ) {
+            if (!moment(lastLoginDate).isSame(moment(), "day")) {
               // 전날 퇴근을 안 찍은 것!
               const docRef = dayRef(uid, lastLoginDate);
               await getDoc(docRef)
@@ -207,7 +206,6 @@ const QRreader = () => {
       sx={{
         position: "relative",
         display: "flex",
-        // flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
         bgcolor: "#333333",
@@ -267,8 +265,6 @@ const CheckIn = async (uid) => {
     const time = new Date();
     if (docSnap.exists()) {
       const data = docSnap.data();
-      // const { started } = data || time;
-      // const { log } = data || [];
       const started = data.started || time;
       const log = data.log || time;
       log.push({ time, type: "in" });
@@ -285,7 +281,6 @@ const CheckOut = async (uid) => {
   const docRef = dayRef(uid, moment());
   await getDoc(docRef).then(async (docSnap) => {
     if (docSnap.exists()) {
-      // const { log } = docSnap.data() || [];
       const data = docSnap.data();
       const log = data.log || [];
       const time = new Date();

@@ -24,10 +24,10 @@ export const initialDailyData = (date) => ({
 });
 
 // user의 월간 근로데이터 collection 레퍼런스
-export const monthDocRef = (uid, yearMonth) => {
-  const date = moment(yearMonth, "YYYYMM");
-  const year = date.format("YYYY");
-  const month = date.format("MM");
+export const monthDocRef = (uid, date) => {
+  const d = moment(date);
+  const year = d.format("YYYY");
+  const month = d.format("MM");
   return collection(db, `userlist/${uid}/schedule/${year}/${month}`);
 };
 
@@ -46,8 +46,8 @@ export const fetchDayData = async (uid, date) => {
 };
 
 // user의 월간 근로데이터 불러오기
-export const fetchMonthData = async (uid, yearMonth) => {
-  return await getDocs(monthDocRef(uid, yearMonth));
+export const fetchMonthData = async (uid, date) => {
+  return await getDocs(monthDocRef(uid, date));
 };
 
 // 사내 휴무, 행사, 정산 일정 모두 불러오기

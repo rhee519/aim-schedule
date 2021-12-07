@@ -4,29 +4,27 @@ import {
   Box,
   Grid,
   Divider,
-  IconButton,
   ListItem,
   ListItemButton,
   Paper,
   Stack,
-  Tab,
-  Typography,
-  Button,
   Skeleton,
+  List,
+  ListItemText,
+  ListSubheader,
+  Typography,
 } from "@mui/material";
-import EditIcon from "@mui/icons-material/Edit";
 import Status from "../components/Status";
 import { db } from "../myFirebase";
-import { TabContext, TabList, TabPanel } from "@mui/lab";
+import {
+  CalendarPickerSkeleton,
+  LocalizationProvider,
+  StaticDatePicker,
+} from "@mui/lab";
 import moment from "moment";
-import CustomRangeCalendar, {
-  getMonthRange,
-  getNextMonthRange,
-} from "../components/CustomRangeCalendar";
-import Loading from "../components/Loading";
-
-const { startDate, endDate } = getMonthRange(moment());
-const { nextStartDate, nextEndDate } = getNextMonthRange(moment());
+import AdapterMoment from "@mui/lab/AdapterMoment";
+import { fetchMonthData, initialDailyData } from "../docFunctions";
+import { PickersDayWithMarker, worktypeEmoji } from "../components/Schedule";
 
 const Admin = () => {
   const [userList, setUserList] = useState([]);
@@ -37,14 +35,16 @@ const Admin = () => {
     setLoading(true);
     const collectionRef = collection(db, "userlist");
     const fetchedList = [];
-    const querySnap = await getDocs(collectionRef);
-    querySnap.forEach((doc) => {
-      fetchedList.push({
-        ...doc.data(),
-      });
-    });
-    setUserList(fetchedList);
-    setLoading(false);
+    await getDocs(collectionRef)
+      .then((snapshot) => {
+        snapshot.forEach((doc) => {
+          fetchedList.push({
+            ...doc.data(),
+          });
+        });
+        setUserList(fetchedList);
+      })
+      .then(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -127,7 +127,7 @@ const UserListPanel = (props) => {
       }}
     >
       {users.map((user, index) => (
-        <React.Fragment key={index}>
+        <Box key={index}>
           {index !== 0 && <Divider variant="middle" sx={{ mb: 1 }} />}
           <ListItemButton
             sx={{
@@ -144,7 +144,7 @@ const UserListPanel = (props) => {
           >
             <Status user={user} />
           </ListItemButton>
-        </React.Fragment>
+        </Box>
       ))}
     </Paper>
   );
@@ -152,144 +152,243 @@ const UserListPanel = (props) => {
 
 const UserDisplay = (props) => {
   const { user } = props;
-  const [value, setValue] = useState("1");
-  const [thisMonth, setThisMonth] = useState({});
-  const [nextMonth, setNextMonth] = useState({});
-  const [loading1, setLoading1] = useState(true);
-  const [loading2, setLoading2] = useState(true);
+  const [date, setDate] = useState(moment());
+  const [monthData, setMonthData] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [lastSelectedDate, setLastSelectedDate] = useState(moment());
 
-  const handleChange = (event, value) => setValue(value);
-
-  const fetchData = useCallback(async () => {
-    setLoading1(true);
-    setLoading2(true);
-    const thisMonthRef = collection(
-      db,
-      `userlist/${user.uid}/schedule/${moment(endDate).year()}/${moment(
-        startDate
-      ).format("YYYYMMDD")}-${moment(endDate).format("YYYYMMDD")}`
-    );
-    const nextMonthRef = collection(
-      db,
-      `userlist/${user.uid}/schedule/${moment(nextEndDate).year()}/${moment(
-        nextStartDate
-      ).format("YYYYMMDD")}-${moment(nextEndDate).format("YYYYMMDD")}`
-    );
-
-    // fetch this month
-    await getDocs(thisMonthRef)
-      .then((querySnap) => {
-        const data = {};
-        querySnap.forEach((doc) => {
-          data[doc.id] = doc.data();
-        });
-        setThisMonth(data);
-      })
-      .then(() => setLoading1(false));
-    await getDocs(nextMonthRef)
-      .then((querySnap) => {
-        const data = {};
-        querySnap.forEach((doc) => {
-          data[doc.id] = doc.data();
-        });
-        setNextMonth(data);
-      })
-      .then(() => setLoading2(false));
-  }, [user.uid]);
+  const refetchMonthData = useCallback(
+    async (date) => {
+      setLoading(true);
+      fetchMonthData(user.uid, date)
+        .then((snapshot) => {
+          const data = {};
+          for (
+            let d = moment(date).startOf("month");
+            d.isSame(moment(date), "month");
+            d.add(1, "d")
+          ) {
+            const key = d.format("YYYYMMDD");
+            data[key] = undefined;
+          }
+          snapshot.forEach(
+            (doc) =>
+              (data[moment(date).date(doc.id).format("YYYYMMDD")] = doc.data())
+          );
+          setMonthData(data);
+        })
+        .then(() => setLoading(false));
+    },
+    [user]
+  );
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  console.log(thisMonth, nextMonth);
+    refetchMonthData(lastSelectedDate);
+    return () => {
+      setLoading();
+    };
+  }, [refetchMonthData, lastSelectedDate]);
 
   return (
-    <Paper>
-      <ListItem
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-        }}
-      >
-        <Status user={user} />
-        <Box sx={{ display: "flex", flexGrow: 1, justifyContent: "flex-end" }}>
-          <IconButton size="small">
-            <EditIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      </ListItem>
-      <Box>
-        <TabContext value={value}>
-          <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-            <TabList onChange={handleChange}>
-              <Tab label="이번 달 스케줄 조회" value="1" />
-              <Tab label="다음 달 스케줄 신청" value="2" />
-            </TabList>
-          </Box>
-          <TabPanel value="1">
-            <UserScheduleCheck loading={loading1} />
-          </TabPanel>
-          <TabPanel value="2">
-            <UserScheduleApplication
-              {...props}
-              loading={loading2}
-              monthData={nextMonth}
+    <LocalizationProvider dateAdapter={AdapterMoment}>
+      <Paper>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", md: "row" },
+          }}
+        >
+          <Stack>
+            <ListItem>
+              <Status user={user} editable={true} />
+            </ListItem>
+            <StaticDatePicker
+              displayStaticWrapperAs="desktop"
+              value={date}
+              minDate={moment("2021-01-01")}
+              onChange={(date) => setDate(date)}
+              loading={loading}
+              renderLoading={() => <CalendarPickerSkeleton />}
+              renderInput={(params) => null}
+              renderDay={(day, _value, props) => {
+                const key = day.format("YYYYMMDD");
+                return (
+                  <PickersDayWithMarker
+                    {...props}
+                    type={monthData[key] ? monthData[key].type : undefined}
+                  />
+                );
+              }}
+              onMonthChange={(date) => {
+                setLastSelectedDate(date);
+                refetchMonthData(date);
+              }}
             />
-          </TabPanel>
-        </TabContext>
-      </Box>
-    </Paper>
+            <Box sx={{ height: 200 }}>
+              <SelectedDateInfo
+                date={date}
+                data={
+                  monthData[date.format("YYYYMMDD")] || initialDailyData(date)
+                }
+              />
+            </Box>
+          </Stack>
+          <List
+            sx={{
+              width: "100%",
+              height: { xs: "auto", md: 700 },
+              overflowY: "scroll",
+              pt: 0,
+            }}
+          >
+            <ListSubheader>
+              {moment(lastSelectedDate).format("M월")}
+            </ListSubheader>
+            {Object.keys(monthData).map((key, index) => {
+              const dailyData =
+                (monthData && monthData[key]) || initialDailyData(moment(key));
+              const { type } = dailyData;
+              return (
+                <ListItemButton
+                  key={key}
+                  onClick={() => setDate(moment(key))}
+                  sx={{ height: 60 }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      width: 10,
+                      justifyContent: "center",
+                    }}
+                  >
+                    {worktypeEmoji(type)}
+                  </Box>
+                  <Box width={40} mr={1}>
+                    <ListItemText
+                      primary=""
+                      secondary={moment(key).format("D일")}
+                      sx={{
+                        textAlign: "right",
+                      }}
+                    />
+                  </Box>
+                  <Box sx={{ display: "flex", width: "100%" }}>
+                    {type === "annual" ? (
+                      <ListItemText
+                        primary="연차"
+                        sx={{
+                          textAlign: "center",
+                        }}
+                      />
+                    ) : type === "sick" ? (
+                      <ListItemText
+                        primary="병가"
+                        sx={{
+                          textAlign: "center",
+                        }}
+                      />
+                    ) : (
+                      <>
+                        <ListItemText
+                          primary={moment(dailyData.start.toDate()).format(
+                            "HH:mm"
+                          )}
+                          secondary={
+                            dailyData.started
+                              ? `${moment(dailyData.started.toDate()).format(
+                                  "HH:mm"
+                                )} 출근`
+                              : "-"
+                          }
+                          sx={{ textAlign: "center" }}
+                        />
+                        <ListItemText
+                          primary={moment(dailyData.finish.toDate()).format(
+                            "HH:mm"
+                          )}
+                          secondary={
+                            dailyData.finished
+                              ? `${moment(dailyData.finished.toDate()).format(
+                                  "HH:mm"
+                                )} 퇴근`
+                              : "-"
+                          }
+                          sx={{ textAlign: "center" }}
+                        />
+                      </>
+                    )}
+                  </Box>
+                </ListItemButton>
+              );
+            })}
+          </List>
+        </Box>
+      </Paper>
+    </LocalizationProvider>
   );
 };
 
+const SelectedDateInfo = (props) => {
+  const { date, data } = props;
+  // console.log(data);
+  return (
+    <Box>
+      <Typography variant="h6">{date.format("M월 D일")}</Typography>
+      <Typography variant="body2">
+        {moment(data.start.toDate()).format("HH:mm")} ~{" "}
+        {moment(data.finish.toDate()).format("HH:mm")}
+      </Typography>
+    </Box>
+  );
+};
 const AdminNotificationPanel = (props) => {
   return (
     <Paper sx={{ height: "100%" }} {...props}>
-      admin notification panel
+      회원가입 신청 목록 여기에 띄우기.
     </Paper>
   );
 };
 
-const UserScheduleCheck = (props) => {
-  const [date, setDate] = useState();
-  return (
-    <>
-      <CustomRangeCalendar
-        calendarStart={startDate}
-        calendarEnd={endDate}
-        value={date}
-        onChange={(value) => setDate(value)}
-        dayComponent={ScheduleCheckDayComponent}
-      />
-    </>
-  );
-};
+// const UserScheduleCheck = (props) => {
+//   const [date, setDate] = useState();
+//   return (
+//     <>
+//       <CustomRangeCalendar
+//         calendarStart={startDate}
+//         calendarEnd={endDate}
+//         value={date}
+//         onChange={(value) => setDate(value)}
+//         dayComponent={ScheduleCheckDayComponent}
+//       />
+//     </>
+//   );
+// };
 
-const ScheduleCheckDayComponent = (props) => {
-  const {
-    value,
-    // today, outOfRange, selected, onClick
-  } = props;
+// const ScheduleCheckDayComponent = (props) => {
+//   const {
+//     value,
+//     // today, outOfRange, selected, onClick
+//   } = props;
 
-  return <Box sx={{}}>{value.format("M/D")}</Box>;
-};
+//   return <Box sx={{}}>{value.format("M/D")}</Box>;
+// };
 
-const UserScheduleApplication = (props) => {
-  const { user, loading, monthData } = props;
-  console.log(user);
+// const UserScheduleApplication = (props) => {
+//   const { user, loading, monthData } = props;
+//   console.log(user);
 
-  return loading ? (
-    <Loading />
-  ) : monthData && monthData.info && monthData.info.type === "submitted" ? (
-    <Box>
-      <Button variant="contained" size="small">
-        confirm
-      </Button>
-      <Typography>hi</Typography>
-    </Box>
-  ) : (
-    <Typography>아직 근로 신청을 하지 않았습니다.</Typography>
-  );
-};
+//   return loading ? (
+//     <Loading />
+//   ) : monthData && monthData.info && monthData.info.type === "submitted" ? (
+//     <Box>
+//       <Button variant="contained" size="small">
+//         confirm
+//       </Button>
+//       <Typography>hi</Typography>
+//     </Box>
+//   ) : (
+//     <Typography>아직 근로 신청을 하지 않았습니다.</Typography>
+//   );
+// };
 
 export default Admin;

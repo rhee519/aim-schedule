@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import {
   CalendarPickerSkeleton,
   LocalizationProvider,
+  PickersDay,
   StaticDatePicker,
 } from "@mui/lab";
 import AdapterMoment from "@mui/lab/AdapterMoment";
@@ -47,6 +48,16 @@ import {
 // /schedule 접속 시 fetch하는 정산일 정보를 context에 저장
 const EventsContext = createContext();
 
+export const annualEmoji = "🔥";
+export const halfEmoji = "😎";
+export const sickEmoji = "😷";
+export const worktypeEmoji = (type) => {
+  if (type === "annual") return annualEmoji;
+  else if (type === "half") return halfEmoji;
+  else if (type === "sick") return sickEmoji;
+  else return undefined;
+};
+
 const Schedule = () => {
   const user = useContext(UserContext);
   const [open, setOpen] = useState(false);
@@ -74,7 +85,7 @@ const Schedule = () => {
         snapshot.forEach(
           (doc) => (data[moment().date(doc.id).format("YYYYMMDD")] = doc.data())
         );
-        setMonthData(data);
+        setMonthData((prev) => ({ ...prev, ...data }));
       })
       .then(() => setLoading(false));
 
@@ -86,21 +97,32 @@ const Schedule = () => {
 
   // 달력 넘어갈 때마다 월 단위 데이터 fetch
   // 만약 해당 월에 데이터가 존재하지 않으면 데이터는 갱신되지 않음.
-  const handleMonthChange = async (date) => {
+  const refetchMonthData = async (date) => {
     setLoading(true);
     fetchMonthData(user.uid, date)
       .then((snapshot) => {
         const data = {};
+        for (
+          let d = moment(date).startOf("month");
+          d.isSame(moment(date), "month");
+          d.add(1, "d")
+        ) {
+          const key = d.format("YYYYMMDD");
+          data[key] = undefined;
+        }
         snapshot.forEach(
           (doc) =>
             (data[moment(date).date(doc.id).format("YYYYMMDD")] = doc.data())
         );
-        setMonthData(data);
+        setMonthData((prev) => ({ ...prev, ...data }));
       })
       .then(() => setLoading(false));
   };
 
-  const handleClose = (event) => setOpen(false);
+  const handleClose = async (event) => {
+    refetchMonthData(date);
+    setOpen(false);
+  };
 
   return (
     <EventsContext.Provider value={events}>
@@ -127,29 +149,15 @@ const Schedule = () => {
           </Paper>
         </Modal>
         <Grid container spacing={1} columns={12}>
-          <Grid item xs={12}>
-            <Stack spacing={1}>
+          <Grid item xs={12} sx={{ display: "flex", justifyContent: "center" }}>
+            <Stack spacing={1} sx={{ width: { xs: "100%", md: 400 } }}>
               <Paper
                 sx={{
                   position: "relative",
-                  width: { xs: "100%", md: 320 },
                   height: 340,
                   overflowY: "hidden",
                 }}
               >
-                {/* <FormGroup>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={showNextMonth}
-                        onChange={(event) =>
-                          setShowNextMonth(event.target.checked)
-                        }
-                      />
-                    }
-                    label="다음 달 근무 신청하기"
-                  />
-                </FormGroup> */}
                 <StaticDatePicker
                   displayStaticWrapperAs="desktop"
                   // showDaysOutsideCurrentMonth
@@ -161,8 +169,17 @@ const Schedule = () => {
                   renderInput={(params) => (
                     <TextField {...params} helperText={"날짜를 입력하세요"} />
                   )}
-                  onMonthChange={handleMonthChange}
-                  showTodayButton={true}
+                  onMonthChange={refetchMonthData}
+                  // showTodayButton={true}
+                  renderDay={(day, _value, props) => {
+                    const key = day.format("YYYYMMDD");
+                    return (
+                      <PickersDayWithMarker
+                        {...props}
+                        type={monthData[key] ? monthData[key].type : undefined}
+                      />
+                    );
+                  }}
                 />
                 <Button
                   onClick={() => setOpen(true)}
@@ -194,6 +211,25 @@ const Schedule = () => {
   );
 };
 
+export const PickersDayWithMarker = (props) => {
+  const { day, type, outsideCurrentMonth, selected } = props;
+  const color = outsideCurrentMonth
+    ? "text.disabled"
+    : selected
+    ? "background.paper"
+    : day.day() === 0
+    ? "error.main"
+    : day.day() === 6
+    ? "primary.main"
+    : "text.primary";
+
+  return (
+    <PickersDay {...props} sx={{ color, fontSize: 12 }}>
+      {worktypeEmoji(type)}
+    </PickersDay>
+  );
+};
+
 const SelectedDayDisplay = ({ date, data }) => {
   return (
     <Box>
@@ -218,7 +254,6 @@ const ApplicationDisplay = ({ onClose }) => {
   // payday.history.at(-1) == 최근 정산일
   // payday.next[0] == 다음 정산 예정일
   // payday.next[1] == 다다음 정산 예정일
-  // const [dates, setDates] = useState([]);
   const user = useContext(UserContext);
   const events = useContext(EventsContext);
   const [loading, setLoading] = useState(true);
@@ -319,10 +354,14 @@ const ApplicationDisplay = ({ onClose }) => {
               <Select
                 value={data[date].type}
                 onChange={(event) => handleTypeChange(event, date)}
+                disabled={data[date].type === "sick"}
               >
                 <MenuItem value="work">근로</MenuItem>
                 <MenuItem value="annual">연차</MenuItem>
                 <MenuItem value="half">반차</MenuItem>
+                <MenuItem value="sick" disabled>
+                  병가
+                </MenuItem>
               </Select>
             </FormControl>
 
@@ -332,7 +371,9 @@ const ApplicationDisplay = ({ onClose }) => {
                 value={data[date].start.toDate().getHours()}
                 label="출근"
                 onChange={(event) => handleStartChange(event, date)}
-                disabled={data[date].type === "annual"}
+                disabled={
+                  data[date].type === "annual" || data[date].type === "sick"
+                }
               >
                 <MenuItem value={9}>9시</MenuItem>
                 <MenuItem value={10}>10시</MenuItem>
@@ -356,7 +397,9 @@ const ApplicationDisplay = ({ onClose }) => {
                 value={data[date].finish.toDate().getHours()}
                 label="퇴근"
                 onChange={(event) => handleFinishChange(event, date)}
-                disabled={data[date].type === "annual"}
+                disabled={
+                  data[date].type === "annual" || data[date].type === "sick"
+                }
               >
                 <MenuItem value={9}>9시</MenuItem>
                 <MenuItem value={10}>10시</MenuItem>
@@ -381,6 +424,24 @@ const ApplicationDisplay = ({ onClose }) => {
     </List>
   );
 };
+
+// const LargeViewDayComponent = (props) => {
+//   const { value, today, outOfRange, selected, data } = props;
+//   const isFirstDayOfMonth = moment(value).date() === 1;
+//   const isFirstDayOfYear = isFirstDayOfMonth && moment(value).month() === 0;
+//   return (
+//     <Box width="100%">
+//       <Typography variant="body2" component="div" textAlign="right">
+//         {isFirstDayOfYear || isFirstDayOfMonth
+//           ? moment(value).format("M/D")
+//           : moment(value).date()}
+//       </Typography>
+//       <List>
+//         <ListItem></ListItem>
+//       </List>
+//     </Box>
+//   );
+// };
 
 // const DayDisplayThisMonth = (props) => {
 //   const { date } = props;

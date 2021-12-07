@@ -38,8 +38,9 @@ export const CalendarContainer = styled(Paper)(({ theme }) => ({
 }));
 
 const CustomRangeCalendar = (props) => {
-  const { calendarStart, calendarEnd, value, onChange, dayComponent } = props;
-  const DayComponent = dayComponent;
+  const { calendarStart, calendarEnd, value, onChange, dayComponent, data } =
+    props;
+  const DayComponent = dayComponent || CustomDayComponent;
   const range = useMemo(() => {
     const r = [];
     for (
@@ -76,6 +77,7 @@ const CustomRangeCalendar = (props) => {
                 }
                 selected={value && value.format("YMD") === date.format("YMD")}
                 onClick={() => onChange(date)}
+                data={data && data[date.format("YYYYMMDD")]}
               />
             )}
           </Grid>
@@ -86,7 +88,9 @@ const CustomRangeCalendar = (props) => {
 };
 
 export const CustomDayComponent = (props) => {
-  const { value, today, outOfRange, selected, onClick } = props;
+  const { value, today, outOfRange, selected, onClick, data } = props;
+  const key = moment(value).format("YYYYMMDD");
+
   return (
     <IconButton
       size="small"
@@ -106,6 +110,7 @@ export const CustomDayComponent = (props) => {
         today={today}
         outOfRange={outOfRange}
         selected={selected}
+        data={data && data[key]}
       />
     </IconButton>
   );
