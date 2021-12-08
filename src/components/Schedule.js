@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import {
   CalendarPickerSkeleton,
+  DatePicker,
   LocalizationProvider,
   PickersDay,
   StaticDatePicker,
@@ -40,6 +41,7 @@ import {
   updateDoc,
   Timestamp,
 } from "@firebase/firestore";
+import CustomRangeCalendar from "./CustomRangeCalendar";
 
 // 현재 @mui/lab 버전에서는 MonthPicker 에러때문에 월 선택창을 띄우는 것이 불가능!
 // 기능은 정상이지만, 에러 메시지가 계속 출력됨.
@@ -150,7 +152,13 @@ const Schedule = () => {
         </Modal>
         <Grid container spacing={1} columns={12}>
           <Grid item xs={12} sx={{ display: "flex", justifyContent: "center" }}>
-            <Stack spacing={1} sx={{ width: { xs: "100%", md: 400 } }}>
+            <Stack
+              spacing={1}
+              sx={{
+                display: { xs: "block", md: "none" },
+                width: "100%",
+              }}
+            >
               <Paper
                 sx={{
                   position: "relative",
@@ -160,7 +168,6 @@ const Schedule = () => {
               >
                 <StaticDatePicker
                   displayStaticWrapperAs="desktop"
-                  // showDaysOutsideCurrentMonth
                   loading={loading}
                   minDate={moment("2021-01-01")}
                   value={date}
@@ -170,7 +177,6 @@ const Schedule = () => {
                     <TextField {...params} helperText={"날짜를 입력하세요"} />
                   )}
                   onMonthChange={refetchMonthData}
-                  // showTodayButton={true}
                   renderDay={(day, _value, props) => {
                     const key = day.format("YYYYMMDD");
                     return (
@@ -204,10 +210,124 @@ const Schedule = () => {
                 )}
               </Paper>
             </Stack>
+            <Paper sx={{ display: { xs: "none", md: "block" }, width: "100%" }}>
+              <DatePicker
+                displayStaticWrapperAs="desktop"
+                loading={loading}
+                minDate={moment("2021-01-01")}
+                views={["year", "month"]}
+                value={date}
+                onChange={(newValue) => setDate(newValue)}
+                renderLoading={() => <CalendarPickerSkeleton />}
+                renderInput={(params) => <TextField {...params} />}
+                onMonthChange={refetchMonthData}
+              />
+              <CustomRangeCalendar
+                calendarStart={moment(date).startOf("month")}
+                calendarEnd={moment(date).endOf("month")}
+                value={date}
+                onChange={(newValue) => setDate(newValue)}
+                dayComponent={LargeViewDayComponent}
+                data={monthData}
+              />
+            </Paper>
           </Grid>
         </Grid>
       </LocalizationProvider>
     </EventsContext.Provider>
+  );
+};
+
+const LargeViewDayComponent = (props) => {
+  const {
+    value,
+    today,
+    outOfRange,
+    // selected, onClick,
+    data,
+  } = props;
+  const { type } = data;
+  const startedTime = data.started
+    ? moment(data.started.toDate()).format("HH:mm")
+    : "-";
+  const finishedTime = data.finished
+    ? moment(data.finished.toDate()).format("HH:mm")
+    : "-";
+
+  return (
+    <Box
+      sx={{
+        position: "relative",
+        width: "100%",
+        height: 100,
+        boxSizing: "border-box",
+        border: today ? "1px solid" : "none",
+        borderColor: today ? "primary.main" : "none",
+        borderRadius: today ? 3 : 0,
+      }}
+      disabled={outOfRange}
+    >
+      {!outOfRange && (
+        <Stack sx={{ width: "100%" }}>
+          <ListItemText
+            primary={value.format("D")}
+            secondary={worktypeEmoji(type)}
+            sx={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              width: "100%",
+              mt: 0,
+              mr: 0.5,
+              "& .MuiListItemText-primary": {
+                fontSize: 12,
+                textAlign: "right",
+              },
+              "& .MuiListItemText-secondary": {
+                fontSize: 12,
+                textAlign: "right",
+              },
+            }}
+          />
+          {type !== "annual" && (
+            <List>
+              <ListItem>
+                <ListItemText
+                  primary={moment(data.start.toDate()).format("HH:mm")}
+                  secondary={startedTime}
+                  sx={{
+                    m: 0,
+                    "& .MuiListItemText-primary": {
+                      fontSize: 10,
+                      textAlign: "center",
+                    },
+                    "& .MuiListItemText-secondary": {
+                      fontSize: 10,
+                      textAlign: "center",
+                    },
+                  }}
+                />
+                <ListItemText
+                  primary={moment(data.finish.toDate()).format("HH:mm")}
+                  secondary={finishedTime}
+                  sx={{
+                    m: 0,
+                    "& .MuiListItemText-primary": {
+                      fontSize: 10,
+                      textAlign: "center",
+                    },
+                    "& .MuiListItemText-secondary": {
+                      fontSize: 10,
+                      textAlign: "center",
+                    },
+                  }}
+                />
+              </ListItem>
+            </List>
+          )}
+        </Stack>
+      )}
+    </Box>
   );
 };
 
@@ -424,24 +544,6 @@ const ApplicationDisplay = ({ onClose }) => {
     </List>
   );
 };
-
-// const LargeViewDayComponent = (props) => {
-//   const { value, today, outOfRange, selected, data } = props;
-//   const isFirstDayOfMonth = moment(value).date() === 1;
-//   const isFirstDayOfYear = isFirstDayOfMonth && moment(value).month() === 0;
-//   return (
-//     <Box width="100%">
-//       <Typography variant="body2" component="div" textAlign="right">
-//         {isFirstDayOfYear || isFirstDayOfMonth
-//           ? moment(value).format("M/D")
-//           : moment(value).date()}
-//       </Typography>
-//       <List>
-//         <ListItem></ListItem>
-//       </List>
-//     </Box>
-//   );
-// };
 
 // const DayDisplayThisMonth = (props) => {
 //   const { date } = props;

@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import moment from "moment";
 import React, { useMemo } from "react";
+import { initialDailyData } from "../docFunctions";
 
 const weekdays = ["S", "M", "T", "W", "T", "F", "S"];
 export const isHoliday = (date) => {
@@ -77,7 +78,10 @@ const CustomRangeCalendar = (props) => {
                 }
                 selected={value && value.format("YMD") === date.format("YMD")}
                 onClick={() => onChange(date)}
-                data={data && data[date.format("YYYYMMDD")]}
+                data={
+                  (data && data[date.format("YYYYMMDD")]) ||
+                  initialDailyData(date)
+                }
               />
             )}
           </Grid>
