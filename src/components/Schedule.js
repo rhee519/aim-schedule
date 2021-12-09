@@ -25,6 +25,7 @@ import {
   Button,
   ListSubheader,
   Modal,
+  IconButton,
 } from "@mui/material";
 import moment from "moment";
 import {
@@ -42,6 +43,8 @@ import {
   Timestamp,
 } from "@firebase/firestore";
 import CustomRangeCalendar from "./CustomRangeCalendar";
+import NavigateNextIcon from "@mui/icons-material/NavigateNext";
+import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 
 // 현재 @mui/lab 버전에서는 MonthPicker 에러때문에 월 선택창을 띄우는 것이 불가능!
 // 기능은 정상이지만, 에러 메시지가 계속 출력됨.
@@ -211,17 +214,41 @@ const Schedule = () => {
               </Paper>
             </Stack>
             <Paper sx={{ display: { xs: "none", md: "block" }, width: "100%" }}>
-              <DatePicker
-                displayStaticWrapperAs="desktop"
-                loading={loading}
-                minDate={moment("2021-01-01")}
-                views={["year", "month"]}
-                value={date}
-                onChange={(newValue) => setDate(newValue)}
-                renderLoading={() => <CalendarPickerSkeleton />}
-                renderInput={(params) => <TextField {...params} />}
-                onMonthChange={refetchMonthData}
-              />
+              <Box display="flex" justifyContent="space-between">
+                <DatePicker
+                  displayStaticWrapperAs="desktop"
+                  loading={loading}
+                  minDate={moment("2021-01-01")}
+                  views={["year", "month"]}
+                  value={date}
+                  onChange={(newValue) => setDate(newValue)}
+                  renderLoading={() => <CalendarPickerSkeleton />}
+                  renderInput={(params) => (
+                    <TextField variant="standard" {...params} />
+                  )}
+                  onMonthChange={refetchMonthData}
+                />
+                <Box>
+                  <IconButton
+                    size="small"
+                    onClick={() =>
+                      setDate(
+                        moment(date).subtract(1, "month").startOf("month")
+                      )
+                    }
+                  >
+                    <NavigateBeforeIcon />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={() =>
+                      setDate(moment(date).add(1, "month").startOf("month"))
+                    }
+                  >
+                    <NavigateNextIcon />
+                  </IconButton>
+                </Box>
+              </Box>
               <CustomRangeCalendar
                 calendarStart={moment(date).startOf("month")}
                 calendarEnd={moment(date).endOf("month")}
