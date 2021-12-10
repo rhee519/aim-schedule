@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import {
   CalendarPickerSkeleton,
   DatePicker,
@@ -102,27 +108,30 @@ const Schedule = () => {
 
   // 달력 넘어갈 때마다 월 단위 데이터 fetch
   // 만약 해당 월에 데이터가 존재하지 않으면 데이터는 갱신되지 않음.
-  const refetchMonthData = async (date) => {
-    setLoading(true);
-    fetchMonthData(user.uid, date)
-      .then((snapshot) => {
-        const data = {};
-        for (
-          let d = moment(date).startOf("month");
-          d.isSame(moment(date), "month");
-          d.add(1, "d")
-        ) {
-          const key = d.format("YYYYMMDD");
-          data[key] = undefined;
-        }
-        snapshot.forEach(
-          (doc) =>
-            (data[moment(date).date(doc.id).format("YYYYMMDD")] = doc.data())
-        );
-        setMonthData((prev) => ({ ...prev, ...data }));
-      })
-      .then(() => setLoading(false));
-  };
+  const refetchMonthData = useCallback(
+    async (date) => {
+      setLoading(true);
+      fetchMonthData(user.uid, date)
+        .then((snapshot) => {
+          const data = {};
+          for (
+            let d = moment(date).startOf("month");
+            d.isSame(moment(date), "month");
+            d.add(1, "d")
+          ) {
+            const key = d.format("YYYYMMDD");
+            data[key] = undefined;
+          }
+          snapshot.forEach(
+            (doc) =>
+              (data[moment(date).date(doc.id).format("YYYYMMDD")] = doc.data())
+          );
+          setMonthData((prev) => ({ ...prev, ...data }));
+        })
+        .then(() => setLoading(false));
+    },
+    [user.uid]
+  );
 
   const handleClose = async (event) => {
     refetchMonthData(date);
@@ -280,7 +289,12 @@ const LargeViewDayComponent = (props) => {
   const finishedTime = data.finished
     ? moment(data.finished.toDate()).format("HH:mm")
     : "-";
-
+  const dateColor =
+    value.day() === 0
+      ? "error.main"
+      : value.day() === 6
+      ? "primary.main"
+      : "text.primary";
   return (
     <Box
       sx={{
@@ -306,6 +320,7 @@ const LargeViewDayComponent = (props) => {
               width: "100%",
               mt: 0,
               mr: 0.5,
+              color: dateColor,
               "& .MuiListItemText-primary": {
                 fontSize: 12,
                 textAlign: "right",
@@ -430,7 +445,7 @@ const ApplicationDisplay = ({ onClose }) => {
         d.isBefore(moment(finishDate));
         d.add(1, "d")
       ) {
-        fetchData(d).then(() => {
+        fetchData(moment(d)).then(() => {
           if (d.format("YMD") === moment(finishDate).format("YMD")) {
             setLoading(false);
           }
