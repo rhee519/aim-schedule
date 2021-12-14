@@ -11,6 +11,15 @@ import { db } from "./myFirebase";
 // user 기본 정보 불러오기
 export const fetchUser = async (uid) => await getDoc(db, `userlist/${uid}`);
 
+// 회원가입 승인 후 최초 로그인 시 생성되는 유저의 초기 정보
+export const initialUserData = (user) => ({
+  uid: user.uid,
+  email: user.email,
+  userName: user.displayName,
+  profileImageURL: user.photoURL,
+  position: "직책",
+});
+
 // 일간 근로 데이터 생성할 때 기본값
 // 날짜값은 Google Firebase에서 제공하는 class Timestamp 타입으로 저장!
 // 그래야 생성할 때와 fetch할 때 type 차이에서 오는 오류를 방지할 수 있음!
@@ -38,6 +47,15 @@ export const dayRef = (uid, date) => {
   const month = d.format("MM");
   const dateNumber = d.format("DD");
   return doc(db, `userlist/${uid}/schedule/${year}/${month}/${dateNumber}`);
+};
+
+// waiting list doc 레퍼런스
+export const waitingRef = collection(db, "waitinglist");
+export const waitingUserRef = (uid) => doc(waitingRef, uid);
+
+// waiting list 불러오기
+export const fetchWaitingList = async () => {
+  return await getDocs(waitingRef);
 };
 
 // user의 해당 날짜의 일간 근로데이터 불러오기

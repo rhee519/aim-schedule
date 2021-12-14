@@ -1,4 +1,9 @@
-import { collection, getDocs, onSnapshot } from "@firebase/firestore";
+import {
+  collection,
+  getDocs,
+  onSnapshot,
+  updateDoc,
+} from "@firebase/firestore";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Box,
@@ -13,6 +18,7 @@ import {
   ListItemText,
   ListSubheader,
   Typography,
+  Button,
 } from "@mui/material";
 import Status from "../components/Status";
 import { db } from "../myFirebase";
@@ -23,8 +29,15 @@ import {
 } from "@mui/lab";
 import moment from "moment";
 import AdapterMoment from "@mui/lab/AdapterMoment";
-import { fetchMonthData, initialDailyData } from "../docFunctions";
+import {
+  fetchMonthData,
+  fetchWaitingList,
+  initialDailyData,
+  waitingUserRef,
+} from "../docFunctions";
 import { PickersDayWithMarker, worktypeEmoji } from "../components/Schedule";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
 
 const Admin = () => {
   const [userList, setUserList] = useState([]);
@@ -73,14 +86,14 @@ const Admin = () => {
     <>
       <Grid container columns={12} spacing={1}>
         <Grid item xs={12} md={6}>
-          <AdminNotificationPanel />
+          <UserListPanel
+            users={userList}
+            onClick={setSelectedUser}
+            loading={loading}
+          />
         </Grid>
         <Grid item xs={12} md={6}>
-          {loading ? (
-            <UserListSkeleton />
-          ) : (
-            <UserListPanel users={userList} onClick={setSelectedUser} />
-          )}
+          <AdminNotificationPanel />
         </Grid>
         <Grid item xs={12}>
           {selectedUser && <UserDisplay user={selectedUser} />}
@@ -92,15 +105,13 @@ const Admin = () => {
 
 const UserListSkeleton = () => {
   return (
-    <Paper sx={{ p: 1 }}>
-      <Stack>
-        <UserStatusSkeleton />
-        <Divider variant="middle" sx={{ mb: 1 }} />
-        <UserStatusSkeleton />
-        <Divider variant="middle" sx={{ mb: 1 }} />
-        <UserStatusSkeleton />
-      </Stack>
-    </Paper>
+    <Stack>
+      <UserStatusSkeleton />
+      <Divider variant="middle" sx={{ mb: 1 }} />
+      <UserStatusSkeleton />
+      <Divider variant="middle" sx={{ mb: 1 }} />
+      <UserStatusSkeleton />
+    </Stack>
   );
 };
 
@@ -117,35 +128,41 @@ const UserStatusSkeleton = () => {
 };
 
 const UserListPanel = (props) => {
-  const { users, onClick } = props;
+  const { users, onClick, loading } = props;
   return (
     <Paper
       sx={{
-        maxHeight: 400,
-        overflowY: "auto",
+        maxHeight: 300,
+        overflowY: "scroll",
         p: 1,
+        pt: 0,
       }}
     >
-      {users.map((user, index) => (
-        <Box key={index}>
-          {index !== 0 && <Divider variant="middle" sx={{ mb: 1 }} />}
-          <ListItemButton
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              width: "100%",
-              textTransform: "none",
-              borderRadius: 1,
-              p: 1,
-              mb: 1,
-              height: 40,
-            }}
-            onClick={() => onClick(user)}
-          >
-            <Status user={user} />
-          </ListItemButton>
-        </Box>
-      ))}
+      <ListSubheader sx={{ zIndex: 2 }}>근로자 목록</ListSubheader>
+      {loading ? (
+        <UserListSkeleton />
+      ) : (
+        users.map((user, index) => (
+          <Box key={index}>
+            {index !== 0 && <Divider variant="middle" sx={{ mb: 1 }} />}
+            <ListItemButton
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                width: "100%",
+                textTransform: "none",
+                borderRadius: 1,
+                p: 1,
+                mb: 1,
+                height: 40,
+              }}
+              onClick={() => onClick(user)}
+            >
+              <Status user={user} />
+            </ListItemButton>
+          </Box>
+        ))
+      )}
     </Paper>
   );
 };
@@ -342,10 +359,99 @@ const SelectedDateInfo = (props) => {
   );
 };
 const AdminNotificationPanel = (props) => {
+  const [waitlist, setWaitlist] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchWaitingList()
+      .then((snapshot) => {
+        const list = [];
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          list.push({
+            status: data.status,
+            data: JSON.parse(data.json),
+          });
+        });
+        setWaitlist(list);
+      })
+      .then(() => setLoading(false));
+  }, []);
+
   return (
-    <Paper sx={{ height: "100%" }} {...props}>
-      회원가입 신청 목록 여기에 띄우기.
+    <Paper sx={{ height: "100%", p: 1, pt: 0 }} {...props}>
+      <ListSubheader>가입 신청 목록</ListSubheader>
+      {loading ? (
+        <>loading...</>
+      ) : (
+        <List sx={{ p: 0 }}>
+          {waitlist.map((waitingUser) => {
+            return (
+              <WaitingUser
+                key={waitingUser.data.uid}
+                data={waitingUser.data}
+                status={waitingUser.status}
+              />
+            );
+          })}
+        </List>
+      )}
     </Paper>
+  );
+};
+
+const WaitingUser = (props) => {
+  const { data } = props;
+  const [status, setStatus] = useState(props.status);
+  const handleApproveClick = async () => {
+    const docRef = waitingUserRef(data.uid);
+    await updateDoc(docRef, {
+      status: "approved",
+    });
+    setStatus("approved");
+  };
+
+  const handleDenyClick = async () => {
+    const docRef = waitingUserRef(data.uid);
+    await updateDoc(docRef, {
+      status: "denied",
+    });
+    setStatus("denied");
+  };
+
+  return (
+    <ListItem sx={{ p: 0 }}>
+      <ListItemText
+        primary={<Typography>{data.displayName}</Typography>}
+        secondary={data.email}
+      />
+      {status === "pending" ? (
+        <>
+          <Button
+            variant="contained"
+            size="small"
+            color="success"
+            onClick={handleApproveClick}
+          >
+            <CheckIcon />
+          </Button>
+          <Button
+            variant="contained"
+            size="small"
+            color="error"
+            onClick={handleDenyClick}
+          >
+            <CloseIcon />
+          </Button>
+        </>
+      ) : status === "denied" ? (
+        <ListItemText primary="거절됨" />
+      ) : status === "approved" ? (
+        <ListItemText primary="승인됨" />
+      ) : (
+        <></>
+      )}
+    </ListItem>
   );
 };
 

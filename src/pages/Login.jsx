@@ -39,8 +39,8 @@ const Login = () => {
           id="social--container"
           onClick={onGoogleLoginClick}
         >
-          Continue with Google{"  "}
-          <GoogleIcon fontSize="small" />
+          Continue with Google
+          <GoogleIcon fontSize="small" sx={{ ml: 1 }} />
         </Button>
       </Paper>
     </Box>
