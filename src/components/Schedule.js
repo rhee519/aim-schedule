@@ -79,7 +79,7 @@ export const worktypeEmoji = (type) => {
 
 const Schedule = () => {
   const user = useContext(UserContext);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false); // 근로 신청 창 open 여부
   const [index, setIndex] = useState("schedule"); // tab index
   const [date, setDate] = useState(moment()); // 선택된 날짜
   const [monthData, setMonthData] = useState({}); // 선택된 월의 데이터
@@ -254,9 +254,18 @@ const Schedule = () => {
                   </Paper>
                 </Stack>
                 <Paper
-                  sx={{ display: { xs: "none", md: "block" }, width: "100%" }}
+                  sx={{
+                    display: { xs: "none", md: "block" },
+                    width: "100%",
+                    minWidth: 650,
+                  }}
                 >
-                  <Box display="flex" justifyContent="space-between">
+                  <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    position="relative"
+                  >
                     <DatePicker
                       displayStaticWrapperAs="desktop"
                       loading={loading}
@@ -276,26 +285,41 @@ const Schedule = () => {
                       )}
                       onMonthChange={refetchMonthData}
                     />
-                    <Box>
-                      <IconButton
-                        size="small"
-                        onClick={() =>
-                          setDate(
-                            moment(date).subtract(1, "month").startOf("month")
-                          )
-                        }
+                    <Stack>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "flex-end",
+                          alignItems: "center",
+                        }}
                       >
-                        <NavigateBeforeIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() =>
-                          setDate(moment(date).add(1, "month").startOf("month"))
-                        }
-                      >
-                        <NavigateNextIcon />
-                      </IconButton>
-                    </Box>
+                        <IconButton
+                          size="small"
+                          onClick={() =>
+                            setDate(
+                              moment(date).subtract(1, "month").startOf("month")
+                            )
+                          }
+                        >
+                          <NavigateBeforeIcon />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() =>
+                            setDate(
+                              moment(date).add(1, "month").startOf("month")
+                            )
+                          }
+                        >
+                          <NavigateNextIcon />
+                        </IconButton>
+                      </Box>
+                      <Button onClick={() => setOpen(true)} variant="text">
+                        <Typography variant="subtitle2">
+                          다음 달 근로 신청하기
+                        </Typography>
+                      </Button>
+                    </Stack>
                   </Box>
                   <CustomRangeCalendar
                     calendarStart={moment(date).startOf("month")}

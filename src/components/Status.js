@@ -1,26 +1,39 @@
-import React, { useEffect, useState } from "react";
-import { Box, Avatar, Typography, IconButton, TextField } from "@mui/material";
+import React, { useState } from "react";
+import {
+  Box,
+  Avatar,
+  Typography,
+  IconButton,
+  TextField,
+  Modal,
+  Paper,
+  ListSubheader,
+  Button,
+  Stack,
+  ListItem,
+  ListItemText,
+} from "@mui/material";
 import { StyledBadge } from "./Styles";
 import EditIcon from "@mui/icons-material/Edit";
-import CheckIcon from "@mui/icons-material/Check";
 import { doc, updateDoc } from "@firebase/firestore";
 import { db } from "../myFirebase";
 
 const Status = ({ user, editable }) => {
   const [edit, setEdit] = useState(false);
-  const [position, setPosition] = useState();
+  const [userdata, setUserdata] = useState(user);
 
-  useEffect(() => {
-    setPosition(user.position);
-  }, [user]);
-
-  const updatePosition = async () => {
+  const updateUserdata = async (data) => {
     const docRef = doc(db, "userlist", user.uid);
-    await updateDoc(docRef, { position });
+    await updateDoc(docRef, data);
   };
 
-  const handleOKClick = () => {
-    updatePosition();
+  const handleSaveClick = (data) => {
+    updateUserdata(data);
+    setEdit(false);
+  };
+
+  const handleCancelClick = () => {
+    setUserdata(user);
     setEdit(false);
   };
 
@@ -46,7 +59,6 @@ const Status = ({ user, editable }) => {
       </StyledBadge>
       <Box
         sx={{
-          // position: "relative",
           display: "flex",
           flexDirection: "column",
           alignItems: "flex-start",
@@ -54,36 +66,72 @@ const Status = ({ user, editable }) => {
       >
         <Typography variant="body1" component="div">
           {user.userName}
-          {edit ? (
-            <Typography
-              component="div"
-              variant="caption"
-              sx={{ display: "inline-block" }}
-            >
-              <TextField
-                variant="standard"
-                size="small"
-                value={position}
-                onChange={(event) => setPosition(event.target.value)}
-                sx={{ width: 100, height: 10, fontSize: 10 }}
-              />
-              <IconButton onClick={handleOKClick} size="small">
-                <CheckIcon sx={{ fontSize: 14, color: "success.main" }} />
-              </IconButton>
-            </Typography>
-          ) : (
-            <>
-              <Typography variant="caption">{position}</Typography>
-              {editable && (
-                <IconButton onClick={() => setEdit(true)}>
-                  <EditIcon sx={{ fontSize: 12 }} />
-                </IconButton>
-              )}
-            </>
+          <Typography variant="caption">{userdata.position}</Typography>
+          {editable && (
+            <IconButton onClick={() => setEdit(true)}>
+              <EditIcon sx={{ fontSize: 12 }} />
+            </IconButton>
           )}
         </Typography>
         <Typography variant="caption">{user.email}</Typography>
       </Box>
+      <Modal
+        open={edit}
+        onClose={() => {
+          setEdit(false);
+          updateUserdata(userdata);
+        }}
+      >
+        <Paper
+          sx={{
+            width: 500,
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          <ListSubheader
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            {userdata.userName}님의 정보 수정
+            <Stack direction="row">
+              <Button
+                variant="text"
+                size="small"
+                onClick={() => handleSaveClick(userdata)}
+              >
+                save
+              </Button>
+              <Button variant="text" size="small" onClick={handleCancelClick}>
+                cancel
+              </Button>
+            </Stack>
+          </ListSubheader>
+          <ListItem>
+            <ListItemText primary="직급" />
+            <TextField
+              size="small"
+              value={userdata.position}
+              onChange={(event) =>
+                setUserdata({ ...userdata, position: event.target.value })
+              }
+            />
+          </ListItem>
+          <ListItem>
+            <ListItemText primary="입사일" />
+            <TextField placeholder="준비중" disabled size="small" />
+          </ListItem>
+          <ListItem>
+            <ListItemText primary="급여(월)" />
+            <TextField placeholder="준비중" disabled size="small" />
+          </ListItem>
+        </Paper>
+      </Modal>
     </>
   );
 };
