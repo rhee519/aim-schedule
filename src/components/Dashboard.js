@@ -7,21 +7,28 @@ import {
   experimentalStyled as styled,
   IconButton,
   TextField,
+  ListItemText,
+  Stack,
+  ListItem,
 } from "@mui/material";
-import { UserContext } from "../contexts/Context";
+import { EventsContext, UserContext } from "../contexts/Context";
 import moment from "moment";
-import CustomRangeCalendar, { DayComponentText } from "./CustomRangeCalendar";
+import CustomRangeCalendar, {
+  DayComponentText,
+  holidayType,
+} from "./CustomRangeCalendar";
 import { Doughnut } from "react-chartjs-2";
 import "chart.js/auto";
 import { fetchMonthData, initialDailyData } from "../docFunctions";
-import { blue, red } from "@mui/material/colors";
+import { blue, red, grey } from "@mui/material/colors";
 import {
   CalendarPickerSkeleton,
   LocalizationProvider,
   StaticDatePicker,
 } from "@mui/lab";
 import AdapterMoment from "@mui/lab/AdapterMoment";
-import { PickersDayWithMarker } from "./Schedule";
+import { PickersDayWithMarker, worktypeEmoji } from "./Schedule";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
 const Paper = styled(MuiPaper)(({ theme }) => ({
   ...theme.typography.body2,
@@ -121,6 +128,9 @@ const Dashboard = () => {
 
 const DaySummary = (props) => {
   const { date, data } = props;
+  const key = date.format("YYYYMMDD");
+  const events = useContext(EventsContext);
+  const htype = holidayType(date, events);
   const { start, started, finish, finished, type } =
     data || initialDailyData(date);
   const noon = moment(date).startOf("day").hour(12).toDate();
@@ -146,26 +156,34 @@ const DaySummary = (props) => {
   };
 
   return (
-    <>
-      <Typography
-        variant="h5"
+    <Stack spacing={1}>
+      <ListItem sx={{ m: 0 }}>
+        <Typography
+          variant="h5"
+          sx={{
+            // position: "absolute",
+            // top: 0,
+            // left: 0,
+            width: "100%",
+            textAlign: "left",
+            // m: 1,
+          }}
+        >
+          {date.format("M월 D일")}
+        </Typography>
+        <Typography>{worktypeEmoji(type)}</Typography>
+      </ListItem>
+      <Box
         sx={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          textAlign: "left",
-          m: 1,
+          maxHeight: 400,
+          maxWidth: 300,
         }}
       >
-        {date.format("M월 D일")}
-      </Typography>
-      <Box sx={{ maxHeight: 400, maxWidth: 300 }}>
         <Box sx={{ position: "relative" }}>
-          {type === "work" ? (
+          {htype === "holiday" || htype === "vacation" ? (
             <>
               <Typography
-                variant="h4"
+                variant="h5"
                 sx={{
                   position: "absolute",
                   top: "50%",
@@ -173,8 +191,69 @@ const DaySummary = (props) => {
                   transform: "translate(-50%, -50%)",
                 }}
               >
-                근로시간
+                {events[htype][key]}
               </Typography>
+              <Doughnut
+                options={{
+                  layout: {
+                    margin: 0,
+                  },
+                  cutout: "70%",
+                  plugins: {
+                    tooltip: {
+                      enabled: false,
+                    },
+                  },
+                }}
+                data={{
+                  datasets: [
+                    clock,
+                    {
+                      id: htype,
+                      label: "",
+                      data: [1],
+                      backgroundColor: [red[400]],
+                      weight: 2,
+                      borderWidth: 0,
+                    },
+                  ],
+                }}
+              />
+            </>
+          ) : type === "work" ? (
+            <>
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                }}
+              >
+                <ListItemText
+                  primary={moment(start.toDate()).format("HH:mm")}
+                  secondary={
+                    started ? moment(started.toDate()).format("HH:mm") : ""
+                  }
+                  sx={{
+                    "& .MuiListItemText-primary": {
+                      fontSize: 20,
+                    },
+                  }}
+                />
+                <KeyboardArrowDownIcon />
+                <ListItemText
+                  primary={moment(finish.toDate()).format("HH:mm")}
+                  secondary={
+                    finished ? moment(finished.toDate()).format("HH:mm") : ""
+                  }
+                  sx={{
+                    "& .MuiListItemText-primary": {
+                      fontSize: 20,
+                    },
+                  }}
+                />
+              </Box>
               <Doughnut
                 style={{
                   margin: 0,
@@ -297,8 +376,7 @@ const DaySummary = (props) => {
             </>
           ) : type === "half" ? (
             <>
-              <Typography
-                variant="h4"
+              <Box
                 sx={{
                   position: "absolute",
                   top: "50%",
@@ -306,8 +384,30 @@ const DaySummary = (props) => {
                   transform: "translate(-50%, -50%)",
                 }}
               >
-                근로시간
-              </Typography>
+                <ListItemText
+                  primary={moment(start.toDate()).format("HH:mm")}
+                  secondary={
+                    started ? moment(started.toDate()).format("HH:mm") : ""
+                  }
+                  sx={{
+                    "& .MuiListItemText-primary": {
+                      fontSize: 20,
+                    },
+                  }}
+                />
+                <KeyboardArrowDownIcon />
+                <ListItemText
+                  primary={moment(finish.toDate()).format("HH:mm")}
+                  secondary={
+                    finished ? moment(finished.toDate()).format("HH:mm") : ""
+                  }
+                  sx={{
+                    "& .MuiListItemText-primary": {
+                      fontSize: 20,
+                    },
+                  }}
+                />
+              </Box>
               <Doughnut
                 style={{
                   margin: 0,
@@ -388,13 +488,52 @@ const DaySummary = (props) => {
               />
             </>
           ) : type === "sick" ? (
-            <>병가</>
+            <>
+              <Typography
+                variant="h4"
+                sx={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                }}
+              >
+                병가
+              </Typography>
+              <Doughnut
+                options={{
+                  layout: {
+                    margin: 0,
+                  },
+                  cutout: "70%",
+                  plugins: {
+                    tooltip: {
+                      enabled: false,
+                    },
+                  },
+                }}
+                data={{
+                  datasets: [
+                    clock,
+                    {
+                      id: "sick",
+                      label: "",
+                      data: [1],
+                      // rotation: outerOffset,
+                      backgroundColor: [grey[600]],
+                      weight: 2,
+                      borderWidth: 0,
+                    },
+                  ],
+                }}
+              />
+            </>
           ) : (
             <>type 오류!</>
           )}
         </Box>
       </Box>
-    </>
+    </Stack>
   );
 };
 

@@ -195,7 +195,6 @@ const Schedule = () => {
                             type={
                               monthData[key] ? monthData[key].type : undefined
                             }
-                            htype={holidayType(day, events)}
                           />
                         );
                       }}
@@ -434,7 +433,10 @@ const LargeViewDayComponent = (props) => {
 };
 
 export const PickersDayWithMarker = (props) => {
-  const { day, type, outsideCurrentMonth, selected, htype } = props;
+  const { day, type, outsideCurrentMonth, selected } = props;
+  const events = useContext(EventsContext);
+  const htype = holidayType(day, events);
+
   const color = outsideCurrentMonth
     ? "text.disabled"
     : selected
