@@ -4,7 +4,7 @@ import {
   onSnapshot,
   updateDoc,
 } from "@firebase/firestore";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import {
   Box,
   Grid,
@@ -19,6 +19,7 @@ import {
   ListSubheader,
   Typography,
   Button,
+  Tab,
 } from "@mui/material";
 import Status from "../components/Status";
 import { db } from "../myFirebase";
@@ -26,6 +27,9 @@ import {
   CalendarPickerSkeleton,
   LocalizationProvider,
   StaticDatePicker,
+  TabContext,
+  TabList,
+  TabPanel,
 } from "@mui/lab";
 import moment from "moment";
 import AdapterMoment from "@mui/lab/AdapterMoment";
@@ -38,6 +42,7 @@ import {
 import { PickersDayWithMarker, worktypeEmoji } from "../components/Schedule";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import { EventsContext } from "../contexts/Context";
 
 const Admin = () => {
   const [userList, setUserList] = useState([]);
@@ -93,7 +98,7 @@ const Admin = () => {
           />
         </Grid>
         <Grid item xs={12} md={6}>
-          <AdminNotificationPanel />
+          <AdminControlPanel />
         </Grid>
         <Grid item xs={12}>
           {selectedUser && <UserDisplay user={selectedUser} />}
@@ -347,7 +352,6 @@ const UserDisplay = (props) => {
 
 const SelectedDateInfo = (props) => {
   const { date, data } = props;
-  // console.log(data);
   return (
     <Box>
       <Typography variant="h6">{date.format("M월 D일")}</Typography>
@@ -358,7 +362,10 @@ const SelectedDateInfo = (props) => {
     </Box>
   );
 };
-const AdminNotificationPanel = (props) => {
+const AdminControlPanel = (props) => {
+  const events = useContext(EventsContext);
+  console.log(events);
+  const [index, setIndex] = useState("sign-in-request");
   const [waitlist, setWaitlist] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -380,22 +387,47 @@ const AdminNotificationPanel = (props) => {
 
   return (
     <Paper sx={{ height: "100%", p: 1, pt: 0 }} {...props}>
-      <ListSubheader>가입 신청 목록</ListSubheader>
-      {loading ? (
-        <>loading...</>
-      ) : (
-        <List sx={{ p: 0 }}>
-          {waitlist.map((waitingUser) => {
-            return (
-              <WaitingUser
-                key={waitingUser.data.uid}
-                data={waitingUser.data}
-                status={waitingUser.status}
-              />
-            );
-          })}
-        </List>
-      )}
+      <TabContext value={index}>
+        <TabList onChange={(event, value) => setIndex(value)}>
+          <Tab label="회원가입 신청" value="sign-in-request" />
+          <Tab label="사내 일정" value="calendar" />
+          <Tab label="정산일" value="payday" />
+          <Tab label="휴무일" value="holiday" />
+        </TabList>
+        <TabPanel value="sign-in-request" sx={{ p: 0 }}>
+          {/* <ListSubheader>가입 신청 목록</ListSubheader> */}
+          {loading ? (
+            <>loading...</>
+          ) : (
+            <List sx={{ p: 0 }}>
+              {waitlist.map((waitingUser) => {
+                return (
+                  <WaitingUser
+                    key={waitingUser.data.uid}
+                    data={waitingUser.data}
+                    status={waitingUser.status}
+                  />
+                );
+              })}
+            </List>
+          )}
+        </TabPanel>
+        <TabPanel value="calendar" sx={{ p: 0 }}>
+          {/* {Object.keys(events.event)
+            .filter((key) => moment(key).year() === moment().year())
+            .map((key) => (
+              <Typography>
+                {moment(key).format("M/D")} {events.event[key]}
+              </Typography>
+            ))} */}
+        </TabPanel>
+        <TabPanel value="payday" sx={{ p: 0 }}>
+          정산일
+        </TabPanel>
+        <TabPanel value="holiday" sx={{ p: 0 }}>
+          휴무일
+        </TabPanel>
+      </TabContext>
     </Paper>
   );
 };

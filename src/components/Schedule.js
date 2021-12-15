@@ -1,10 +1,4 @@
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import {
   CalendarPickerSkeleton,
   DatePicker,
@@ -42,12 +36,11 @@ import {
 import moment from "moment";
 import {
   dayRef,
-  fetchCalendarEvents,
   fetchDayData,
   fetchMonthData,
   initialDailyData,
 } from "../docFunctions";
-import { UserContext } from "../contexts/Context";
+import { EventsContext, UserContext } from "../contexts/Context";
 import {
   query,
   setDoc,
@@ -63,9 +56,6 @@ import PriceCheckIcon from "@mui/icons-material/PriceCheck";
 // 현재 @mui/lab 버전에서는 MonthPicker 에러때문에 월 선택창을 띄우는 것이 불가능!
 // 기능은 정상이지만, 에러 메시지가 계속 출력됨.
 // 주기적으로 확인 필요
-
-// /schedule 접속 시 fetch하는 정산일 정보를 context에 저장
-export const EventsContext = createContext();
 
 export const annualEmoji = "🔥";
 export const halfEmoji = "😎";
@@ -84,19 +74,7 @@ const Schedule = () => {
   const [date, setDate] = useState(moment()); // 선택된 날짜
   const [monthData, setMonthData] = useState({}); // 선택된 월의 데이터
   const [loading, setLoading] = useState(true); // monthData fetch 여부
-  const [events, setEvents] = useState({}); // 휴무, 공휴일, 행사, 정산 일정
-
-  // payday 문서 fetch
-  useEffect(() => {
-    fetchCalendarEvents().then((snapshot) => {
-      const e = {};
-      snapshot.forEach((doc) => (e[doc.id] = doc.data()));
-      setEvents(e);
-    });
-    return () => {
-      setEvents();
-    };
-  }, []);
+  const events = useContext(EventsContext); // 휴무, 공휴일, 행사, 정산 일정
 
   // 최초 월 단위 데이터 fetch
   useEffect(() => {
@@ -151,10 +129,7 @@ const Schedule = () => {
   return (
     <TabContext value={index}>
       <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-        <TabList
-          onChange={(event, value) => setIndex(value)}
-          aria-label="lab API tabs example"
-        >
+        <TabList onChange={(event, value) => setIndex(value)}>
           <Tab label="스케줄 확인" value="schedule" />
           <Tab label="근로시간 확인 & 급여 가계산" value="calculate" />
         </TabList>
@@ -226,6 +201,7 @@ const Schedule = () => {
                             type={
                               monthData[key] ? monthData[key].type : undefined
                             }
+                            htype={holidayType(day, events)}
                           />
                         );
                       }}
@@ -351,6 +327,9 @@ const LargeViewDayComponent = (props) => {
     data,
   } = props;
   const { type } = data;
+  const events = useContext(EventsContext);
+  const htype = holidayType(value, events);
+  const key = value.format("YYYYMMDD");
   const startedTime = data.started
     ? moment(data.started.toDate()).format("HH:mm")
     : "-";
@@ -358,7 +337,7 @@ const LargeViewDayComponent = (props) => {
     ? moment(data.finished.toDate()).format("HH:mm")
     : "-";
   const dateColor =
-    value.day() === 0
+    htype === "holiday" || htype === "vacation" || value.day() === 0
       ? "error.main"
       : value.day() === 6
       ? "primary.main"
@@ -401,38 +380,57 @@ const LargeViewDayComponent = (props) => {
           />
           {type !== "annual" && (
             <List>
-              <ListItem>
-                <ListItemText
-                  primary={moment(data.start.toDate()).format("HH:mm")}
-                  secondary={startedTime}
-                  sx={{
-                    m: 0,
-                    "& .MuiListItemText-primary": {
-                      fontSize: 10,
-                      textAlign: "center",
-                    },
-                    "& .MuiListItemText-secondary": {
-                      fontSize: 10,
-                      textAlign: "center",
-                    },
-                  }}
-                />
-                <ListItemText
-                  primary={moment(data.finish.toDate()).format("HH:mm")}
-                  secondary={finishedTime}
-                  sx={{
-                    m: 0,
-                    "& .MuiListItemText-primary": {
-                      fontSize: 10,
-                      textAlign: "center",
-                    },
-                    "& .MuiListItemText-secondary": {
-                      fontSize: 10,
-                      textAlign: "center",
-                    },
-                  }}
-                />
-              </ListItem>
+              {htype === "holiday" || htype === "vacation" ? (
+                <ListItem>
+                  <ListItemText
+                    sx={{
+                      m: 0,
+                      "& .MuiListItemText-primary": {
+                        fontSize: 10,
+                        textAlign: "center",
+                      },
+                      "& .MuiListItemText-secondary": {
+                        fontSize: 10,
+                        textAlign: "center",
+                      },
+                    }}
+                    primary={events[htype][key]}
+                  />
+                </ListItem>
+              ) : (
+                <ListItem>
+                  <ListItemText
+                    primary={moment(data.start.toDate()).format("HH:mm")}
+                    secondary={startedTime}
+                    sx={{
+                      m: 0,
+                      "& .MuiListItemText-primary": {
+                        fontSize: 10,
+                        textAlign: "center",
+                      },
+                      "& .MuiListItemText-secondary": {
+                        fontSize: 10,
+                        textAlign: "center",
+                      },
+                    }}
+                  />
+                  <ListItemText
+                    primary={moment(data.finish.toDate()).format("HH:mm")}
+                    secondary={finishedTime}
+                    sx={{
+                      m: 0,
+                      "& .MuiListItemText-primary": {
+                        fontSize: 10,
+                        textAlign: "center",
+                      },
+                      "& .MuiListItemText-secondary": {
+                        fontSize: 10,
+                        textAlign: "center",
+                      },
+                    }}
+                  />
+                </ListItem>
+              )}
             </List>
           )}
         </Stack>
@@ -442,12 +440,12 @@ const LargeViewDayComponent = (props) => {
 };
 
 export const PickersDayWithMarker = (props) => {
-  const { day, type, outsideCurrentMonth, selected } = props;
+  const { day, type, outsideCurrentMonth, selected, htype } = props;
   const color = outsideCurrentMonth
     ? "text.disabled"
     : selected
     ? "background.paper"
-    : day.day() === 0
+    : htype === "holiday" || htype === "vacation" || day.day() === 0
     ? "error.main"
     : day.day() === 6
     ? "primary.main"

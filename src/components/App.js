@@ -4,9 +4,9 @@ import { auth, db } from "../myFirebase";
 import AppRouter from "./AppRouter";
 import Loading from "./Loading";
 import { doc, getDoc, setDoc } from "@firebase/firestore";
-import { UserContext } from "../contexts/Context";
+import { EventsContext, UserContext } from "../contexts/Context";
 import { Box } from "@mui/material";
-import { initialUserData } from "../docFunctions";
+import { fetchCalendarEvents, initialUserData } from "../docFunctions";
 
 const Error = (error) => {
   console.log("from App.js");
@@ -18,6 +18,8 @@ function App() {
   const [userData, setUserData] = useState(
     JSON.parse(localStorage.getItem("currentUser"))
   );
+  const [events, setEvents] = useState();
+
   const fetchUserData = useCallback(async (user) => {
     if (!user) {
       setIsLoading(false);
@@ -89,12 +91,13 @@ function App() {
                 return true;
               }
             })
-            .then((signout) => signout && auth.signOut())
+            .then((signout) => {
+              if (signout) {
+                auth.signOut();
+              }
+            })
             .catch(Error);
         }
-      })
-      .then(() => {
-        setIsLoading(false);
       })
       .catch(Error);
   }, []);
@@ -102,32 +105,32 @@ function App() {
   useEffect(() => {
     // component did mount
     onAuthStateChanged(auth, (user) => {
-      // console.log(user);
-      fetchUserData(user);
+      fetchUserData(user)
+        .then(() => {
+          fetchCalendarEvents().then((snapshot) => {
+            const e = {};
+            snapshot.forEach((doc) => (e[doc.id] = doc.data()));
+            setEvents(e);
+          });
+        })
+        .then(() => setIsLoading(false));
       if (user) {
-        // if (isWaitingUser) auth.signOut();
       } else {
         setUserData(null);
-        // setIsWaitingUser(false);
         localStorage.removeItem("currentUser");
       }
-      // setIsLoading(false);
     });
     return () => {
       setUserData(null);
       setIsLoading(true);
     };
-  }, [
-    fetchUserData,
-    // isWaitingUser
-  ]);
+  }, [fetchUserData]);
 
   return (
     <UserContext.Provider value={userData}>
-      <Box position="relative">
-        {isLoading ? <Loading /> : <AppRouter />}
-        {/* <AppRouter /> */}
-      </Box>
+      <EventsContext.Provider value={events}>
+        <Box position="relative">{isLoading ? <Loading /> : <AppRouter />}</Box>
+      </EventsContext.Provider>
     </UserContext.Provider>
   );
 }

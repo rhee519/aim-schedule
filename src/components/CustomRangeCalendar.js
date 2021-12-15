@@ -11,12 +11,12 @@ import {
 import moment from "moment";
 import React, { useMemo, useContext } from "react";
 import { initialDailyData } from "../docFunctions";
-import { EventsContext } from "./Schedule";
+import { EventsContext } from "../contexts/Context";
 
 const weekdays = ["S", "M", "T", "W", "T", "F", "S"];
 
 export const holidayType = (date, events) => {
-  if (!moment.isMoment(date) || !events) return "error";
+  if (!moment.isMoment(date) || !events) return undefined;
   const key = moment(date).format("YYYYMMDD");
   if (events.holiday && events.holiday[key]) return "holiday";
   else if (events.vacation && events.vacation[key]) return "vacation";
@@ -53,7 +53,6 @@ export const CalendarContainer = styled(Paper)(({ theme }) => ({
 
 const CustomRangeCalendar = (props) => {
   const events = useContext(EventsContext);
-  console.log(events);
   const { calendarStart, calendarEnd, value, onChange, dayComponent, data } =
     props;
   const DayComponent = dayComponent || CustomDayComponent;
@@ -97,6 +96,7 @@ const CustomRangeCalendar = (props) => {
                   (data && data[date.format("YYYYMMDD")]) ||
                   initialDailyData(date)
                 }
+                holidayType={holidayType(date, events)}
               />
             )}
           </Grid>
@@ -107,7 +107,8 @@ const CustomRangeCalendar = (props) => {
 };
 
 export const CustomDayComponent = (props) => {
-  const { value, today, outOfRange, selected, onClick, data } = props;
+  const { value, today, outOfRange, selected, onClick, data, holidayType } =
+    props;
   const key = moment(value).format("YYYYMMDD");
 
   return (
@@ -130,13 +131,14 @@ export const CustomDayComponent = (props) => {
         outOfRange={outOfRange}
         selected={selected}
         data={data && data[key]}
+        holidayType={holidayType}
       />
     </IconButton>
   );
 };
 
 export const DayComponentText = (props) => {
-  const { value, today, outOfRange, selected } = props;
+  const { value, today, outOfRange, selected, holidayType } = props;
   const showMonth = value.month() !== moment(value).subtract(1, "d").month();
   const showYear = value.year() !== moment(value).subtract(1, "d").year();
   return (
@@ -156,7 +158,9 @@ export const DayComponentText = (props) => {
               ? "text.disabled"
               : selected
               ? "background.paper"
-              : value.day() === 0
+              : holidayType === "holiday" ||
+                holidayType === "vacation" ||
+                value.day() === 0
               ? "error.main"
               : value.day() === 6
               ? "primary.main"
