@@ -217,7 +217,7 @@ const Navigator = (props) => {
         )}
 
         {/* SETTING */}
-        <ListItem button>
+        <ListItem button disabled>
           <ListItemIcon>
             <SettingsIcon fontSize="small" />
           </ListItemIcon>

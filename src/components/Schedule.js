@@ -8,11 +8,11 @@ import React, {
 import {
   CalendarPickerSkeleton,
   DatePicker,
-  DateRangePicker,
   LoadingButton,
   LocalizationProvider,
   PickersDay,
   StaticDatePicker,
+  StaticDateRangePicker,
   TabContext,
   TabList,
   TabPanel,
@@ -55,7 +55,7 @@ import {
   updateDoc,
   Timestamp,
 } from "@firebase/firestore";
-import CustomRangeCalendar from "./CustomRangeCalendar";
+import CustomRangeCalendar, { holidayType } from "./CustomRangeCalendar";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import PriceCheckIcon from "@mui/icons-material/PriceCheck";
@@ -632,9 +632,14 @@ const ApplicationDisplay = ({ onClose }) => {
 
 const Calculate = (props) => {
   const user = useContext(UserContext);
+  const events = useContext(EventsContext);
   const [dateRange, setDateRange] = useState([null, null]); // 근로 시간 확인 & 급여 정산
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState({});
+  const [data, setData] = useState([]);
+  const [showDatePicker, setShowDatePicker] = useState(true);
+  const [showDetail, setShowDetail] = useState(false);
+  const [worktime, setWorktime] = useState(0);
+  const [workedtime, setWorkedtime] = useState(0);
 
   const handleCalculateClick = async (event) => {
     setLoading(true);
@@ -654,19 +659,61 @@ const Calculate = (props) => {
     }
     Promise.all(responses)
       .then((snapshot) => {
-        let worktime = 0;
+        let timeToWork = 0,
+          timeWorked = 0;
         setData(snapshot);
         snapshot.forEach((value) => {
-          const { data } = value;
-          const { start, started, finish, finished, type } = data;
+          const { data, key } = value;
+          const {
+            start,
+            started,
+            finish,
+            finished,
+            // type
+          } = data;
+          const htype = holidayType(moment(key), events);
+          if (htype !== "default") console.log("off day");
+          else {
+            const work = finish.toDate().getTime() - start.toDate().getTime();
+            const worked =
+              started && finished
+                ? finished.toDate().getTime() - started.toDate().getTime()
+                : 0;
+            timeToWork += work;
+            timeWorked += worked;
+          }
         });
+        setWorktime(timeToWork);
+        setWorkedtime(timeWorked);
       })
-      .then(() => setLoading(false));
+      .then(() => {
+        setLoading(false);
+        setShowDatePicker(false);
+      });
   };
 
-  return (
-    <>
-      <DateRangePicker
+  const handleRecalculateClick = (event) => {
+    setShowDatePicker(true);
+  };
+
+  const handleDetailClick = (event) => {
+    setShowDetail(!showDetail);
+  };
+
+  return showDatePicker ? (
+    <Stack spacing={1}>
+      <LoadingButton
+        variant="contained"
+        loading={loading}
+        onClick={handleCalculateClick}
+        startIcon={<PriceCheckIcon />}
+        loadingPosition="start"
+        disabled={!dateRange[1]}
+      >
+        근로시간 및 예상 급여 확인하기
+      </LoadingButton>
+      <StaticDateRangePicker
+        displayStaticWrapperAs="desktop"
         startText="정산 시작일"
         endText="정산 종료일"
         value={dateRange}
@@ -680,18 +727,54 @@ const Calculate = (props) => {
           </React.Fragment>
         )}
       />
-      {dateRange[1] && (
-        <LoadingButton
-          variant="contained"
-          loading={loading}
-          onClick={handleCalculateClick}
-          startIcon={<PriceCheckIcon />}
-          loadingPosition="start"
-        >
-          근로시간 및 예상 급여 확인하기
-        </LoadingButton>
-      )}
-    </>
+    </Stack>
+  ) : (
+    <Stack>
+      <Paper>
+        <Typography>
+          {dateRange[0].format("Y년 M월 D일")}부터{" "}
+          {dateRange[1].format("Y년 M월 D일")}까지
+        </Typography>
+        <Typography>
+          예정 근로시간: {Math.floor(worktime / 3600000)}h{" "}
+          {Math.floor(worktime / 60000) % 60}m
+        </Typography>
+        <Typography>
+          실제 근로시간: {Math.floor(workedtime / 3600000)}h{" "}
+          {Math.floor(workedtime / 60000) % 60}m
+        </Typography>
+        <Button variant="text" onClick={handleDetailClick}>
+          {showDetail ? "hide" : "show detail"}
+        </Button>
+        {showDetail &&
+          data.map(({ key, data }) => {
+            const d = moment(key);
+            const htype = holidayType(d, events);
+            return (
+              <Box key={key}>
+                <Typography>{d.format("M월 D일")}</Typography>
+                {htype === "default" ? (
+                  <Typography>
+                    {moment(data.start.toDate()).format("HH:mm")} ~{" "}
+                    {moment(data.finish.toDate()).format("HH:mm")}
+                  </Typography>
+                ) : htype === "annual" ? (
+                  <Typography>연차</Typography>
+                ) : htype === "sick" ? (
+                  <Typography>병가</Typography>
+                ) : htype === "holiday" || htype === "vacation" ? (
+                  <Typography>{events[htype][key]}</Typography>
+                ) : (
+                  <Typography>{htype}</Typography>
+                )}
+              </Box>
+            );
+          })}
+      </Paper>
+      <Button variant="contained" onClick={handleRecalculateClick}>
+        다른 날짜 선택하기
+      </Button>
+    </Stack>
   );
 };
 
