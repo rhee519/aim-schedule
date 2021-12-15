@@ -3,6 +3,7 @@ import {
   getDocs,
   onSnapshot,
   updateDoc,
+  deleteDoc,
 } from "@firebase/firestore";
 import React, { useCallback, useContext, useEffect, useState } from "react";
 import {
@@ -11,6 +12,7 @@ import {
   Divider,
   ListItem,
   ListItemButton,
+  IconButton,
   Paper,
   Stack,
   Skeleton,
@@ -375,6 +377,7 @@ const AdminControlPanel = (props) => {
         snapshot.forEach((doc) => {
           const data = doc.data();
           list.push({
+            id: doc.id,
             status: data.status,
             data: JSON.parse(data.json),
           });
@@ -383,6 +386,14 @@ const AdminControlPanel = (props) => {
       })
       .then(() => setLoading(false));
   }, []);
+
+  const onDeleteClick = async (index) => {
+    const list = [...waitlist];
+    const doc = list[index];
+    list.splice(index, 1);
+    setWaitlist(list);
+    await deleteDoc(waitingUserRef(doc.id));
+  };
 
   return (
     <Paper sx={{ height: "100%", p: 1, pt: 0 }} {...props}>
@@ -402,12 +413,13 @@ const AdminControlPanel = (props) => {
             <>loading...</>
           ) : (
             <List sx={{ p: 0 }}>
-              {waitlist.map((waitingUser) => {
+              {waitlist.map((waitingUser, index) => {
                 return (
                   <WaitingUser
                     key={waitingUser.data.uid}
                     data={waitingUser.data}
                     status={waitingUser.status}
+                    onDeleteClick={() => onDeleteClick(index)}
                   />
                 );
               })}
@@ -441,7 +453,7 @@ const AdminControlPanel = (props) => {
 };
 
 const WaitingUser = (props) => {
-  const { data } = props;
+  const { data, onDeleteClick } = props;
   const [status, setStatus] = useState(props.status);
   const handleApproveClick = async () => {
     const docRef = waitingUserRef(data.uid);
@@ -491,6 +503,9 @@ const WaitingUser = (props) => {
       ) : (
         <></>
       )}
+      <IconButton size="small" onClick={onDeleteClick}>
+        <CloseIcon size="small" />
+      </IconButton>
     </ListItem>
   );
 };

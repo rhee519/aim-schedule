@@ -727,33 +727,36 @@ const Calculate = (props) => {
   };
 
   return showDatePicker ? (
-    <Stack spacing={1}>
-      <LoadingButton
-        variant="contained"
-        loading={loading}
-        onClick={handleCalculateClick}
-        startIcon={<PriceCheckIcon />}
-        loadingPosition="start"
-        disabled={!dateRange[1]}
-      >
-        근로시간 및 예상 급여 확인하기
-      </LoadingButton>
-      <StaticDateRangePicker
-        displayStaticWrapperAs="desktop"
-        startText="정산 시작일"
-        endText="정산 종료일"
-        value={dateRange}
-        onChange={(range) => setDateRange(range)}
-        renderInput={(startProps, endProps) => (
-          <React.Fragment>
-            <TextField {...startProps} size="small" />
-            부터
-            <TextField {...endProps} size="small" />
-            까지
-          </React.Fragment>
-        )}
-      />
-    </Stack>
+    <Box sx={{ maxWidth: 600 }}>
+      <Stack spacing={1}>
+        <LoadingButton
+          fullWidth
+          variant="contained"
+          loading={loading}
+          onClick={handleCalculateClick}
+          startIcon={<PriceCheckIcon />}
+          loadingPosition="start"
+          disabled={!dateRange[1]}
+        >
+          근로시간 및 예상 급여 확인하기
+        </LoadingButton>
+        <StaticDateRangePicker
+          displayStaticWrapperAs="desktop"
+          startText="정산 시작일"
+          endText="정산 종료일"
+          value={dateRange}
+          onChange={(range) => setDateRange(range)}
+          renderInput={(startProps, endProps) => (
+            <React.Fragment>
+              <TextField {...startProps} size="small" />
+              부터
+              <TextField {...endProps} size="small" />
+              까지
+            </React.Fragment>
+          )}
+        />
+      </Stack>
+    </Box>
   ) : (
     <Stack>
       <Paper>
