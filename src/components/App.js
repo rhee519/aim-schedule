@@ -105,15 +105,15 @@ function App() {
   useEffect(() => {
     // component did mount
     onAuthStateChanged(auth, (user) => {
-      fetchUserData(user)
-        .then(() => {
-          fetchCalendarEvents().then((snapshot) => {
+      fetchUserData(user).then(() => {
+        fetchCalendarEvents()
+          .then((snapshot) => {
             const e = {};
             snapshot.forEach((doc) => (e[doc.id] = doc.data()));
             setEvents(e);
-          });
-        })
-        .then(() => setIsLoading(false));
+          })
+          .then(() => setIsLoading(false));
+      });
       if (user) {
       } else {
         setUserData(null);

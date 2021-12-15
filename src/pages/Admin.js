@@ -364,7 +364,6 @@ const SelectedDateInfo = (props) => {
 };
 const AdminControlPanel = (props) => {
   const events = useContext(EventsContext);
-  console.log(events);
   const [index, setIndex] = useState("sign-in-request");
   const [waitlist, setWaitlist] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -388,14 +387,17 @@ const AdminControlPanel = (props) => {
   return (
     <Paper sx={{ height: "100%", p: 1, pt: 0 }} {...props}>
       <TabContext value={index}>
-        <TabList onChange={(event, value) => setIndex(value)}>
+        <TabList
+          onChange={(event, value) => setIndex(value)}
+          variant="scrollable"
+          scrollButtons="auto"
+        >
           <Tab label="회원가입 신청" value="sign-in-request" />
           <Tab label="사내 일정" value="calendar" />
           <Tab label="정산일" value="payday" />
           <Tab label="휴무일" value="holiday" />
         </TabList>
         <TabPanel value="sign-in-request" sx={{ p: 0 }}>
-          {/* <ListSubheader>가입 신청 목록</ListSubheader> */}
           {loading ? (
             <>loading...</>
           ) : (
@@ -413,19 +415,25 @@ const AdminControlPanel = (props) => {
           )}
         </TabPanel>
         <TabPanel value="calendar" sx={{ p: 0 }}>
-          {/* {Object.keys(events.event)
+          {Object.keys(events.event)
             .filter((key) => moment(key).year() === moment().year())
             .map((key) => (
-              <Typography>
+              <Typography key={key}>
                 {moment(key).format("M/D")} {events.event[key]}
               </Typography>
-            ))} */}
+            ))}
         </TabPanel>
         <TabPanel value="payday" sx={{ p: 0 }}>
           정산일
         </TabPanel>
         <TabPanel value="holiday" sx={{ p: 0 }}>
-          휴무일
+          {Object.keys(events.vacation)
+            .filter((key) => moment(key).year() === moment().year())
+            .map((key) => (
+              <Typography key={key}>
+                {moment(key).format("M/D")} {events.vacation[key]}
+              </Typography>
+            ))}
         </TabPanel>
       </TabContext>
     </Paper>

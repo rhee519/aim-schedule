@@ -41,13 +41,7 @@ import {
   initialDailyData,
 } from "../docFunctions";
 import { EventsContext, UserContext } from "../contexts/Context";
-import {
-  query,
-  setDoc,
-  getDoc,
-  updateDoc,
-  Timestamp,
-} from "@firebase/firestore";
+import { updateDoc, Timestamp } from "@firebase/firestore";
 import CustomRangeCalendar, { holidayType } from "./CustomRangeCalendar";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
@@ -479,50 +473,58 @@ const SelectedDayDisplay = ({ date, data }) => {
 };
 
 const ApplicationDisplay = ({ onClose }) => {
+  // payday.from == 신청일(시작)
+  // payday.to == 신청일(종료)
   // payday.history.at(-1) == 최근 정산일
   // payday.next[0] == 다음 정산 예정일
   // payday.next[1] == 다다음 정산 예정일
   const user = useContext(UserContext);
   const events = useContext(EventsContext);
+  const { payday } = events;
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState();
 
   useEffect(() => {
-    const fetchData = async (date) => {
-      const key = moment(date).format("YYYYMMDD");
-      const q = query(dayRef(user.uid, moment(date)));
-      await getDoc(q).then(async (doc) => {
-        if (doc.exists()) {
-          setData((prev) => ({ ...prev, [key]: doc.data() }));
-        } else {
-          const defaultData = initialDailyData(moment(date));
-          setData((prev) => ({ ...prev, [key]: defaultData }));
-          await setDoc(q, defaultData);
-        }
-      });
-    };
-
-    if (events && events.payday && events.payday.next) {
-      const startDate = events.payday.next[0].toDate();
-      const finishDate = events.payday.next[1].toDate();
-      for (
-        let d = moment(startDate);
-        d.isBefore(moment(finishDate));
-        d.add(1, "d")
-      ) {
-        fetchData(moment(d)).then(() => {
-          if (d.format("YMD") === moment(finishDate).format("YMD")) {
-            setLoading(false);
-          }
+    // const fetchData = async (date) => {
+    //   const key = moment(date).format("YYYYMMDD");
+    //   const q = query(dayRef(user.uid, moment(date)));
+    //   await getDoc(q).then(async (doc) => {
+    //     if (doc.exists()) {
+    //       setData((prev) => ({ ...prev, [key]: doc.data() }));
+    //     } else {
+    //       const defaultData = initialDailyData(moment(date));
+    //       setData((prev) => ({ ...prev, [key]: defaultData }));
+    //       await setDoc(q, defaultData);
+    //     }
+    //   });
+    // };
+    const from = moment(payday.from.toDate());
+    const to = moment(payday.to.toDate());
+    const responses = [];
+    for (let d = moment(from); d.isSameOrBefore(to); d.add(1, "d")) {
+      const key = moment(d).format("YYYYMMDD");
+      responses.push(
+        fetchDayData(user.uid, moment(d)).then((docSnap) => {
+          if (docSnap.exists()) return { key, data: docSnap.data() };
+          else return { key, data: initialDailyData(moment(key)) };
+        })
+      );
+    }
+    Promise.all(responses)
+      .then((snapshot) => {
+        const newData = {};
+        snapshot.forEach(({ key, data }) => {
+          newData[key] = data;
         });
-      }
-    } else setLoading(false);
+        setData(newData);
+      })
+      .then(() => setLoading(false));
 
     return () => {
       setLoading(true);
       setData();
     };
-  }, [user.uid, events]);
+  }, [user.uid, events, payday]);
 
   const handleStartChange = async (event, date) => {
     const docRef = dayRef(user.uid, date);
@@ -564,10 +566,10 @@ const ApplicationDisplay = ({ onClose }) => {
         }}
       >
         <Typography variant="body1">{`${moment(
-          events.payday.next[0].toDate()
-        ).format("Y년 M월 D일")} ~ ${moment(events.payday.next[1].toDate())
-          .subtract(1, "d")
-          .format("Y년 M월 D일")}`}</Typography>
+          events.payday.from.toDate()
+        ).format("Y년 M월 D일")} ~ ${moment(events.payday.to.toDate()).format(
+          "Y년 M월 D일"
+        )}`}</Typography>
         <Button onClick={onClose}>OK</Button>
       </ListSubheader>
       {Object.keys(data).map((date, index) => (
