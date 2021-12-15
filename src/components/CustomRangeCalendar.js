@@ -9,25 +9,38 @@ import {
   Paper,
 } from "@mui/material";
 import moment from "moment";
-import React, { useMemo } from "react";
+import React, { useMemo, useContext } from "react";
 import { initialDailyData } from "../docFunctions";
+import { EventsContext } from "./Schedule";
 
 const weekdays = ["S", "M", "T", "W", "T", "F", "S"];
+
+export const holidayType = (date, events) => {
+  if (!moment.isMoment(date) || !events) return "error";
+  const key = moment(date).format("YYYYMMDD");
+  if (events.holiday && events.holiday[key]) return "holiday";
+  else if (events.vacation && events.vacation[key]) return "vacation";
+  else if (date.day() === 0) return "sunday";
+  else if (date.day() === 6) return "saturday";
+  return "default";
+};
+
 export const isHoliday = (date) => {
   // 추후에 한국 공휴일 API 긁어와서 포함시키자!
   return moment(date).day() === 0 || moment(date).day() === 6;
 };
 
-export const workdays = (startDate, endDate) => {
+export const workdays = (startDate, endDate, events) => {
   // 해당 기간의 실제 근로일수
   // 추후에 한국 공휴일 API 긁어와서 적용시켜야 함!!!
+  // const events = useContext(EventsContext);
   let count = 0;
   for (
     let date = moment(startDate);
-    date.isSameOrBefore(endDate.endOf("day"));
+    date.isSameOrBefore(moment(endDate).endOf("day"));
     date.add(1, "d")
   ) {
-    if (!isHoliday(date)) count++;
+    if (holidayType(date, events) === "default") count++;
   }
   return count;
 };
@@ -39,6 +52,8 @@ export const CalendarContainer = styled(Paper)(({ theme }) => ({
 }));
 
 const CustomRangeCalendar = (props) => {
+  const events = useContext(EventsContext);
+  console.log(events);
   const { calendarStart, calendarEnd, value, onChange, dayComponent, data } =
     props;
   const DayComponent = dayComponent || CustomDayComponent;

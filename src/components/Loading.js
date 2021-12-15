@@ -1,12 +1,17 @@
 import React from "react";
 import { Box, CircularProgress } from "@mui/material";
-// import Loader from "react-loader-spinner";
-// import "../css/Loading.css";
 
 const Loading = () => {
   return (
-    // <Loader className="loader-spinner" type="Oval" width={50} color="#6e7eb1" />
-    <Box sx={{ display: "flex" }}>
+    <Box
+      sx={{
+        display: "flex",
+        position: "absolute",
+        top: "50vh",
+        left: "50vw",
+        transform: "translate(-50%, -50%)",
+      }}
+    >
       <CircularProgress />
     </Box>
   );

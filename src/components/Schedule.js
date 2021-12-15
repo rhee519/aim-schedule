@@ -8,9 +8,14 @@ import React, {
 import {
   CalendarPickerSkeleton,
   DatePicker,
+  DateRangePicker,
+  LoadingButton,
   LocalizationProvider,
   PickersDay,
   StaticDatePicker,
+  TabContext,
+  TabList,
+  TabPanel,
 } from "@mui/lab";
 import AdapterMoment from "@mui/lab/AdapterMoment";
 import {
@@ -32,11 +37,13 @@ import {
   ListSubheader,
   Modal,
   IconButton,
+  Tab,
 } from "@mui/material";
 import moment from "moment";
 import {
   dayRef,
   fetchCalendarEvents,
+  fetchDayData,
   fetchMonthData,
   initialDailyData,
 } from "../docFunctions";
@@ -51,13 +58,14 @@ import {
 import CustomRangeCalendar from "./CustomRangeCalendar";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
+import PriceCheckIcon from "@mui/icons-material/PriceCheck";
 
 // 현재 @mui/lab 버전에서는 MonthPicker 에러때문에 월 선택창을 띄우는 것이 불가능!
 // 기능은 정상이지만, 에러 메시지가 계속 출력됨.
 // 주기적으로 확인 필요
 
 // /schedule 접속 시 fetch하는 정산일 정보를 context에 저장
-const EventsContext = createContext();
+export const EventsContext = createContext();
 
 export const annualEmoji = "🔥";
 export const halfEmoji = "😎";
@@ -72,10 +80,12 @@ export const worktypeEmoji = (type) => {
 const Schedule = () => {
   const user = useContext(UserContext);
   const [open, setOpen] = useState(false);
+  const [index, setIndex] = useState("schedule"); // tab index
   const [date, setDate] = useState(moment()); // 선택된 날짜
   const [monthData, setMonthData] = useState({}); // 선택된 월의 데이터
   const [loading, setLoading] = useState(true); // monthData fetch 여부
   const [events, setEvents] = useState({}); // 휴무, 공휴일, 행사, 정산 일정
+
   // payday 문서 fetch
   useEffect(() => {
     fetchCalendarEvents().then((snapshot) => {
@@ -139,138 +149,172 @@ const Schedule = () => {
   };
 
   return (
-    <EventsContext.Provider value={events}>
-      <LocalizationProvider dateAdapter={AdapterMoment}>
-        <Modal
-          sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
-          open={open}
-          onClose={handleClose}
+    <TabContext value={index}>
+      <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+        <TabList
+          onChange={(event, value) => setIndex(value)}
+          aria-label="lab API tabs example"
         >
-          <Paper
-            sx={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: "80%",
-              height: "80%",
-              overflowY: "scroll",
-            }}
-          >
-            {events && events.payday && (
-              <ApplicationDisplay onClose={handleClose} />
-            )}
-          </Paper>
-        </Modal>
-        <Grid container spacing={1} columns={12}>
-          <Grid item xs={12} sx={{ display: "flex", justifyContent: "center" }}>
-            <Stack
-              spacing={1}
-              sx={{
-                display: { xs: "block", md: "none" },
-                width: "100%",
-              }}
+          <Tab label="스케줄 확인" value="schedule" />
+          <Tab label="근로시간 확인 & 급여 가계산" value="calculate" />
+        </TabList>
+      </Box>
+
+      <EventsContext.Provider value={events}>
+        <LocalizationProvider dateAdapter={AdapterMoment}>
+          <TabPanel value="schedule">
+            <Modal
+              sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+              open={open}
+              onClose={handleClose}
             >
               <Paper
                 sx={{
-                  position: "relative",
-                  height: 340,
-                  overflowY: "hidden",
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: "80%",
+                  height: "80%",
+                  overflowY: "scroll",
                 }}
               >
-                <StaticDatePicker
-                  displayStaticWrapperAs="desktop"
-                  loading={loading}
-                  minDate={moment("2021-01-01")}
-                  value={date}
-                  onChange={(newValue) => setDate(newValue)}
-                  renderLoading={() => <CalendarPickerSkeleton />}
-                  renderInput={(params) => (
-                    <TextField {...params} helperText={"날짜를 입력하세요"} />
-                  )}
-                  onMonthChange={refetchMonthData}
-                  renderDay={(day, _value, props) => {
-                    const key = day.format("YYYYMMDD");
-                    return (
-                      <PickersDayWithMarker
-                        {...props}
-                        type={monthData[key] ? monthData[key].type : undefined}
-                      />
-                    );
-                  }}
-                />
-                <Button
-                  onClick={() => setOpen(true)}
-                  variant="text"
-                  sx={{
-                    position: "absolute",
-                    right: 0,
-                    bottom: 0,
-                  }}
-                >
-                  <Typography variant="subtitle2">
-                    다음 달 근로 신청하기
-                  </Typography>
-                </Button>
-              </Paper>
-              <Paper>
-                {monthData && (
-                  <SelectedDayDisplay
-                    date={date}
-                    data={monthData[date.format("YYYYMMDD")]}
-                  />
+                {events && events.payday && (
+                  <ApplicationDisplay onClose={handleClose} />
                 )}
               </Paper>
-            </Stack>
-            <Paper sx={{ display: { xs: "none", md: "block" }, width: "100%" }}>
-              <Box display="flex" justifyContent="space-between">
-                <DatePicker
-                  displayStaticWrapperAs="desktop"
-                  loading={loading}
-                  minDate={moment("2021-01-01")}
-                  views={["year", "month"]}
-                  value={date}
-                  onChange={(newValue) => setDate(newValue)}
-                  renderLoading={() => <CalendarPickerSkeleton />}
-                  renderInput={(params) => (
-                    <TextField variant="standard" {...params} />
-                  )}
-                  onMonthChange={refetchMonthData}
-                />
-                <Box>
-                  <IconButton
-                    size="small"
-                    onClick={() =>
-                      setDate(
-                        moment(date).subtract(1, "month").startOf("month")
-                      )
-                    }
+            </Modal>
+            <Grid container spacing={1} columns={12}>
+              <Grid
+                item
+                xs={12}
+                sx={{ display: "flex", justifyContent: "center" }}
+              >
+                <Stack
+                  spacing={1}
+                  sx={{
+                    display: { xs: "block", md: "none" },
+                    width: "100%",
+                  }}
+                >
+                  <Paper
+                    sx={{
+                      position: "relative",
+                      height: 340,
+                      overflowY: "hidden",
+                    }}
                   >
-                    <NavigateBeforeIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() =>
-                      setDate(moment(date).add(1, "month").startOf("month"))
-                    }
-                  >
-                    <NavigateNextIcon />
-                  </IconButton>
-                </Box>
-              </Box>
-              <CustomRangeCalendar
-                calendarStart={moment(date).startOf("month")}
-                calendarEnd={moment(date).endOf("month")}
-                value={date}
-                onChange={(newValue) => setDate(newValue)}
-                dayComponent={LargeViewDayComponent}
-                data={monthData}
-              />
-            </Paper>
-          </Grid>
-        </Grid>
-      </LocalizationProvider>
-    </EventsContext.Provider>
+                    <StaticDatePicker
+                      displayStaticWrapperAs="desktop"
+                      loading={loading}
+                      minDate={moment("2021-01-01")}
+                      value={date}
+                      onChange={(newValue) => setDate(newValue)}
+                      renderLoading={() => <CalendarPickerSkeleton />}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          helperText={"날짜를 입력하세요"}
+                        />
+                      )}
+                      onMonthChange={refetchMonthData}
+                      renderDay={(day, _value, props) => {
+                        const key = day.format("YYYYMMDD");
+                        return (
+                          <PickersDayWithMarker
+                            {...props}
+                            type={
+                              monthData[key] ? monthData[key].type : undefined
+                            }
+                          />
+                        );
+                      }}
+                    />
+                    <Button
+                      onClick={() => setOpen(true)}
+                      variant="text"
+                      sx={{
+                        position: "absolute",
+                        right: 0,
+                        bottom: 0,
+                      }}
+                    >
+                      <Typography variant="subtitle2">
+                        다음 달 근로 신청하기
+                      </Typography>
+                    </Button>
+                  </Paper>
+                  <Paper>
+                    {monthData && (
+                      <SelectedDayDisplay
+                        date={date}
+                        data={monthData[date.format("YYYYMMDD")]}
+                      />
+                    )}
+                  </Paper>
+                </Stack>
+                <Paper
+                  sx={{ display: { xs: "none", md: "block" }, width: "100%" }}
+                >
+                  <Box display="flex" justifyContent="space-between">
+                    <DatePicker
+                      displayStaticWrapperAs="desktop"
+                      loading={loading}
+                      minDate={moment("2021-01-01")}
+                      views={["year", "month"]}
+                      value={date}
+                      onChange={(newValue) => setDate(newValue)}
+                      renderLoading={() => <CalendarPickerSkeleton />}
+                      renderInput={(params) => (
+                        <TextField
+                          variant="standard"
+                          {...params}
+                          sx={{
+                            m: 1,
+                          }}
+                        />
+                      )}
+                      onMonthChange={refetchMonthData}
+                    />
+                    <Box>
+                      <IconButton
+                        size="small"
+                        onClick={() =>
+                          setDate(
+                            moment(date).subtract(1, "month").startOf("month")
+                          )
+                        }
+                      >
+                        <NavigateBeforeIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() =>
+                          setDate(moment(date).add(1, "month").startOf("month"))
+                        }
+                      >
+                        <NavigateNextIcon />
+                      </IconButton>
+                    </Box>
+                  </Box>
+                  <CustomRangeCalendar
+                    calendarStart={moment(date).startOf("month")}
+                    calendarEnd={moment(date).endOf("month")}
+                    value={date}
+                    onChange={(newValue) => setDate(newValue)}
+                    dayComponent={LargeViewDayComponent}
+                    data={monthData}
+                  />
+                </Paper>
+              </Grid>
+            </Grid>
+          </TabPanel>
+          <TabPanel value="calculate">
+            <Calculate />
+          </TabPanel>
+        </LocalizationProvider>
+      </EventsContext.Provider>
+    </TabContext>
   );
 };
 
@@ -423,7 +467,6 @@ const ApplicationDisplay = ({ onClose }) => {
 
   useEffect(() => {
     const fetchData = async (date) => {
-      // setLoading(true);
       const key = moment(date).format("YYYYMMDD");
       const q = query(dayRef(user.uid, moment(date)));
       await getDoc(q).then(async (doc) => {
@@ -584,6 +627,71 @@ const ApplicationDisplay = ({ onClose }) => {
         </Box>
       ))}
     </List>
+  );
+};
+
+const Calculate = (props) => {
+  const user = useContext(UserContext);
+  const [dateRange, setDateRange] = useState([null, null]); // 근로 시간 확인 & 급여 정산
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState({});
+
+  const handleCalculateClick = async (event) => {
+    setLoading(true);
+    const responses = [];
+    for (
+      let d = moment(dateRange[0]);
+      d.isSameOrBefore(dateRange[1]);
+      d.add(1, "d")
+    ) {
+      const key = moment(d).format("YYYYMMDD");
+      responses.push(
+        fetchDayData(user.uid, moment(d)).then((docSnap) => {
+          if (docSnap.exists()) return { key, data: docSnap.data() };
+          else return { key, data: initialDailyData(moment(key)) };
+        })
+      );
+    }
+    Promise.all(responses)
+      .then((snapshot) => {
+        let worktime = 0;
+        setData(snapshot);
+        snapshot.forEach((value) => {
+          const { data } = value;
+          const { start, started, finish, finished, type } = data;
+        });
+      })
+      .then(() => setLoading(false));
+  };
+
+  return (
+    <>
+      <DateRangePicker
+        startText="정산 시작일"
+        endText="정산 종료일"
+        value={dateRange}
+        onChange={(range) => setDateRange(range)}
+        renderInput={(startProps, endProps) => (
+          <React.Fragment>
+            <TextField {...startProps} size="small" />
+            부터
+            <TextField {...endProps} size="small" />
+            까지
+          </React.Fragment>
+        )}
+      />
+      {dateRange[1] && (
+        <LoadingButton
+          variant="contained"
+          loading={loading}
+          onClick={handleCalculateClick}
+          startIcon={<PriceCheckIcon />}
+          loadingPosition="start"
+        >
+          근로시간 및 예상 급여 확인하기
+        </LoadingButton>
+      )}
+    </>
   );
 };
 
