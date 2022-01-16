@@ -257,7 +257,7 @@ const QRreader = () => {
             ? "warning.main"
             : "transparent",
         width: 400,
-        height: "95vh",
+        height: "80vh",
         overflow: "none",
       }}
     >

@@ -90,6 +90,7 @@ const Login = () => {
         open={QRReaderOpen}
         onClick={handleQRReaderClose}
         sx={{
+          height: "100vh",
           zIndex: (theme) => theme.zIndex.drawer + 1,
         }}
       >
