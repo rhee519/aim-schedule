@@ -246,7 +246,8 @@ const QRreader = () => {
         alignItems: "center",
         justifyContent: "center",
         bgcolor: "#333333",
-        border: "2px solid",
+        border: "5px solid",
+        borderRadius: 2,
         borderColor:
           status === STATUS_SUCCESS
             ? "success.main"
