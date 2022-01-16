@@ -4,6 +4,7 @@ import React, {
   useEffect,
   useState,
   useRef,
+  useMemo,
 } from "react";
 import QRCode from "react-qr-code";
 import QrReader from "react-qr-reader";
@@ -13,6 +14,8 @@ import { db } from "../myFirebase";
 import { UserContext } from "../contexts/Context";
 import moment from "moment";
 import { dayRef, initialDailyData } from "../docFunctions";
+import AudioSuccess from "../resources/qr-success.mp3";
+import AudioError from "../resources/qr-error.mp3";
 
 // QR code의 새로고침 주기
 const refreshTime = 30;
@@ -20,6 +23,10 @@ const refreshTime = 30;
 const durationTime = 5000;
 // QR code의 유효시간?
 const validTime = 30000;
+
+const STATUS_SUCCESS = "success";
+const STATUS_ERROR = "error";
+const STATUS_WARNING = "warning";
 
 const QRcode = () => {
   // userData.userName 은 한글 인코딩 문제때문에 QR 코드 생성은 되지만
@@ -86,8 +93,13 @@ const QRreader = () => {
   const [scannedData, setScannedData] = useState(null);
   const [mode, setMode] = useState(true); // 전면, 후면 카메라 선택
   const [text, setText] = useState("");
-  const [error, setError] = useState(null);
+  // const [error, setError] = useState(null);
+  const [status, setStatus] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const audioSuccess = useMemo(() => new Audio(AudioSuccess), []);
+  const audioWarning = useMemo(() => new Audio(AudioError), []); // 나중에 warning alert sound로 교체
+  const audioError = useMemo(() => new Audio(AudioError), []);
 
   const clearData = useCallback(() => {
     // n초 동안 현재 userData를 유지한다.
@@ -95,7 +107,8 @@ const QRreader = () => {
     // 실수로 한 명의 QR이 중복 스캔되는 것을 방지하기 위함!
     setTimeout(() => {
       setScannedData(null);
-      setError(null);
+      // setError(null);
+      setStatus(null);
     }, durationTime);
   }, []);
 
@@ -109,6 +122,19 @@ const QRreader = () => {
     setMode(!mode);
   };
 
+  const playAudio = useCallback(
+    (type) => {
+      if (type === STATUS_SUCCESS) {
+        audioSuccess.play();
+      } else if (type === STATUS_WARNING) {
+        audioWarning.play();
+      } else if (type === STATUS_ERROR) {
+        audioError.play();
+      } else return;
+    },
+    [audioSuccess, audioWarning, audioError]
+  );
+
   // process parsed data
   const processData = useCallback(async () => {
     if (!scannedData) return;
@@ -118,7 +144,8 @@ const QRreader = () => {
       setText(
         "QR의 유효시간이 만료되었습니다. 새로고침하여 새 QR코드를 발급받으세요."
       );
-      setError(true);
+      // setError(true);
+      setStatus(STATUS_ERROR);
       return;
     }
     setIsLoading(true);
@@ -152,6 +179,8 @@ const QRreader = () => {
                     setText(
                       `${userName}님 출근! 오늘은 퇴근할 때 잊지 말고 QR체크 부탁드려요.`
                     );
+                    setStatus(STATUS_WARNING);
+                    playAudio(STATUS_WARNING);
                   } else {
                     // 에러: 마지막으로 login한 날짜의 데이터를 찾을 수 없다.
                     // 일단 퇴근 처리 후 다시 QR스캔하라고 안내한다.
@@ -159,7 +188,9 @@ const QRreader = () => {
                     setText(
                       "알 수 없는 에러로 지난 퇴근처리가 되지 않았어요. QR코드를 다시 스캔해주세요."
                     );
-                    setError(true);
+                    // setError(true);
+                    setStatus(STATUS_ERROR);
+                    playAudio(STATUS_ERROR);
                   }
                 });
               return;
@@ -168,29 +199,35 @@ const QRreader = () => {
             CheckOut(uid);
             updateDoc(userRef, { isWorking: false, lastLogoutAt: new Date() });
             setText(`${userName}님 퇴근!`);
+            setStatus(STATUS_SUCCESS);
+            playAudio(STATUS_SUCCESS);
           } else {
             // 출근
             CheckIn(uid);
             updateDoc(userRef, { isWorking: true, lastLoginAt: new Date() });
             setText(`${userName}님 출근!`);
+            setStatus(STATUS_SUCCESS);
+            playAudio(STATUS_SUCCESS);
           }
         } else {
           // 사용자 정보가 유효하지 않음
           setText("사용자의 정보가 존재하지 않습니다. 관리자에게 문의하세요.");
+          setStatus(STATUS_ERROR);
+          playAudio(STATUS_ERROR);
           throw new Error();
         }
       })
       .then(() => {
         clearData();
         setIsLoading(false);
-        setError(false);
+        // setError(false);
       })
       .catch((error) => {
         console.log(error);
-        setError(true);
+        // setError(true);
         clearData();
       });
-  }, [scannedData, clearData]);
+  }, [scannedData, clearData, playAudio]);
 
   useEffect(() => {
     processData();
@@ -211,16 +248,20 @@ const QRreader = () => {
         bgcolor: "#333333",
         border: "2px solid",
         borderColor:
-          error === null
-            ? "transparent"
-            : error
+          status === STATUS_SUCCESS
+            ? "success.main"
+            : status === STATUS_ERROR
             ? "error.main"
-            : "success.main",
+            : status === STATUS_WARNING
+            ? "warning.main"
+            : "transparent",
         width: 400,
         height: "95vh",
         overflow: "none",
       }}
     >
+      <audio id="audio--success" src="src/resources/qr-success.mp3"></audio>
+      <audio id="audio--error" src="src/resources/qr-error.mp3"></audio>
       <QrReader
         className="qr-reader--camera"
         onScan={handleScan}

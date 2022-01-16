@@ -15,9 +15,7 @@ const Error = (error) => {
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const [userData, setUserData] = useState(
-    JSON.parse(localStorage.getItem("currentUser"))
-  );
+  const [userData, setUserData] = useState();
   const [events, setEvents] = useState();
 
   const fetchUserData = useCallback(async (user) => {
@@ -33,10 +31,6 @@ function App() {
           // user already exists
           processedUserData = docSnap.data();
           setUserData(processedUserData);
-          localStorage.setItem(
-            "currentUser",
-            JSON.stringify(processedUserData)
-          );
 
           // signout 시키지 않고 정상 로그인
           return false;
@@ -52,10 +46,6 @@ function App() {
                 if (data.status === "approved") {
                   // 관리자가 해당 유저의 회원가입을 승인했음
                   const newUserData = initialUserData(user);
-                  localStorage.setItem(
-                    "currentUser",
-                    JSON.stringify(newUserData)
-                  );
                   const docRef = doc(db, "userlist", user.uid);
                   await setDoc(docRef, newUserData);
                   setUserData(newUserData);
@@ -103,7 +93,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // component did mount
     onAuthStateChanged(auth, (user) => {
       fetchUserData(user).then(() => {
         fetchCalendarEvents()
@@ -117,7 +106,6 @@ function App() {
       if (user) {
       } else {
         setUserData(null);
-        localStorage.removeItem("currentUser");
       }
     });
     return () => {

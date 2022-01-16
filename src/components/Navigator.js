@@ -18,7 +18,7 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import EventAvailableIcon from "@mui/icons-material/EventAvailable";
-import SettingsIcon from "@mui/icons-material/Settings";
+// import SettingsIcon from "@mui/icons-material/Settings";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import QrCode2Icon from "@mui/icons-material/QrCode2";
 import CropFreeIcon from "@mui/icons-material/CropFree";
@@ -217,7 +217,7 @@ const Navigator = (props) => {
         )}
 
         {/* SETTING */}
-        <ListItem button disabled>
+        {/* <ListItem button disabled>
           <ListItemIcon>
             <SettingsIcon fontSize="small" />
           </ListItemIcon>
@@ -226,7 +226,7 @@ const Navigator = (props) => {
             sx={{ ml: -1 }}
             primaryTypographyProps={{ sx: { fontSize: 15 } }}
           />
-        </ListItem>
+        </ListItem> */}
 
         {/* ADMIN */}
         {user && user.isAdmin && (
