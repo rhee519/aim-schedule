@@ -8,8 +8,10 @@ import {
 import moment from "moment";
 import { db } from "./myFirebase";
 
+export const userDocRef = (uid) => doc(db, `userlist/${uid}`);
+
 // user 기본 정보 불러오기
-export const fetchUser = async (uid) => await getDoc(db, `userlist/${uid}`);
+export const fetchUser = async (uid) => await getDoc(db, userDocRef(uid));
 
 // 회원가입 승인 후 최초 로그인 시 생성되는 유저의 초기 정보
 export const initialUserData = (user) => ({

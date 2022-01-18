@@ -3,10 +3,15 @@ import React, { useCallback, useEffect, useState } from "react";
 import { auth, db } from "../myFirebase";
 import AppRouter from "./AppRouter";
 import Loading from "./Loading";
-import { doc, getDoc, setDoc } from "@firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc } from "@firebase/firestore";
 import { EventsContext, UserContext } from "../contexts/Context";
 import { Box } from "@mui/material";
-import { fetchCalendarEvents, initialUserData } from "../docFunctions";
+import {
+  fetchCalendarEvents,
+  initialUserData,
+  userDocRef,
+} from "../docFunctions";
+import { QRreader } from "./QR";
 
 const Error = (error) => {
   console.log("from App.js");
@@ -16,6 +21,7 @@ const Error = (error) => {
 function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [userData, setUserData] = useState();
+  const [scanner, setScanner] = useState(false);
   const [events, setEvents] = useState();
 
   const fetchUserData = useCallback(async (user) => {
@@ -94,18 +100,34 @@ function App() {
 
   useEffect(() => {
     onAuthStateChanged(auth, (user) => {
-      fetchUserData(user).then(() => {
-        fetchCalendarEvents()
-          .then((snapshot) => {
-            const e = {};
-            snapshot.forEach((doc) => (e[doc.id] = doc.data()));
-            setEvents(e);
-          })
-          .then(() => setIsLoading(false));
-      });
       if (user) {
+        if (user.uid === process.env.REACT_APP_QR_SCANNER_UID) {
+          setScanner(true);
+          setIsLoading(false);
+        } else {
+          fetchUserData(user)
+            .then(() => {
+              fetchCalendarEvents()
+                .then((snapshot) => {
+                  const e = {};
+                  snapshot.forEach((doc) => (e[doc.id] = doc.data()));
+                  setEvents(e);
+                })
+                .then(() => setIsLoading(false));
+            })
+            .then(() => {
+              if (user)
+                updateDoc(userDocRef(user.uid), {
+                  profileImageURL: user.photoURL,
+                  userName: user.displayName,
+                  uid: user.uid,
+                });
+            });
+        }
       } else {
         setUserData(null);
+        setScanner(false);
+        setIsLoading(false);
       }
     });
     return () => {
@@ -117,7 +139,9 @@ function App() {
   return (
     <UserContext.Provider value={userData}>
       <EventsContext.Provider value={events}>
-        <Box position="relative">{isLoading ? <Loading /> : <AppRouter />}</Box>
+        <Box position="relative">
+          {isLoading ? <Loading /> : scanner ? <QRreader /> : <AppRouter />}
+        </Box>
       </EventsContext.Provider>
     </UserContext.Provider>
   );

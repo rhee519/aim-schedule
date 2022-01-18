@@ -16,6 +16,8 @@ import moment from "moment";
 import { dayRef, initialDailyData } from "../docFunctions";
 import AudioSuccess from "../resources/qr-success.mp3";
 import AudioError from "../resources/qr-error.mp3";
+import { auth } from "../myFirebase";
+import { useHistory } from "react-router-dom";
 
 // QR code의 새로고침 주기
 const refreshTime = 30;
@@ -100,6 +102,8 @@ const QRreader = () => {
   const audioSuccess = useMemo(() => new Audio(AudioSuccess), []);
   const audioWarning = useMemo(() => new Audio(AudioError), []); // 나중에 warning alert sound로 교체
   const audioError = useMemo(() => new Audio(AudioError), []);
+
+  const history = useHistory();
 
   const clearData = useCallback(() => {
     // n초 동안 현재 userData를 유지한다.
@@ -229,6 +233,13 @@ const QRreader = () => {
       });
   }, [scannedData, clearData, playAudio]);
 
+  const onLogOutClick = async () => {
+    await auth.signOut().then(() => {
+      // back to sign-in page
+      history.push("/");
+    });
+  };
+
   useEffect(() => {
     processData();
 
@@ -240,63 +251,86 @@ const QRreader = () => {
 
   return (
     <Box
-      sx={{
-        position: "relative",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        bgcolor: "#333333",
-        border: "5px solid",
-        borderRadius: 2,
-        borderColor:
-          status === STATUS_SUCCESS
-            ? "success.main"
-            : status === STATUS_ERROR
-            ? "error.main"
-            : status === STATUS_WARNING
-            ? "warning.main"
-            : "transparent",
-        width: 400,
-        height: "80vh",
-        overflow: "none",
-      }}
+      height="100vh"
+      width="100vw"
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      bgcolor="primary.main"
     >
-      <audio id="audio--success" src="src/resources/qr-success.mp3"></audio>
-      <audio id="audio--error" src="src/resources/qr-error.mp3"></audio>
-      <QrReader
-        className="qr-reader--camera"
-        onScan={handleScan}
-        onError={(error) => console.log(error)}
-        // onLoad={() => console.log("loaded")}
-        facingMode={mode ? "user" : "environment"}
-        delay={2000}
-        style={{
-          display: "block",
-          width: "100%",
-          // height: 320,
-        }}
-      />
-      <Button
-        variant="contained"
-        color="success"
-        onClick={cameraChange}
-        id="btn--camera-change"
+      <Box
         sx={{
-          position: "absolute",
-          zIndex: 1,
-          top: 0,
-          right: 0,
+          position: "relative",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: "#333333",
+          border: "5px solid",
+          borderRadius: 2,
+          borderColor:
+            status === STATUS_SUCCESS
+              ? "success.main"
+              : status === STATUS_ERROR
+              ? "error.main"
+              : status === STATUS_WARNING
+              ? "warning.main"
+              : "transparent",
+          width: 400,
+          height: "80vh",
+          overflow: "none",
         }}
       >
-        카메라 전환
-      </Button>
-      <Paper sx={{ position: "absolute", bottom: 0, m: 2 }}>
-        {scannedData && (
-          <Typography variant="h6" sx={{ m: 1 }}>
-            {isLoading ? "Loading..." : text}
-          </Typography>
-        )}
-      </Paper>
+        <audio id="audio--success" src="src/resources/qr-success.mp3"></audio>
+        <audio id="audio--error" src="src/resources/qr-error.mp3"></audio>
+        <QrReader
+          className="qr-reader--camera"
+          onScan={handleScan}
+          onError={(error) => console.log(error)}
+          // onLoad={() => console.log("loaded")}
+          facingMode={mode ? "user" : "environment"}
+          delay={2000}
+          style={{
+            display: "block",
+            width: "100%",
+            // height: 320,
+          }}
+        />
+        <Button
+          variant="contained"
+          color="success"
+          onClick={cameraChange}
+          id="btn--camera-change"
+          sx={{
+            position: "absolute",
+            zIndex: 1,
+            top: 0,
+            right: 0,
+          }}
+        >
+          카메라 전환
+        </Button>
+        <Button
+          variant="contained"
+          color="warning"
+          onClick={onLogOutClick}
+          // id="btn--camera-change"
+          sx={{
+            position: "absolute",
+            zIndex: 1,
+            top: 0,
+            left: 0,
+          }}
+        >
+          로그인 화면
+        </Button>
+        <Paper sx={{ position: "absolute", bottom: 0, m: 2 }}>
+          {scannedData && (
+            <Typography variant="h6" sx={{ m: 1 }}>
+              {isLoading ? "Loading..." : text}
+            </Typography>
+          )}
+        </Paper>
+      </Box>
     </Box>
   );
 };

@@ -20,22 +20,26 @@ import { db } from "../myFirebase";
 
 const Status = ({ user, editable }) => {
   const [edit, setEdit] = useState(false);
-  const [userdata, setUserdata] = useState(user);
+  const [typedPosition, setTypedPosition] = useState();
 
-  const updateUserdata = async (data) => {
-    const docRef = doc(db, "userlist", user.uid);
-    await updateDoc(docRef, data);
+  const handleSaveClick = async (event) => {
+    // event.preventDefault();
+    const docRef = doc(db, `userlist/${user.uid}`);
+    const newUserData = {
+      ...user,
+      position: typedPosition,
+    };
+    await updateDoc(docRef, newUserData);
+    // setUserdata(newUserData);
+    handleClose();
   };
 
-  const handleSaveClick = (data) => {
-    updateUserdata(data);
-    setEdit(false);
+  const handleEditClick = () => {
+    setTypedPosition(user.position);
+    setEdit(true);
   };
 
-  const handleCancelClick = () => {
-    setUserdata(user);
-    setEdit(false);
-  };
+  const handleClose = () => setEdit(false);
 
   return (
     <>
@@ -66,22 +70,16 @@ const Status = ({ user, editable }) => {
       >
         <Typography variant="body1" component="div">
           {user.userName}
-          <Typography variant="caption">{userdata.position}</Typography>
+          <Typography variant="caption">{user.position}</Typography>
           {editable && (
-            <IconButton onClick={() => setEdit(true)}>
+            <IconButton onClick={handleEditClick}>
               <EditIcon sx={{ fontSize: 12 }} />
             </IconButton>
           )}
         </Typography>
         <Typography variant="caption">{user.email}</Typography>
       </Box>
-      <Modal
-        open={edit}
-        onClose={() => {
-          setEdit(false);
-          updateUserdata(userdata);
-        }}
-      >
+      <Modal open={edit} onClose={handleClose}>
         <Paper
           sx={{
             width: 500,
@@ -98,16 +96,12 @@ const Status = ({ user, editable }) => {
               alignItems: "center",
             }}
           >
-            {userdata.userName}님의 정보 수정
+            {user.userName}님의 정보 수정
             <Stack direction="row">
-              <Button
-                variant="text"
-                size="small"
-                onClick={() => handleSaveClick(userdata)}
-              >
+              <Button variant="text" size="small" onClick={handleSaveClick}>
                 save
               </Button>
-              <Button variant="text" size="small" onClick={handleCancelClick}>
+              <Button variant="text" size="small" onClick={handleClose}>
                 cancel
               </Button>
             </Stack>
@@ -116,10 +110,8 @@ const Status = ({ user, editable }) => {
             <ListItemText primary="직급" />
             <TextField
               size="small"
-              value={userdata.position}
-              onChange={(event) =>
-                setUserdata({ ...userdata, position: event.target.value })
-              }
+              value={typedPosition}
+              onChange={(event) => setTypedPosition(event.target.value)}
             />
           </ListItem>
           <ListItem>

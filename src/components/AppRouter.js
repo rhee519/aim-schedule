@@ -21,7 +21,7 @@ const drawerWidth = 200;
 const AppRouter = () => {
   const userData = useContext(UserContext);
   return (
-    <Box className="router--container">
+    <Box>
       {userData ? (
         <Box>
           <Navigator drawerWidth={drawerWidth}>
