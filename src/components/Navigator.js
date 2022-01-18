@@ -21,10 +21,13 @@ import EventAvailableIcon from "@mui/icons-material/EventAvailable";
 // import SettingsIcon from "@mui/icons-material/Settings";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import QrCode2Icon from "@mui/icons-material/QrCode2";
-import CropFreeIcon from "@mui/icons-material/CropFree";
+// import CropFreeIcon from "@mui/icons-material/CropFree";
 import PropTypes from "prop-types";
 import { ProfileAvatar } from "../pages/Profile";
-import { QRcode, QRreader } from "./QR";
+import {
+  QRcode,
+  //  QRreader
+} from "./QR";
 import NotificationContainer from "./NotificationContainer";
 import { UserContext } from "../contexts/Context";
 
@@ -73,7 +76,7 @@ const Navigator = (props) => {
   const { window, drawerWidth, children } = props;
   const [mobileOpen, setMobileOpen] = useState(false);
   const [QRCodeOpen, setQRCodeOpen] = useState(false);
-  const [QRReaderOpen, setQRReaderOpen] = useState(false);
+  // const [QRReaderOpen, setQRReaderOpen] = useState(false);
   const [pageTitle, setPageTitle] = useState();
   // const [scheduleExpand, setScheduleExpand] = useState(false);
   // const handleExpandClick = () => setScheduleExpand(!scheduleExpand);
@@ -96,16 +99,16 @@ const Navigator = (props) => {
       setQRCodeOpen(false);
     }
   };
-  const handleQRReaderClose = (event) => {
-    const {
-      target: { id },
-    } = event;
-    if (id !== "btn--camera-change") {
-      setQRReaderOpen(false);
-    }
-  };
+  // const handleQRReaderClose = (event) => {
+  //   const {
+  //     target: { id },
+  //   } = event;
+  //   if (id !== "btn--camera-change") {
+  //     setQRReaderOpen(false);
+  //   }
+  // };
   const handleQRCodeToggle = () => setQRCodeOpen(!QRCodeOpen);
-  const handleQRReaderToggle = () => setQRReaderOpen(!QRReaderOpen);
+  // const handleQRReaderToggle = () => setQRReaderOpen(!QRReaderOpen);
 
   const drawer = (
     <div>
@@ -203,7 +206,7 @@ const Navigator = (props) => {
         </ListItem>
 
         {/* QR Reader */}
-        {user && user.isAdmin && (
+        {/* {user && user.isAdmin && (
           <ListItem button onClick={handleQRReaderToggle}>
             <ListItemIcon>
               <CropFreeIcon fontSize="small" />
@@ -214,7 +217,7 @@ const Navigator = (props) => {
               primaryTypographyProps={{ sx: { fontSize: 15 } }}
             />
           </ListItem>
-        )}
+        )} */}
 
         {/* SETTING */}
         {/* <ListItem button disabled>
@@ -267,7 +270,7 @@ const Navigator = (props) => {
       </Backdrop>
 
       {/* QR Reader Modal */}
-      <Backdrop
+      {/* <Backdrop
         open={QRReaderOpen}
         onClick={handleQRReaderClose}
         sx={{
@@ -275,7 +278,7 @@ const Navigator = (props) => {
         }}
       >
         {QRReaderOpen && <QRreader />}
-      </Backdrop>
+      </Backdrop> */}
 
       <CssBaseline />
       <AppBar

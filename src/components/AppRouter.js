@@ -11,7 +11,7 @@ import TodoList from "../pages/TodoList";
 import NotAdmin from "../pages/NotAdmin";
 import Admin from "../pages/Admin";
 import Schedule from "./Schedule";
-import { QRreader } from "./QR";
+// import { QRreader } from "./QR";
 
 // import "../css/AppRouter.scss";
 import { Box } from "@mui/material";
@@ -35,7 +35,6 @@ const AppRouter = () => {
                 component={userData && userData.isAdmin ? Admin : NotAdmin}
               />
               {/* <Route path="/qr-code" component={QRpage} /> */}
-              <Route path="/qr-reader" component={QRreader} />
               <Route path="/schedule" component={Schedule} />
               <Redirect path="/login" to="/" />
               <Route path="*" component={NotFound} />
