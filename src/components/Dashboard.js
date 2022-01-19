@@ -146,6 +146,12 @@ const DaySummary = (props) => {
       ? (finished.toDate().getTime() - started.toDate().getTime()) / 3600000
       : (moment(date).toDate().getTime() - started.toDate().getTime()) / 3600000
     : 0;
+  const diffMinutes = Math.round((workedtime - worktime) * 60);
+  const diffString =
+    diffMinutes > 0
+      ? `+${Math.floor(diffMinutes / 60)}시간 ${diffMinutes % 60}분`
+      : `-${Math.floor(-diffMinutes / 60)}시간 ${-diffMinutes % 60}분`;
+  const emoji = worktypeEmoji(type);
 
   const clock = {
     id: "clock",
@@ -158,20 +164,28 @@ const DaySummary = (props) => {
   return (
     <Stack spacing={1}>
       <ListItem sx={{ m: 0 }}>
-        <Typography
-          variant="h5"
-          sx={{
-            // position: "absolute",
-            // top: 0,
-            // left: 0,
-            width: "100%",
-            textAlign: "left",
-            // m: 1,
-          }}
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          sx={{ width: "100%" }}
         >
-          {date.format("M월 D일")}
-        </Typography>
-        <Typography>{worktypeEmoji(type)}</Typography>
+          <Typography
+            variant="h5"
+            sx={{
+              // position: "absolute",
+              // top: 0,
+              // left: 0,
+              // width: "80%",
+              textAlign: "left",
+              // m: 1,
+            }}
+          >
+            {date.format("M월 D일")}
+          </Typography>
+          <Typography variant="body2">
+            {workedtime > 0 ? diffString : emoji}
+          </Typography>
+        </Stack>
       </ListItem>
       <Box
         sx={{
