@@ -595,6 +595,7 @@ const ApplicationDisplay = ({ onClose }) => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterMoment}>
+      <Typography variant="h6">💳 급여 정산일은 매월 25일입니다.</Typography>
       <DateRangePicker
         startText="시작일"
         endText="종료일"
@@ -603,23 +604,31 @@ const ApplicationDisplay = ({ onClose }) => {
           setRange(newValue);
         }}
         renderInput={(startProps, endProps) => (
-          <>
-            <TextField {...startProps} />
-            <Box sx={{ mx: 2 }}> 부터 </Box>
-            <TextField {...endProps} />
-            <Box sx={{ mx: 2 }}> 까지 </Box>
-            <Button
-              variant="contained"
-              size="large"
-              disabled={!Boolean(range[0]) || !Boolean(range[1])}
-              onClick={() => {
-                setSelectedRange(range);
-                fetchRangeData(range[0], range[1]);
-              }}
-            >
-              조회
-            </Button>
-          </>
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            sx={{ width: "100%" }}
+          >
+            <Stack direction="row" alignItems="center">
+              <TextField {...startProps} />
+              <Box sx={{ mx: 2 }}> 부터 </Box>
+              <TextField {...endProps} />
+              <Box sx={{ mx: 2 }}> 까지 </Box>
+              <Button
+                variant="contained"
+                size="large"
+                disabled={!Boolean(range[0]) || !Boolean(range[1])}
+                onClick={() => {
+                  setSelectedRange(range);
+                  fetchRangeData(range[0], range[1]);
+                }}
+              >
+                조회
+              </Button>
+            </Stack>
+            <Button onClick={onClose}>OK</Button>
+          </Stack>
         )}
       />
       {Boolean(selectedRange[0]) &&
@@ -638,7 +647,6 @@ const ApplicationDisplay = ({ onClose }) => {
               <Typography variant="body1">{`${selectedRange[0].format(
                 "Y년 M월 D일"
               )} ~ ${selectedRange[1].format("Y년 M월 D일")}`}</Typography>
-              <Button onClick={onClose}>OK</Button>
             </ListSubheader>
             {Object.keys(data).map((date, index) => (
               <Box key={index}>
