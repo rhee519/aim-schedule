@@ -2,6 +2,7 @@ import React, { useCallback, useContext, useEffect, useState } from "react";
 import {
   CalendarPickerSkeleton,
   DatePicker,
+  DateRangePicker,
   LoadingButton,
   LocalizationProvider,
   PickersDay,
@@ -41,7 +42,7 @@ import {
   initialDailyData,
 } from "../docFunctions";
 import { EventsContext, UserContext } from "../contexts/Context";
-import { updateDoc, Timestamp } from "@firebase/firestore";
+import { setDoc, updateDoc, Timestamp } from "@firebase/firestore";
 import CustomRangeCalendar, { holidayType } from "./CustomRangeCalendar";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
@@ -60,6 +61,8 @@ export const worktypeEmoji = (type) => {
   else if (type === "sick") return sickEmoji;
   else return undefined;
 };
+
+const koreanWeekDays = ["일", "월", "화", "수", "목", "금", "토"];
 
 const Schedule = () => {
   const user = useContext(UserContext);
@@ -481,52 +484,86 @@ const ApplicationDisplay = ({ onClose }) => {
   // payday.next[0] == 다음 정산 예정일
   // payday.next[1] == 다다음 정산 예정일
   const user = useContext(UserContext);
-  const events = useContext(EventsContext);
-  const { payday } = events;
+  // const events = useContext(EventsContext);
+  // const { payday } = events;
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState();
+  const [range, setRange] = useState([null, null]);
+  const [selectedRange, setSelectedRange] = useState([null, null]);
 
-  useEffect(() => {
-    // const fetchData = async (date) => {
-    //   const key = moment(date).format("YYYYMMDD");
-    //   const q = query(dayRef(user.uid, moment(date)));
-    //   await getDoc(q).then(async (doc) => {
-    //     if (doc.exists()) {
-    //       setData((prev) => ({ ...prev, [key]: doc.data() }));
-    //     } else {
-    //       const defaultData = initialDailyData(moment(date));
-    //       setData((prev) => ({ ...prev, [key]: defaultData }));
-    //       await setDoc(q, defaultData);
-    //     }
-    //   });
-    // };
-    const from = moment(payday.from.toDate());
-    const to = moment(payday.to.toDate());
-    const responses = [];
-    for (let d = moment(from); d.isSameOrBefore(to); d.add(1, "d")) {
-      const key = moment(d).format("YYYYMMDD");
-      responses.push(
-        fetchDayData(user.uid, moment(d)).then((docSnap) => {
-          if (docSnap.exists()) return { key, data: docSnap.data() };
-          else return { key, data: initialDailyData(moment(key)) };
-        })
-      );
-    }
-    Promise.all(responses)
-      .then((snapshot) => {
-        const newData = {};
-        snapshot.forEach(({ key, data }) => {
-          newData[key] = data;
-        });
-        setData(newData);
-      })
-      .then(() => setLoading(false));
-
-    return () => {
+  const fetchRangeData = useCallback(
+    async (from, to) => {
       setLoading(true);
-      setData();
-    };
-  }, [user.uid, events, payday]);
+      const responses = [];
+      for (let d = moment(from); d.isSameOrBefore(to); d.add(1, "d")) {
+        const key = moment(d).format("YYYYMMDD");
+        const initData = initialDailyData(moment(d));
+        responses.push(
+          fetchDayData(user.uid, moment(d)).then(async (docSnap) => ({
+            key,
+            data: docSnap.exists() ? docSnap.data() : initData,
+            exists: docSnap.exists(),
+          }))
+        );
+      }
+
+      Promise.all(responses)
+        .then((snapshot) => {
+          const newData = {};
+          snapshot.forEach(async ({ key, data, exists }) => {
+            newData[key] = data;
+            if (!exists) {
+              await setDoc(dayRef(user.uid, moment(key)), data);
+            }
+          });
+          setData(newData);
+        })
+        .then(() => setLoading(false));
+    },
+    [user.uid]
+  );
+
+  // useEffect(() => {
+  //   // const fetchData = async (date) => {
+  //   //   const key = moment(date).format("YYYYMMDD");
+  //   //   const q = query(dayRef(user.uid, moment(date)));
+  //   //   await getDoc(q).then(async (doc) => {
+  //   //     if (doc.exists()) {
+  //   //       setData((prev) => ({ ...prev, [key]: doc.data() }));
+  //   //     } else {
+  //   //       const defaultData = initialDailyData(moment(date));
+  //   //       setData((prev) => ({ ...prev, [key]: defaultData }));
+  //   //       await setDoc(q, defaultData);
+  //   //     }
+  //   //   });
+  //   // };
+  //   const from = moment(payday.from.toDate());
+  //   const to = moment(payday.to.toDate());
+  //   const responses = [];
+  //   for (let d = moment(from); d.isSameOrBefore(to); d.add(1, "d")) {
+  //     const key = moment(d).format("YYYYMMDD");
+  //     responses.push(
+  //       fetchDayData(user.uid, moment(d)).then((docSnap) => {
+  //         if (docSnap.exists()) return { key, data: docSnap.data() };
+  //         else return { key, data: initialDailyData(moment(key)) };
+  //       })
+  //     );
+  //   }
+  //   Promise.all(responses)
+  //     .then((snapshot) => {
+  //       const newData = {};
+  //       snapshot.forEach(({ key, data }) => {
+  //         newData[key] = data;
+  //       });
+  //       setData(newData);
+  //     })
+  //     .then(() => setLoading(false));
+
+  //   return () => {
+  //     setLoading(true);
+  //     setData();
+  //   };
+  // }, [user.uid, events, payday]);
 
   const handleStartChange = async (event, date) => {
     const docRef = dayRef(user.uid, date);
@@ -556,103 +593,141 @@ const ApplicationDisplay = ({ onClose }) => {
     await updateDoc(docRef, newData);
   };
 
-  return loading ? (
-    <>loading...</>
-  ) : (
-    <List>
-      <ListSubheader
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
+  return (
+    <LocalizationProvider dateAdapter={AdapterMoment}>
+      <DateRangePicker
+        startText="시작일"
+        endText="종료일"
+        value={range}
+        onChange={(newValue) => {
+          setRange(newValue);
         }}
-      >
-        <Typography variant="body1">{`${moment(
-          events.payday.from.toDate()
-        ).format("Y년 M월 D일")} ~ ${moment(events.payday.to.toDate()).format(
-          "Y년 M월 D일"
-        )}`}</Typography>
-        <Button onClick={onClose}>OK</Button>
-      </ListSubheader>
-      {Object.keys(data).map((date, index) => (
-        <Box key={index}>
-          <ListItem>
-            <ListItemText variant="body2">
-              {moment(date).format("M월 D일")}
-            </ListItemText>
-            <FormControl variant="standard">
-              <InputLabel>근로 형태</InputLabel>
-              <Select
-                value={data[date].type}
-                onChange={(event) => handleTypeChange(event, date)}
-                disabled={data[date].type === "sick"}
-              >
-                <MenuItem value="work">근로</MenuItem>
-                <MenuItem value="annual">연차</MenuItem>
-                <MenuItem value="half">반차</MenuItem>
-                <MenuItem value="sick" disabled>
-                  병가
-                </MenuItem>
-              </Select>
-            </FormControl>
+        renderInput={(startProps, endProps) => (
+          <>
+            <TextField {...startProps} />
+            <Box sx={{ mx: 2 }}> 부터 </Box>
+            <TextField {...endProps} />
+            <Box sx={{ mx: 2 }}> 까지 </Box>
+            <Button
+              variant="contained"
+              size="large"
+              disabled={!Boolean(range[0]) || !Boolean(range[1])}
+              onClick={() => {
+                setSelectedRange(range);
+                fetchRangeData(range[0], range[1]);
+              }}
+            >
+              조회
+            </Button>
+          </>
+        )}
+      />
+      {Boolean(selectedRange[0]) &&
+        Boolean(selectedRange[1]) &&
+        (loading ? (
+          <>loading...</>
+        ) : (
+          <List>
+            <ListSubheader
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <Typography variant="body1">{`${selectedRange[0].format(
+                "Y년 M월 D일"
+              )} ~ ${selectedRange[1].format("Y년 M월 D일")}`}</Typography>
+              <Button onClick={onClose}>OK</Button>
+            </ListSubheader>
+            {Object.keys(data).map((date, index) => (
+              <Box key={index}>
+                <ListItem>
+                  <ListItemText variant="body2">
+                    {moment(date).format("M월 D일")}
+                    <Typography variant="body2">
+                      {koreanWeekDays[moment(date).day()]}
+                    </Typography>
+                  </ListItemText>
+                  <Box>
+                    <FormControl variant="standard">
+                      <InputLabel>근로 형태</InputLabel>
+                      <Select
+                        value={data[date].type}
+                        onChange={(event) => handleTypeChange(event, date)}
+                        disabled={data[date].type === "sick"}
+                      >
+                        <MenuItem value="work">근로</MenuItem>
+                        <MenuItem value="annual">연차</MenuItem>
+                        <MenuItem value="half">반차</MenuItem>
+                        <MenuItem value="sick" disabled>
+                          병가
+                        </MenuItem>
+                      </Select>
+                    </FormControl>
 
-            <FormControl variant="standard">
-              <InputLabel>출근</InputLabel>
-              <Select
-                value={data[date].start.toDate().getHours()}
-                label="출근"
-                onChange={(event) => handleStartChange(event, date)}
-                disabled={
-                  data[date].type === "annual" || data[date].type === "sick"
-                }
-              >
-                <MenuItem value={9}>9시</MenuItem>
-                <MenuItem value={10}>10시</MenuItem>
-                <MenuItem value={11}>11시</MenuItem>
-                <MenuItem value={12}>12시</MenuItem>
-                <MenuItem value={13}>13시</MenuItem>
-                <MenuItem value={14}>14시</MenuItem>
-                <MenuItem value={15}>15시</MenuItem>
-                <MenuItem value={16}>16시</MenuItem>
-                <MenuItem value={17}>17시</MenuItem>
-                <MenuItem value={18}>18시</MenuItem>
-                <MenuItem value={19}>19시</MenuItem>
-                <MenuItem value={20}>20시</MenuItem>
-                <MenuItem value={21}>21시</MenuItem>
-                <MenuItem value={22}>22시</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControl variant="standard">
-              <InputLabel>퇴근</InputLabel>
-              <Select
-                value={data[date].finish.toDate().getHours()}
-                label="퇴근"
-                onChange={(event) => handleFinishChange(event, date)}
-                disabled={
-                  data[date].type === "annual" || data[date].type === "sick"
-                }
-              >
-                <MenuItem value={9}>9시</MenuItem>
-                <MenuItem value={10}>10시</MenuItem>
-                <MenuItem value={11}>11시</MenuItem>
-                <MenuItem value={12}>12시</MenuItem>
-                <MenuItem value={13}>13시</MenuItem>
-                <MenuItem value={14}>14시</MenuItem>
-                <MenuItem value={15}>15시</MenuItem>
-                <MenuItem value={16}>16시</MenuItem>
-                <MenuItem value={17}>17시</MenuItem>
-                <MenuItem value={18}>18시</MenuItem>
-                <MenuItem value={19}>19시</MenuItem>
-                <MenuItem value={20}>20시</MenuItem>
-                <MenuItem value={21}>21시</MenuItem>
-                <MenuItem value={22}>22시</MenuItem>
-              </Select>
-            </FormControl>
-          </ListItem>
-          <Divider variant="fullWidth" />
-        </Box>
-      ))}
-    </List>
+                    <FormControl variant="standard">
+                      <InputLabel>출근</InputLabel>
+                      <Select
+                        value={data[date].start.toDate().getHours()}
+                        label="출근"
+                        onChange={(event) => handleStartChange(event, date)}
+                        disabled={
+                          data[date].type === "annual" ||
+                          data[date].type === "sick"
+                        }
+                      >
+                        <MenuItem value={9}>9시</MenuItem>
+                        <MenuItem value={10}>10시</MenuItem>
+                        <MenuItem value={11}>11시</MenuItem>
+                        <MenuItem value={12}>12시</MenuItem>
+                        <MenuItem value={13}>13시</MenuItem>
+                        <MenuItem value={14}>14시</MenuItem>
+                        <MenuItem value={15}>15시</MenuItem>
+                        <MenuItem value={16}>16시</MenuItem>
+                        <MenuItem value={17}>17시</MenuItem>
+                        <MenuItem value={18}>18시</MenuItem>
+                        <MenuItem value={19}>19시</MenuItem>
+                        <MenuItem value={20}>20시</MenuItem>
+                        <MenuItem value={21}>21시</MenuItem>
+                        <MenuItem value={22}>22시</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <FormControl variant="standard">
+                      <InputLabel>퇴근</InputLabel>
+                      <Select
+                        value={data[date].finish.toDate().getHours()}
+                        label="퇴근"
+                        onChange={(event) => handleFinishChange(event, date)}
+                        disabled={
+                          data[date].type === "annual" ||
+                          data[date].type === "sick"
+                        }
+                      >
+                        <MenuItem value={9}>9시</MenuItem>
+                        <MenuItem value={10}>10시</MenuItem>
+                        <MenuItem value={11}>11시</MenuItem>
+                        <MenuItem value={12}>12시</MenuItem>
+                        <MenuItem value={13}>13시</MenuItem>
+                        <MenuItem value={14}>14시</MenuItem>
+                        <MenuItem value={15}>15시</MenuItem>
+                        <MenuItem value={16}>16시</MenuItem>
+                        <MenuItem value={17}>17시</MenuItem>
+                        <MenuItem value={18}>18시</MenuItem>
+                        <MenuItem value={19}>19시</MenuItem>
+                        <MenuItem value={20}>20시</MenuItem>
+                        <MenuItem value={21}>21시</MenuItem>
+                        <MenuItem value={22}>22시</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Box>
+                </ListItem>
+                <Divider variant="fullWidth" />
+              </Box>
+            ))}
+          </List>
+        ))}
+    </LocalizationProvider>
   );
 };
 
