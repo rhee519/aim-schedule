@@ -558,6 +558,7 @@ const SelectedDayDisplay = ({ date, data }) => {
 
 const ApplicationDisplay = ({ onClose }) => {
   const user = useContext(UserContext);
+  const events = useContext(EventsContext);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState();
   const [range, setRange] = useState([null, null]);
@@ -646,7 +647,14 @@ const ApplicationDisplay = ({ onClose }) => {
   return (
     <LocalizationProvider dateAdapter={AdapterMoment}>
       <Stack direction="row" justifyContent="space-between" sx={{ p: 1 }}>
-        <Typography variant="h6">💳 급여 정산일은 매월 25일입니다.</Typography>
+        <Stack>
+          <Typography variant="h6">
+            💳 급여 정산일은 매월 25일입니다.
+          </Typography>
+          <Typography variant="h6">
+            ⚠️ SAVE를 클릭하지 않으면 데이터가 날아갑니다!
+          </Typography>
+        </Stack>
         <Box>
           <Button
             onClick={handleSaveClick}
@@ -709,91 +717,102 @@ const ApplicationDisplay = ({ onClose }) => {
                 "Y년 M월 D일"
               )} ~ ${selectedRange[1].format("Y년 M월 D일")}`}</Typography>
             </ListSubheader>
-            {Object.keys(data).map((date, index) => (
-              <Box key={index}>
-                <ListItem>
-                  <ListItemText variant="body2">
-                    {moment(date).format("M월 D일")}
-                    <Typography variant="body2">
-                      {koreanWeekDays[moment(date).day()]}
-                    </Typography>
-                  </ListItemText>
-                  <Box>
-                    <FormControl variant="standard">
-                      <InputLabel>근로 형태</InputLabel>
-                      <Select
-                        value={data[date].type}
-                        onChange={(event) => handleTypeChange(event, date)}
-                        disabled={data[date].type === "sick"}
-                      >
-                        <MenuItem value="work">근로</MenuItem>
-                        <MenuItem value="annual">연차</MenuItem>
-                        <MenuItem value="half">반차</MenuItem>
-                        <MenuItem value="sick" disabled>
-                          병가
-                        </MenuItem>
-                      </Select>
-                    </FormControl>
+            {Object.keys(data).map((date, index) => {
+              const htype = holidayType(moment(date), events);
+              let secondaryText = koreanWeekDays[moment(date).day()];
+              if (htype === "holiday" || htype === "vacation")
+                secondaryText += `, ${events[htype][date]}`;
 
-                    <FormControl variant="standard">
-                      <InputLabel>출근</InputLabel>
-                      <Select
-                        value={data[date].start.toDate().getHours()}
-                        label="출근"
-                        onChange={(event) => handleStartChange(event, date)}
-                        disabled={
-                          data[date].type === "annual" ||
-                          data[date].type === "sick"
-                        }
-                      >
-                        <MenuItem value={9}>9시</MenuItem>
-                        <MenuItem value={10}>10시</MenuItem>
-                        <MenuItem value={11}>11시</MenuItem>
-                        <MenuItem value={12}>12시</MenuItem>
-                        <MenuItem value={13}>13시</MenuItem>
-                        <MenuItem value={14}>14시</MenuItem>
-                        <MenuItem value={15}>15시</MenuItem>
-                        <MenuItem value={16}>16시</MenuItem>
-                        <MenuItem value={17}>17시</MenuItem>
-                        <MenuItem value={18}>18시</MenuItem>
-                        <MenuItem value={19}>19시</MenuItem>
-                        <MenuItem value={20}>20시</MenuItem>
-                        <MenuItem value={21}>21시</MenuItem>
-                        <MenuItem value={22}>22시</MenuItem>
-                      </Select>
-                    </FormControl>
-                    <FormControl variant="standard">
-                      <InputLabel>퇴근</InputLabel>
-                      <Select
-                        value={data[date].finish.toDate().getHours()}
-                        label="퇴근"
-                        onChange={(event) => handleFinishChange(event, date)}
-                        disabled={
-                          data[date].type === "annual" ||
-                          data[date].type === "sick"
-                        }
-                      >
-                        <MenuItem value={9}>9시</MenuItem>
-                        <MenuItem value={10}>10시</MenuItem>
-                        <MenuItem value={11}>11시</MenuItem>
-                        <MenuItem value={12}>12시</MenuItem>
-                        <MenuItem value={13}>13시</MenuItem>
-                        <MenuItem value={14}>14시</MenuItem>
-                        <MenuItem value={15}>15시</MenuItem>
-                        <MenuItem value={16}>16시</MenuItem>
-                        <MenuItem value={17}>17시</MenuItem>
-                        <MenuItem value={18}>18시</MenuItem>
-                        <MenuItem value={19}>19시</MenuItem>
-                        <MenuItem value={20}>20시</MenuItem>
-                        <MenuItem value={21}>21시</MenuItem>
-                        <MenuItem value={22}>22시</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Box>
-                </ListItem>
-                <Divider variant="fullWidth" />
-              </Box>
-            ))}
+              return (
+                <Box key={index}>
+                  <ListItem>
+                    <ListItemText
+                      variant="body2"
+                      primary={moment(date).format("M월 D일")}
+                      secondary={secondaryText}
+                    />
+
+                    {!isWeekend(date) && htype === "default" && (
+                      <Box>
+                        <FormControl variant="standard">
+                          <InputLabel>근로 형태</InputLabel>
+                          <Select
+                            value={data[date].type}
+                            onChange={(event) => handleTypeChange(event, date)}
+                            disabled={data[date].type === "sick"}
+                          >
+                            <MenuItem value="work">근로</MenuItem>
+                            <MenuItem value="annual">연차</MenuItem>
+                            <MenuItem value="half">반차</MenuItem>
+                            <MenuItem value="sick" disabled>
+                              병가
+                            </MenuItem>
+                          </Select>
+                        </FormControl>
+
+                        <FormControl variant="standard">
+                          <InputLabel>출근</InputLabel>
+                          <Select
+                            value={data[date].start.toDate().getHours()}
+                            label="출근"
+                            onChange={(event) => handleStartChange(event, date)}
+                            disabled={
+                              data[date].type === "annual" ||
+                              data[date].type === "sick"
+                            }
+                          >
+                            <MenuItem value={9}>9시</MenuItem>
+                            <MenuItem value={10}>10시</MenuItem>
+                            <MenuItem value={11}>11시</MenuItem>
+                            <MenuItem value={12}>12시</MenuItem>
+                            <MenuItem value={13}>13시</MenuItem>
+                            <MenuItem value={14}>14시</MenuItem>
+                            <MenuItem value={15}>15시</MenuItem>
+                            <MenuItem value={16}>16시</MenuItem>
+                            <MenuItem value={17}>17시</MenuItem>
+                            <MenuItem value={18}>18시</MenuItem>
+                            <MenuItem value={19}>19시</MenuItem>
+                            <MenuItem value={20}>20시</MenuItem>
+                            <MenuItem value={21}>21시</MenuItem>
+                            <MenuItem value={22}>22시</MenuItem>
+                          </Select>
+                        </FormControl>
+                        <FormControl variant="standard">
+                          <InputLabel>퇴근</InputLabel>
+                          <Select
+                            value={data[date].finish.toDate().getHours()}
+                            label="퇴근"
+                            onChange={(event) =>
+                              handleFinishChange(event, date)
+                            }
+                            disabled={
+                              data[date].type === "annual" ||
+                              data[date].type === "sick"
+                            }
+                          >
+                            <MenuItem value={9}>9시</MenuItem>
+                            <MenuItem value={10}>10시</MenuItem>
+                            <MenuItem value={11}>11시</MenuItem>
+                            <MenuItem value={12}>12시</MenuItem>
+                            <MenuItem value={13}>13시</MenuItem>
+                            <MenuItem value={14}>14시</MenuItem>
+                            <MenuItem value={15}>15시</MenuItem>
+                            <MenuItem value={16}>16시</MenuItem>
+                            <MenuItem value={17}>17시</MenuItem>
+                            <MenuItem value={18}>18시</MenuItem>
+                            <MenuItem value={19}>19시</MenuItem>
+                            <MenuItem value={20}>20시</MenuItem>
+                            <MenuItem value={21}>21시</MenuItem>
+                            <MenuItem value={22}>22시</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Box>
+                    )}
+                  </ListItem>
+                  <Divider variant="fullWidth" />
+                </Box>
+              );
+            })}
           </List>
         ))}
     </LocalizationProvider>
