@@ -1,4 +1,11 @@
-import React, { useCallback, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   CalendarPickerSkeleton,
   DatePicker,
@@ -40,6 +47,7 @@ import {
   dayRef,
   fetchDayData,
   fetchMonthData,
+  fetchUser,
   initialDailyData,
   userDocRef,
 } from "../docFunctions";
@@ -63,8 +71,14 @@ export const worktypeEmoji = (type) => {
   else if (type === "sick") return sickEmoji;
   else return undefined;
 };
+const isWeekend = (date) => {
+  const d = moment(date);
+  return d.day() === 0 || d.day() === 6;
+};
 
 const koreanWeekDays = ["일", "월", "화", "수", "목", "금", "토"];
+
+const ScheduleContext = createContext();
 
 const Schedule = () => {
   const user = useContext(UserContext);
@@ -74,8 +88,14 @@ const Schedule = () => {
   const [monthData, setMonthData] = useState({}); // 선택된 월의 데이터
   const [loading, setLoading] = useState(true); // monthData fetch 여부
   const events = useContext(EventsContext); // 휴무, 공휴일, 행사, 정산 일정
+  const [schedule, setSchedule] = useState();
 
-  // 최초 월 단위 데이터 fetch
+  const fetchSchedule = useCallback(async () => {
+    fetchUser(user.uid).then((docSnap) => {
+      setSchedule(docSnap.data().schedule);
+    });
+  }, [user.uid]);
+  // 최초 월 단위 데이터 & schedule fetch
   useEffect(() => {
     fetchMonthData(user.uid, moment())
       .then((snapshot) => {
@@ -85,13 +105,15 @@ const Schedule = () => {
         );
         setMonthData((prev) => ({ ...prev, ...data }));
       })
+      .then(() => fetchSchedule())
       .then(() => setLoading(false));
 
     return () => {
       setLoading(true);
       setMonthData();
+      setSchedule();
     };
-  }, [user.uid]);
+  }, [user.uid, fetchSchedule]);
 
   // 달력 넘어갈 때마다 월 단위 데이터 fetch
   // 만약 해당 월에 데이터가 존재하지 않으면 데이터는 갱신되지 않음.
@@ -126,15 +148,15 @@ const Schedule = () => {
   };
 
   return (
-    <TabContext value={index}>
-      <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-        <TabList onChange={(event, value) => setIndex(value)}>
-          <Tab label="스케줄 확인" value="schedule" />
-          <Tab label="근로시간 확인 & 급여 가계산" value="calculate" />
-        </TabList>
-      </Box>
+    <ScheduleContext.Provider value={schedule}>
+      <TabContext value={index}>
+        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+          <TabList onChange={(event, value) => setIndex(value)}>
+            <Tab label="스케줄 확인" value="schedule" />
+            <Tab label="근로시간 확인 & 급여 가계산" value="calculate" />
+          </TabList>
+        </Box>
 
-      <EventsContext.Provider value={events}>
         <LocalizationProvider dateAdapter={AdapterMoment}>
           <TabPanel value="schedule">
             <Modal
@@ -311,28 +333,35 @@ const Schedule = () => {
             <Calculate />
           </TabPanel>
         </LocalizationProvider>
-      </EventsContext.Provider>
-    </TabContext>
+      </TabContext>
+    </ScheduleContext.Provider>
   );
 };
 
 const LargeViewDayComponent = (props) => {
-  const {
-    value,
-    today,
-    outOfRange,
-    // selected, onClick,
-    data,
-  } = props;
+  const schedule = useContext(ScheduleContext);
+  const { value, today, outOfRange, data } = props;
+  const hideContent = useMemo(
+    () =>
+      schedule
+        ? moment(value).isAfter(schedule.to.toDate(), "d")
+        : Boolean(!(data && data.started)),
+    [schedule, data, value]
+  );
+  // console.log(value, hideContent);
   const { type } = data;
   const events = useContext(EventsContext);
   const htype = holidayType(value, events);
   const key = value.format("YYYYMMDD");
   const startedTime = data.started
     ? moment(data.started.toDate()).format("HH:mm")
+    : htype !== "default"
+    ? ""
     : "-";
   const finishedTime = data.finished
     ? moment(data.finished.toDate()).format("HH:mm")
+    : htype !== "default"
+    ? ""
     : "-";
   const dateColor =
     htype === "holiday" || htype === "vacation" || value.day() === 0
@@ -340,6 +369,7 @@ const LargeViewDayComponent = (props) => {
       : value.day() === 6
       ? "primary.main"
       : "text.primary";
+
   return (
     <Box
       sx={{
@@ -351,7 +381,6 @@ const LargeViewDayComponent = (props) => {
         borderColor: today ? "primary.main" : "none",
         borderRadius: today ? 3 : 0,
       }}
-      disabled={outOfRange}
     >
       {!outOfRange && (
         <Stack sx={{ width: "100%" }}>
@@ -378,27 +407,72 @@ const LargeViewDayComponent = (props) => {
           />
           {type !== "annual" && (
             <List>
-              {htype === "holiday" || htype === "vacation" ? (
-                <ListItem>
-                  <ListItemText
-                    sx={{
-                      m: 0,
-                      "& .MuiListItemText-primary": {
-                        fontSize: 10,
-                        textAlign: "center",
-                      },
-                      "& .MuiListItemText-secondary": {
-                        fontSize: 10,
-                        textAlign: "center",
-                      },
-                    }}
-                    primary={events[htype][key]}
-                  />
+              {(htype === "holiday" || htype === "vacation") && (
+                <ListItem sx={{ flexDirection: "column" }}>
+                  <Typography
+                    fontSize={10}
+                    textAlign="center"
+                    sx={{ width: "100%", position: "absolute", top: 0 }}
+                    // sx={{
+                    //   position: "absolute",
+                    //   t: 0,
+                    //   right: 0,
+                    // }}
+                    // sx={{
+                    //   m: 0,
+                    //   "& .MuiListItemText-primary": {
+                    //     fontSize: 10,
+                    //     textAlign: "center",
+                    //   },
+                    //   "& .MuiListItemText-secondary": {
+                    //     fontSize: 10,
+                    //     textAlign: "center",
+                    //   },
+                    // }}
+                    // primary={events[htype][key]}
+                  >
+                    {events[htype][key]}
+                  </Typography>
+                  {/* <Stack flexDirection="row">
+                    <ListItemText
+                      sx={{
+                        m: 0,
+                        "& .MuiListItemText-primary": {
+                          fontSize: 10,
+                          textAlign: "center",
+                        },
+                        "& .MuiListItemText-secondary": {
+                          fontSize: 10,
+                          textAlign: "center",
+                        },
+                      }}
+                      secondary="hi"
+                    />
+                    <ListItemText
+                      sx={{
+                        m: 0,
+                        "& .MuiListItemText-primary": {
+                          fontSize: 10,
+                          textAlign: "center",
+                        },
+                        "& .MuiListItemText-secondary": {
+                          fontSize: 10,
+                          textAlign: "center",
+                        },
+                      }}
+                      secondary="hi"
+                    />
+                  </Stack> */}
                 </ListItem>
-              ) : (
+              )}
+
+              {!hideContent && (
                 <ListItem>
                   <ListItemText
-                    primary={moment(data.start.toDate()).format("HH:mm")}
+                    primary={
+                      !(isWeekend(value) || htype !== "default") &&
+                      moment(data.start.toDate()).format("HH:mm")
+                    }
                     secondary={startedTime}
                     sx={{
                       m: 0,
@@ -413,7 +487,10 @@ const LargeViewDayComponent = (props) => {
                     }}
                   />
                   <ListItemText
-                    primary={moment(data.finish.toDate()).format("HH:mm")}
+                    primary={
+                      !(isWeekend(value) || htype !== "default") &&
+                      moment(data.finish.toDate()).format("HH:mm")
+                    }
                     secondary={finishedTime}
                     sx={{
                       m: 0,

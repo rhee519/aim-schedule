@@ -228,7 +228,6 @@ const QRreader = () => {
       })
       .catch((error) => {
         console.log(error);
-        // setError(true);
         clearData();
       });
   }, [scannedData, clearData, playAudio]);
