@@ -36,10 +36,12 @@ import {
 } from "@mui/material";
 import moment from "moment";
 import {
+  appliedSchedule,
   dayRef,
   fetchDayData,
   fetchMonthData,
   initialDailyData,
+  userDocRef,
 } from "../docFunctions";
 import { EventsContext, UserContext } from "../contexts/Context";
 import { setDoc, updateDoc, Timestamp } from "@firebase/firestore";
@@ -478,14 +480,7 @@ const SelectedDayDisplay = ({ date, data }) => {
 };
 
 const ApplicationDisplay = ({ onClose }) => {
-  // payday.from == 신청일(시작)
-  // payday.to == 신청일(종료)
-  // payday.history.at(-1) == 최근 정산일
-  // payday.next[0] == 다음 정산 예정일
-  // payday.next[1] == 다다음 정산 예정일
   const user = useContext(UserContext);
-  // const events = useContext(EventsContext);
-  // const { payday } = events;
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState();
   const [range, setRange] = useState([null, null]);
@@ -510,11 +505,11 @@ const ApplicationDisplay = ({ onClose }) => {
       Promise.all(responses)
         .then((snapshot) => {
           const newData = {};
-          snapshot.forEach(async ({ key, data, exists }) => {
+          snapshot.forEach(({ key, data, exists }) => {
             newData[key] = data;
-            if (!exists) {
-              await setDoc(dayRef(user.uid, moment(key)), data);
-            }
+            // if (!exists) {
+            //   await setDoc(dayRef(user.uid, moment(key)), data);
+            // }
           });
           setData(newData);
         })
@@ -523,79 +518,69 @@ const ApplicationDisplay = ({ onClose }) => {
     [user.uid]
   );
 
-  // useEffect(() => {
-  //   // const fetchData = async (date) => {
-  //   //   const key = moment(date).format("YYYYMMDD");
-  //   //   const q = query(dayRef(user.uid, moment(date)));
-  //   //   await getDoc(q).then(async (doc) => {
-  //   //     if (doc.exists()) {
-  //   //       setData((prev) => ({ ...prev, [key]: doc.data() }));
-  //   //     } else {
-  //   //       const defaultData = initialDailyData(moment(date));
-  //   //       setData((prev) => ({ ...prev, [key]: defaultData }));
-  //   //       await setDoc(q, defaultData);
-  //   //     }
-  //   //   });
-  //   // };
-  //   const from = moment(payday.from.toDate());
-  //   const to = moment(payday.to.toDate());
-  //   const responses = [];
-  //   for (let d = moment(from); d.isSameOrBefore(to); d.add(1, "d")) {
-  //     const key = moment(d).format("YYYYMMDD");
-  //     responses.push(
-  //       fetchDayData(user.uid, moment(d)).then((docSnap) => {
-  //         if (docSnap.exists()) return { key, data: docSnap.data() };
-  //         else return { key, data: initialDailyData(moment(key)) };
-  //       })
-  //     );
-  //   }
-  //   Promise.all(responses)
-  //     .then((snapshot) => {
-  //       const newData = {};
-  //       snapshot.forEach(({ key, data }) => {
-  //         newData[key] = data;
-  //       });
-  //       setData(newData);
-  //     })
-  //     .then(() => setLoading(false));
-
-  //   return () => {
-  //     setLoading(true);
-  //     setData();
-  //   };
-  // }, [user.uid, events, payday]);
-
-  const handleStartChange = async (event, date) => {
-    const docRef = dayRef(user.uid, date);
+  const handleStartChange = (event, date) => {
+    // const docRef = dayRef(user.uid, date);
     const start = Timestamp.fromDate(
       moment(date).startOf("d").hour(event.target.value).toDate()
     );
     const newData = { ...data[date], start };
     setData((prev) => ({ ...prev, [date]: newData }));
-    await updateDoc(docRef, newData);
+    // await updateDoc(docRef, newData);
   };
 
-  const handleFinishChange = async (event, date) => {
-    const docRef = dayRef(user.uid, date);
+  const handleFinishChange = (event, date) => {
+    // const docRef = dayRef(user.uid, date);
     const finish = Timestamp.fromDate(
       moment(date).startOf("d").hour(event.target.value).toDate()
     );
     const newData = { ...data[date], finish };
     setData((prev) => ({ ...prev, [date]: newData }));
-    await updateDoc(docRef, newData);
+    // await updateDoc(docRef, newData);
   };
 
-  const handleTypeChange = async (event, date) => {
-    const docRef = dayRef(user.uid, date);
+  const handleTypeChange = (event, date) => {
+    // const docRef = dayRef(user.uid, date);
     const type = event.target.value;
     const newData = { ...data[date], type };
     setData((prev) => ({ ...prev, [date]: newData }));
-    await updateDoc(docRef, newData);
+    // await updateDoc(docRef, newData);
+  };
+
+  const handleSaveClick = async (event) => {
+    // 날짜별 근로 신청 현황을 DB에 업데이트
+    Object.keys(data).forEach((key) => {
+      const docRef = dayRef(user.uid, moment(key));
+      fetchDayData(user.uid, moment(key)).then(async (docSnap) => {
+        if (docSnap.exists()) {
+          await updateDoc(docRef, data[key]);
+        } else {
+          await setDoc(docRef, data[key]);
+        }
+      });
+    });
+
+    // 해당 기간에 근로 신청을 새롭게 했음을 업데이트
+    const userRef = userDocRef(user.uid);
+    const schedule = appliedSchedule(selectedRange);
+    await updateDoc(userRef, { schedule });
+    onClose();
   };
 
   return (
     <LocalizationProvider dateAdapter={AdapterMoment}>
-      <Typography variant="h6">💳 급여 정산일은 매월 25일입니다.</Typography>
+      <Stack direction="row" justifyContent="space-between" sx={{ p: 1 }}>
+        <Typography variant="h6">💳 급여 정산일은 매월 25일입니다.</Typography>
+        <Box>
+          <Button
+            onClick={handleSaveClick}
+            variant="contained"
+            disabled={!Boolean(selectedRange[0]) || !Boolean(selectedRange[1])}
+          >
+            SAVE
+          </Button>
+          <Button onClick={onClose}>CANCEL</Button>
+        </Box>
+      </Stack>
       <DateRangePicker
         startText="시작일"
         endText="종료일"
@@ -627,7 +612,6 @@ const ApplicationDisplay = ({ onClose }) => {
                 조회
               </Button>
             </Stack>
-            <Button onClick={onClose}>OK</Button>
           </Stack>
         )}
       />

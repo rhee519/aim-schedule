@@ -37,8 +37,10 @@ import moment from "moment";
 import AdapterMoment from "@mui/lab/AdapterMoment";
 import {
   fetchMonthData,
+  fetchUser,
   fetchWaitingList,
   initialDailyData,
+  userDocRef,
   waitingUserRef,
 } from "../docFunctions";
 import { PickersDayWithMarker, worktypeEmoji } from "../components/Schedule";
@@ -177,9 +179,20 @@ const UserListPanel = (props) => {
 const UserDisplay = (props) => {
   const { user } = props;
   const [date, setDate] = useState(moment());
+  const [schedule, setSchedule] = useState();
   const [monthData, setMonthData] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadingSchedule, setLoadingSchedule] = useState(true);
   const [lastSelectedDate, setLastSelectedDate] = useState(moment());
+
+  const fetchSchedule = useCallback(async () => {
+    setLoadingSchedule(true);
+    fetchUser(user.uid)
+      .then((docSnap) => {
+        if (docSnap.exists()) setSchedule(docSnap.data().schedule);
+      })
+      .then(() => setLoadingSchedule(false));
+  }, [user.uid]);
 
   const refetchMonthData = useCallback(
     async (date) => {
@@ -205,6 +218,22 @@ const UserDisplay = (props) => {
     },
     [user]
   );
+
+  const handleConfirmClick = async () => {
+    const newSchedule = { ...schedule, status: "confirmed" };
+    await updateDoc(userDocRef(user.uid), { schedule: newSchedule });
+    setSchedule(newSchedule);
+  };
+
+  const handleRejectClick = async () => {
+    const newSchedule = { ...schedule, status: "rejected" };
+    await updateDoc(userDocRef(user.uid), { schedule: newSchedule });
+    setSchedule(newSchedule);
+  };
+
+  useEffect(() => {
+    fetchSchedule();
+  }, [fetchSchedule]);
 
   useEffect(() => {
     refetchMonthData(lastSelectedDate);
@@ -257,6 +286,8 @@ const UserDisplay = (props) => {
               />
             </Box>
           </Stack>
+          <Divider orientation="vertical" flexItem />
+          <Divider orientation="horizontal" flexItem />
           <List
             sx={{
               width: "100%",
@@ -265,6 +296,53 @@ const UserDisplay = (props) => {
               pt: 0,
             }}
           >
+            {!loadingSchedule &&
+              (schedule ? (
+                <>
+                  <ListItemText
+                    primary="최근 근로 신청"
+                    secondary={moment(schedule.createdAt.toDate()).format(
+                      "M월 D일 HH:mm 신청함"
+                    )}
+                  />
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
+                    <Typography>
+                      {moment(schedule.from.toDate()).format("M월 D일")} -{" "}
+                      {moment(schedule.to.toDate()).format("M월 D일")}
+                    </Typography>
+                    {schedule.status === "waiting" ? (
+                      <Box>
+                        <Button
+                          variant="contained"
+                          color="success"
+                          onClick={handleConfirmClick}
+                        >
+                          Confirm
+                        </Button>
+                        <Button
+                          variant="contained"
+                          color="error"
+                          onClick={handleRejectClick}
+                        >
+                          Reject
+                        </Button>
+                      </Box>
+                    ) : schedule.status === "confirmed" ? (
+                      <>승인됨</>
+                    ) : schedule.status === "rejected" ? (
+                      <>반려됨</>
+                    ) : (
+                      <></>
+                    )}
+                  </Stack>
+                </>
+              ) : (
+                <Typography>아직 근로 신청을 하지 않았습니다.</Typography>
+              ))}
             <ListSubheader>
               {moment(lastSelectedDate).format("M월")}
             </ListSubheader>
@@ -385,6 +463,11 @@ const AdminControlPanel = (props) => {
         setWaitlist(list);
       })
       .then(() => setLoading(false));
+
+    return () => {
+      setWaitlist();
+      setLoading();
+    };
   }, []);
 
   const onDeleteClick = async (index) => {
@@ -412,18 +495,20 @@ const AdminControlPanel = (props) => {
           {loading ? (
             <>loading...</>
           ) : (
-            <List sx={{ p: 0 }}>
-              {waitlist.map((waitingUser, index) => {
-                return (
-                  <WaitingUser
-                    key={waitingUser.data.uid}
-                    data={waitingUser.data}
-                    status={waitingUser.status}
-                    onDeleteClick={() => onDeleteClick(index)}
-                  />
-                );
-              })}
-            </List>
+            waitlist && (
+              <List sx={{ p: 0 }}>
+                {waitlist.map((waitingUser, index) => {
+                  return (
+                    <WaitingUser
+                      key={waitingUser.data.uid}
+                      data={waitingUser.data}
+                      status={waitingUser.status}
+                      onDeleteClick={() => onDeleteClick(index)}
+                    />
+                  );
+                })}
+              </List>
+            )
           )}
         </TabPanel>
         <TabPanel value="calendar" sx={{ p: 0 }}>

@@ -11,7 +11,7 @@ import { db } from "./myFirebase";
 export const userDocRef = (uid) => doc(db, `userlist/${uid}`);
 
 // user 기본 정보 불러오기
-export const fetchUser = async (uid) => await getDoc(db, userDocRef(uid));
+export const fetchUser = async (uid) => await getDoc(userDocRef(uid));
 
 // 회원가입 승인 후 최초 로그인 시 생성되는 유저의 초기 정보
 export const initialUserData = (user) => ({
@@ -126,3 +126,10 @@ export const getPaydayPeriod = (payday, date) => {
   }
   return period;
 };
+
+export const appliedSchedule = (dateRange) => ({
+  from: Timestamp.fromDate(dateRange[0].toDate()),
+  to: Timestamp.fromDate(dateRange[1].toDate()),
+  status: "waiting",
+  createdAt: Timestamp.now(),
+});
