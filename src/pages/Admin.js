@@ -43,10 +43,15 @@ import {
   userDocRef,
   waitingUserRef,
 } from "../docFunctions";
-import { PickersDayWithMarker, worktypeEmoji } from "../components/Schedule";
+import {
+  koreanWeekDays,
+  PickersDayWithMarker,
+  worktypeEmoji,
+} from "../components/Schedule";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import { EventsContext } from "../contexts/Context";
+import { holidayType } from "../components/CustomRangeCalendar";
 
 const Admin = () => {
   const [userList, setUserList] = useState([]);
@@ -178,6 +183,7 @@ const UserListPanel = (props) => {
 
 const UserDisplay = (props) => {
   const { user } = props;
+  const events = useContext(EventsContext);
   const [date, setDate] = useState(moment());
   const [schedule, setSchedule] = useState();
   const [monthData, setMonthData] = useState({});
@@ -350,6 +356,28 @@ const UserDisplay = (props) => {
               const dailyData =
                 (monthData && monthData[key]) || initialDailyData(moment(key));
               const { type } = dailyData;
+              const htype = holidayType(moment(key), events);
+              let secondaryText = koreanWeekDays[moment(key).day()];
+              if (htype === "vacation" || htype === "holiday")
+                secondaryText += `, ${events[htype][key]}`;
+              const hideTimePrimary = htype !== "default";
+              const startPrimary = hideTimePrimary
+                ? ""
+                : moment(dailyData.start.toDate()).format("HH:mm");
+              const finishPrimary = hideTimePrimary
+                ? ""
+                : moment(dailyData.finish.toDate()).format("HH:mm");
+              const startedSecondary = dailyData.started
+                ? `${moment(dailyData.started.toDate()).format("HH:mm")} 출근`
+                : htype === "default"
+                ? "-"
+                : "";
+              const finishedSecondary = dailyData.finished
+                ? `${moment(dailyData.finished.toDate()).format("HH:mm")} 퇴근`
+                : htype === "default"
+                ? "-"
+                : "";
+
               return (
                 <ListItemButton
                   key={key}
@@ -365,12 +393,18 @@ const UserDisplay = (props) => {
                   >
                     {worktypeEmoji(type)}
                   </Box>
-                  <Box width={40} mr={1}>
+                  <Box width={100} mr={1}>
                     <ListItemText
-                      primary=""
-                      secondary={moment(key).format("D일")}
+                      primary={moment(key).format("D일")}
+                      secondary={`${secondaryText}`}
                       sx={{
-                        textAlign: "right",
+                        textAlign: "center",
+                        "& .MuiListItemText-primary": {
+                          fontSize: 14,
+                        },
+                        "& .MuiListItemText-secondary": {
+                          fontSize: 12,
+                        },
                       }}
                     />
                   </Box>
@@ -392,29 +426,13 @@ const UserDisplay = (props) => {
                     ) : (
                       <>
                         <ListItemText
-                          primary={moment(dailyData.start.toDate()).format(
-                            "HH:mm"
-                          )}
-                          secondary={
-                            dailyData.started
-                              ? `${moment(dailyData.started.toDate()).format(
-                                  "HH:mm"
-                                )} 출근`
-                              : "-"
-                          }
+                          primary={startPrimary}
+                          secondary={startedSecondary}
                           sx={{ textAlign: "center" }}
                         />
                         <ListItemText
-                          primary={moment(dailyData.finish.toDate()).format(
-                            "HH:mm"
-                          )}
-                          secondary={
-                            dailyData.finished
-                              ? `${moment(dailyData.finished.toDate()).format(
-                                  "HH:mm"
-                                )} 퇴근`
-                              : "-"
-                          }
+                          primary={finishPrimary}
+                          secondary={finishedSecondary}
                           sx={{ textAlign: "center" }}
                         />
                       </>
