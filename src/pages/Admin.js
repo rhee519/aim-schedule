@@ -4,9 +4,11 @@ import {
   onSnapshot,
   updateDoc,
   deleteDoc,
+  setDoc,
+  Timestamp,
 } from "@firebase/firestore";
 import React, {
-  // createContext,
+  createContext,
   useCallback,
   useContext,
   useEffect,
@@ -28,6 +30,12 @@ import {
   Typography,
   Button,
   Tab,
+  Modal,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  TextField,
 } from "@mui/material";
 import Status from "../components/Status";
 import { db } from "../myFirebase";
@@ -38,10 +46,13 @@ import {
   TabContext,
   TabList,
   TabPanel,
+  TimePicker,
 } from "@mui/lab";
 import moment from "moment";
 import AdapterMoment from "@mui/lab/AdapterMoment";
 import {
+  dayRef,
+  fetchDayData,
   fetchMonthData,
   fetchUser,
   fetchWaitingList,
@@ -61,6 +72,8 @@ import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import { EventsContext, UserContext } from "../contexts/Context";
 import { holidayType } from "../components/CustomRangeCalendar";
+
+const DataHandlerContext = createContext();
 
 const Admin = () => {
   const [userList, setUserList] = useState([]);
@@ -258,234 +271,263 @@ const UserDisplay = (props) => {
   }, [refetchMonthData, lastSelectedDate]);
 
   return (
-    <LocalizationProvider dateAdapter={AdapterMoment}>
-      <Paper>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: { xs: "column", md: "row" },
-          }}
-        >
-          <Stack>
-            <ListItem>
-              <Status user={user} editable={true} />
-            </ListItem>
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-            >
-              <ListItemText
-                primary={annualEmoji}
-                secondary="연차"
-                sx={{ textAlign: "center" }}
-              />
-              <ListItemText
-                primary={halfEmoji}
-                secondary="반차"
-                sx={{ textAlign: "center" }}
-              />
-              <ListItemText
-                primary={sickEmoji}
-                secondary="병가"
-                sx={{ textAlign: "center" }}
-              />
-            </Stack>
-            <StaticDatePicker
-              displayStaticWrapperAs="desktop"
-              value={date}
-              minDate={moment("2021-01-01")}
-              onChange={(date) => setDate(date)}
-              loading={loading}
-              renderLoading={() => <CalendarPickerSkeleton />}
-              renderInput={(params) => null}
-              renderDay={(day, _value, props) => {
-                const key = day.format("YYYYMMDD");
-                return (
-                  <PickersDayWithMarker
-                    {...props}
-                    type={monthData[key] ? monthData[key].type : undefined}
-                  />
-                );
-              }}
-              onMonthChange={(date) => {
-                setLastSelectedDate(date);
-                refetchMonthData(date);
-              }}
-            />
-            <Box sx={{ height: 200 }}>
-              <SelectedDateInfo
-                selectedUser={user}
-                date={date}
-                data={
-                  monthData[date.format("YYYYMMDD")] || initialDailyData(date)
-                }
-              />
-            </Box>
-          </Stack>
-          <Divider orientation="vertical" flexItem />
-          <Divider orientation="horizontal" flexItem />
-          <List
+    <DataHandlerContext.Provider
+      value={(date, data) => {
+        const key = moment(date).format("YYYYMMDD");
+        setMonthData((prev) => ({ ...prev, [key]: data }));
+      }}
+    >
+      <LocalizationProvider dateAdapter={AdapterMoment}>
+        <Paper>
+          <Box
             sx={{
-              width: "100%",
-              height: { xs: "auto", md: 700 },
-              overflowY: "scroll",
-              pt: 0,
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
             }}
           >
-            {!loadingSchedule &&
-              (schedule ? (
-                <>
-                  <ListItemText
-                    primary="최근 근로 신청"
-                    secondary={moment(schedule.createdAt.toDate()).format(
-                      "M월 D일 HH:mm 신청함"
-                    )}
-                  />
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                  >
-                    <Typography>
-                      {moment(schedule.from.toDate()).format("M월 D일")} -{" "}
-                      {moment(schedule.to.toDate()).format("M월 D일")}
-                    </Typography>
-                    {schedule.status === "waiting" ? (
-                      <Box>
-                        <Button
-                          variant="contained"
-                          color="success"
-                          onClick={handleConfirmClick}
-                        >
-                          Confirm
-                        </Button>
-                        <Button
-                          variant="contained"
-                          color="error"
-                          onClick={handleRejectClick}
-                        >
-                          Reject
-                        </Button>
-                      </Box>
-                    ) : schedule.status === "confirmed" ? (
-                      <>승인됨</>
-                    ) : schedule.status === "rejected" ? (
-                      <>반려됨</>
-                    ) : (
-                      <></>
-                    )}
-                  </Stack>
-                </>
-              ) : (
-                <Typography>아직 근로 신청을 하지 않았습니다.</Typography>
-              ))}
-            <ListSubheader>
-              {moment(lastSelectedDate).format("M월")}
-            </ListSubheader>
-            {Object.keys(monthData).map((key, index) => {
-              const dailyData =
-                (monthData && monthData[key]) || initialDailyData(moment(key));
-              const { type } = dailyData;
-              const htype = holidayType(moment(key), events);
-              let secondaryText = koreanWeekDays[moment(key).day()];
-              if (htype === "vacation" || htype === "holiday")
-                secondaryText += `, ${events[htype][key]}`;
-              const hideTimePrimary = htype !== "default";
-              const startPrimary = hideTimePrimary
-                ? ""
-                : moment(dailyData.start.toDate()).format("HH:mm");
-              const finishPrimary = hideTimePrimary
-                ? ""
-                : moment(dailyData.finish.toDate()).format("HH:mm");
-              const startedSecondary = dailyData.started
-                ? `${moment(dailyData.started.toDate()).format("HH:mm")} 출근`
-                : htype === "default"
-                ? "-"
-                : "";
-              const finishedSecondary = dailyData.finished
-                ? `${moment(dailyData.finished.toDate()).format("HH:mm")} 퇴근`
-                : htype === "default"
-                ? "-"
-                : "";
-
-              return (
-                <ListItemButton
-                  key={key}
-                  onClick={() => setDate(moment(key))}
-                  sx={{ height: 60 }}
-                >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      width: 10,
-                      justifyContent: "center",
-                    }}
-                  >
-                    {worktypeEmoji(type)}
-                  </Box>
-                  <Box width={100} mr={1}>
-                    <ListItemText
-                      primary={moment(key).format("D일")}
-                      secondary={`${secondaryText}`}
-                      sx={{
-                        textAlign: "center",
-                        "& .MuiListItemText-primary": {
-                          fontSize: 14,
-                        },
-                        "& .MuiListItemText-secondary": {
-                          fontSize: 12,
-                        },
-                      }}
+            <Stack>
+              <ListItem>
+                <Status user={user} editable={true} />
+              </ListItem>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <ListItemText
+                  primary={annualEmoji}
+                  secondary="연차"
+                  sx={{ textAlign: "center" }}
+                />
+                <ListItemText
+                  primary={halfEmoji}
+                  secondary="반차"
+                  sx={{ textAlign: "center" }}
+                />
+                <ListItemText
+                  primary={sickEmoji}
+                  secondary="병가"
+                  sx={{ textAlign: "center" }}
+                />
+              </Stack>
+              <StaticDatePicker
+                displayStaticWrapperAs="desktop"
+                value={date}
+                minDate={moment("2021-01-01")}
+                onChange={(date) => setDate(date)}
+                loading={loading}
+                renderLoading={() => <CalendarPickerSkeleton />}
+                renderInput={(params) => null}
+                renderDay={(day, _value, props) => {
+                  const key = day.format("YYYYMMDD");
+                  return (
+                    <PickersDayWithMarker
+                      {...props}
+                      type={monthData[key] ? monthData[key].type : undefined}
                     />
-                  </Box>
-                  <Box sx={{ display: "flex", width: "100%" }}>
-                    {type === "annual" ? (
+                  );
+                }}
+                onMonthChange={(date) => {
+                  setLastSelectedDate(date);
+                  refetchMonthData(date);
+                }}
+              />
+              <Box sx={{ height: 200 }}>
+                <SelectedDateInfo
+                  selectedUser={user}
+                  date={date}
+                  data={
+                    monthData[date.format("YYYYMMDD")] || initialDailyData(date)
+                  }
+                />
+              </Box>
+            </Stack>
+            <Divider orientation="vertical" flexItem />
+            <Divider orientation="horizontal" flexItem />
+            <List
+              sx={{
+                width: "100%",
+                height: { xs: "auto", md: 700 },
+                overflowY: "scroll",
+                pt: 0,
+              }}
+            >
+              {!loadingSchedule &&
+                (schedule ? (
+                  <>
+                    <ListItemText
+                      primary="최근 근로 신청"
+                      secondary={moment(schedule.createdAt.toDate()).format(
+                        "M월 D일 HH:mm 신청함"
+                      )}
+                    />
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Typography>
+                        {moment(schedule.from.toDate()).format("M월 D일")} -{" "}
+                        {moment(schedule.to.toDate()).format("M월 D일")}
+                      </Typography>
+                      {schedule.status === "waiting" ? (
+                        <Box>
+                          <Button
+                            variant="contained"
+                            color="success"
+                            onClick={handleConfirmClick}
+                          >
+                            Confirm
+                          </Button>
+                          <Button
+                            variant="contained"
+                            color="error"
+                            onClick={handleRejectClick}
+                          >
+                            Reject
+                          </Button>
+                        </Box>
+                      ) : schedule.status === "confirmed" ? (
+                        <>승인됨</>
+                      ) : schedule.status === "rejected" ? (
+                        <>반려됨</>
+                      ) : (
+                        <></>
+                      )}
+                    </Stack>
+                  </>
+                ) : (
+                  <Typography>아직 근로 신청을 하지 않았습니다.</Typography>
+                ))}
+              <ListSubheader>
+                {moment(lastSelectedDate).format("M월")}
+              </ListSubheader>
+              {Object.keys(monthData).map((key, index) => {
+                const dailyData =
+                  (monthData && monthData[key]) ||
+                  initialDailyData(moment(key));
+                const { type } = dailyData;
+                const htype = holidayType(moment(key), events);
+                let secondaryText = koreanWeekDays[moment(key).day()];
+                if (htype === "vacation" || htype === "holiday")
+                  secondaryText += `, ${events[htype][key]}`;
+                const hideTimePrimary = htype !== "default";
+                const startPrimary = hideTimePrimary
+                  ? ""
+                  : moment(dailyData.start.toDate()).format("HH:mm");
+                const finishPrimary = hideTimePrimary
+                  ? ""
+                  : moment(dailyData.finish.toDate()).format("HH:mm");
+                const startedSecondary = dailyData.started
+                  ? `${moment(dailyData.started.toDate()).format("HH:mm")} 출근`
+                  : htype === "default"
+                  ? "-"
+                  : "";
+                const finishedSecondary = dailyData.finished
+                  ? `${moment(dailyData.finished.toDate()).format(
+                      "HH:mm"
+                    )} 퇴근`
+                  : htype === "default"
+                  ? "-"
+                  : "";
+
+                return (
+                  <ListItemButton
+                    key={key}
+                    onClick={() => setDate(moment(key))}
+                    sx={{ height: 60 }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        width: 10,
+                        justifyContent: "center",
+                      }}
+                    >
+                      {worktypeEmoji(type)}
+                    </Box>
+                    <Box width={100} mr={1}>
                       <ListItemText
-                        primary="연차"
+                        primary={moment(key).format("D일")}
+                        secondary={`${secondaryText}`}
                         sx={{
                           textAlign: "center",
+                          "& .MuiListItemText-primary": {
+                            fontSize: 14,
+                          },
+                          "& .MuiListItemText-secondary": {
+                            fontSize: 12,
+                          },
                         }}
                       />
-                    ) : type === "sick" ? (
-                      <ListItemText
-                        primary="병가"
-                        sx={{
-                          textAlign: "center",
-                        }}
-                      />
-                    ) : (
-                      <>
+                    </Box>
+                    <Box sx={{ display: "flex", width: "100%" }}>
+                      {type === "annual" ? (
                         <ListItemText
-                          primary={startPrimary}
-                          secondary={startedSecondary}
-                          sx={{ textAlign: "center" }}
+                          primary="연차"
+                          sx={{
+                            textAlign: "center",
+                          }}
                         />
+                      ) : type === "sick" ? (
                         <ListItemText
-                          primary={finishPrimary}
-                          secondary={finishedSecondary}
-                          sx={{ textAlign: "center" }}
+                          primary="병가"
+                          sx={{
+                            textAlign: "center",
+                          }}
                         />
-                      </>
-                    )}
-                  </Box>
-                </ListItemButton>
-              );
-            })}
-          </List>
-        </Box>
-      </Paper>
-    </LocalizationProvider>
+                      ) : (
+                        <>
+                          <ListItemText
+                            primary={startPrimary}
+                            secondary={startedSecondary}
+                            sx={{ textAlign: "center" }}
+                          />
+                          <ListItemText
+                            primary={finishPrimary}
+                            secondary={finishedSecondary}
+                            sx={{ textAlign: "center" }}
+                          />
+                        </>
+                      )}
+                    </Box>
+                  </ListItemButton>
+                );
+              })}
+            </List>
+          </Box>
+        </Paper>
+      </LocalizationProvider>
+    </DataHandlerContext.Provider>
   );
 };
 
 const SelectedDateInfo = (props) => {
   const user = useContext(UserContext);
-  const { date, data, selectedUser } = props;
+  const setMonthData = useContext(DataHandlerContext);
   const events = useContext(EventsContext);
+  const { data, date, selectedUser } = props;
   const { type } = data;
   const htype = holidayType(moment(date), events);
+
+  const [edit, setEdit] = useState(false);
   const dateKey = date.format("YYYYMMDD");
+  const [editData, setEditData] = useState(data);
+
+  // return (
+  //   <>
+  //     {type}
+  //     <Button
+  //       onClick={() => {
+  //         const key = date.format("YYYYMMDD");
+  //         setMonthData(date, { ...data, type: "work" });
+  //       }}
+  //     >
+  //       click
+  //     </Button>
+  //   </>
+  // );
+  // const [loading, setLoading] = useState(true);
 
   const startText =
     htype === "default" ? moment(data.start.toDate()).format("HH:mm") : "-";
@@ -498,44 +540,249 @@ const SelectedDateInfo = (props) => {
     ? `${moment(data.finished.toDate()).format("HH:mm")} 퇴근`
     : "-";
 
-  return (
-    <Box sx={{ p: 1 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <ListItemText
-          primary={`${date.format("M월 D일")} ${
-            type !== "work" ? worktypeEmoji(type) : ""
-          }`}
-          secondary={events[htype] ? events[htype][dateKey] : ""}
-          primaryTypographyProps={{ variant: "h6" }}
-        />
-        <Button disabled={user.uid === selectedUser.uid}>수정</Button>
-      </Stack>
+  const handleEditClick = () => {
+    setEditData(data);
+    setEdit(true);
+  };
+  const handleClose = () => {
+    setEdit(false);
+  };
 
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        {type === "annual" ? (
-          <ListItemText primary="연차" sx={{ textAlign: "center" }} />
-        ) : (
-          <>
-            <ListItemText
-              sx={{ textAlign: "center" }}
-              primary={startText}
-              secondary={startedText}
-            />
-            <ListItemText
-              sx={{ textAlign: "center" }}
-              primary={finishText}
-              secondary={finishedText}
-            />
-          </>
-        )}
-      </Stack>
-      {/* <Typography variant="body2">
-        {moment(data.start.toDate()).format("HH:mm")} ~{" "}
-        {moment(data.finish.toDate()).format("HH:mm")}
-      </Typography> */}
-    </Box>
+  const handleChangeType = (event) => {
+    setEditData({ ...editData, type: event.target.value });
+  };
+
+  const handleSaveClick = async (event) => {
+    const d = moment(date);
+    const docRef = dayRef(selectedUser.uid, d);
+    fetchDayData(selectedUser.uid, d).then(async (docSnap) => {
+      if (docSnap.exists()) {
+        updateDoc(docRef, editData);
+      } else {
+        setDoc(docRef, editData);
+      }
+    });
+    setMonthData(date, editData);
+    handleClose();
+  };
+
+  const handleResetClick = async () => {
+    const resetData = { ...data, started: null, finished: null };
+    const d = moment(date);
+    const docRef = dayRef(selectedUser.uid, d);
+    fetchDayData(selectedUser.uid, d).then(async (docSnap) => {
+      if (docSnap.exists()) {
+        updateDoc(docRef, resetData);
+      } else {
+        setDoc(docRef, resetData);
+      }
+    });
+    setMonthData(date, resetData);
+    setEditData(resetData);
+    handleClose();
+  };
+
+  // useEffect(() => {
+  //   setLoading(true);
+  //   fetchDayData(selectedUser.uid, moment(date))
+  //     .then(async (docSnap) => {
+  //       if (docSnap.exists()) setData(docSnap.data());
+  //       else setData(initialDailyData(moment(date)));
+  //     })
+  //     .then(() => setLoading(false));
+
+  //   return () => {
+  //     // setData();
+  //     setLoading(true);
+  //   };
+  // }, [selectedUser, date]);
+
+  // useEffect(() => {
+  //   return () => {
+  //     setEditData();
+  //   };
+  // }, []);
+
+  return (
+    <LocalizationProvider dateAdapter={AdapterMoment}>
+      <Box sx={{ p: 1 }}>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+        >
+          <ListItemText
+            primary={`${date.format("M월 D일")} ${
+              type !== "work" ? worktypeEmoji(type) : ""
+            }`}
+            secondary={events[htype] ? events[htype][dateKey] : ""}
+            primaryTypographyProps={{ variant: "h6" }}
+          />
+          <Button
+            onClick={handleEditClick}
+            disabled={user.uid === selectedUser.uid}
+          >
+            수정
+          </Button>
+        </Stack>
+
+        <>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            {type === "annual" ? (
+              <ListItemText primary="연차" sx={{ textAlign: "center" }} />
+            ) : (
+              <>
+                <ListItemText
+                  sx={{ textAlign: "center" }}
+                  primary={startText}
+                  secondary={startedText}
+                />
+                <ListItemText
+                  sx={{ textAlign: "center" }}
+                  primary={finishText}
+                  secondary={finishedText}
+                />
+              </>
+            )}
+          </Stack>
+          <Modal
+            sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+            open={edit}
+            onClose={handleClose}
+          >
+            <Paper
+              sx={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                p: 1,
+                // width: "80%",
+                // height: "80%",
+                // overflowY: "scroll",
+              }}
+            >
+              <List sx={{ p: 0 }}>
+                <ListSubheader sx={{ p: 0 }}>
+                  {moment(date).format("M월 D일")}
+                </ListSubheader>
+                <ListItemText primary="⚠️ SAVE를 클릭하지 않으면 데이터가 날아갑니다!" />
+                <ListItemText
+                  primary="💡 연차, 반차, 병가가 아닌 경우에는 근로를 선택해주세요."
+                  secondary="(주말, 공휴일 상관 없이)"
+                />
+                <Divider orientation="horizontal" />
+                <FormControl variant="standard">
+                  <InputLabel>근로 형태</InputLabel>
+                  <Select value={editData.type} onChange={handleChangeType}>
+                    <MenuItem value="work">근로</MenuItem>
+                    <MenuItem value="annual">연차</MenuItem>
+                    <MenuItem value="half">반차</MenuItem>
+                    <MenuItem value="sick">병가</MenuItem>
+                  </Select>
+                </FormControl>
+                <Stack direction="row" sx={{ mt: 1 }}>
+                  {/* <TimePicker
+                    label="신청한 출근시각"
+                    value={moment(editData.start.toDate())}
+                    onChange={(time) => {
+                      // const { start } = editData;
+                      const newTime = moment(editData.start.toDate());
+                      newTime.hour(time.hour());
+                      newTime.minute(time.minute());
+                      const start = Timestamp.fromDate(newTime.toDate());
+                      setEditData({ ...editData, start });
+                    }}
+                    renderInput={(params) => (
+                      <TextField size="small" {...params} />
+                    )}
+                    disabled={editData.type === "annual"}
+                  />
+                  <TimePicker
+                    label="신청한 퇴근시각"
+                    value={moment(editData.finish.toDate())}
+                    onChange={(time) => {
+                      const newTime = moment(editData.finish.toDate());
+                      newTime.hour(time.hour());
+                      newTime.minute(time.minute());
+                      const finish = Timestamp.fromDate(newTime.toDate());
+                      setEditData({ ...editData, finish });
+                    }}
+                    renderInput={(params) => (
+                      <TextField size="small" {...params} />
+                    )}
+                    disabled={editData.type === "annual"}
+                  /> */}
+                  <TimePicker
+                    label="실제 출근시각"
+                    value={
+                      editData.started
+                        ? moment(editData.started.toDate())
+                        : moment(editData.start.toDate())
+                    }
+                    onChange={(time) => {
+                      const newTime = editData.started
+                        ? moment(editData.started.toDate())
+                        : moment(editData.start.toDate());
+                      newTime.hour(time.hour());
+                      newTime.minute(time.minute());
+                      const started = Timestamp.fromDate(newTime.toDate());
+                      setEditData({ ...editData, started });
+                    }}
+                    renderInput={(params) => (
+                      <TextField size="small" {...params} />
+                    )}
+                    disabled={editData.type === "annual"}
+                  />
+                  <TimePicker
+                    label="실제 퇴근시각"
+                    value={
+                      editData.finished
+                        ? moment(editData.finished.toDate())
+                        : moment(editData.finish.toDate())
+                    }
+                    onChange={(time) => {
+                      const newTime = editData.finished
+                        ? moment(editData.finished.toDate())
+                        : moment(editData.finish.toDate());
+                      newTime.hour(time.hour());
+                      newTime.minute(time.minute());
+                      const finished = Timestamp.fromDate(newTime.toDate());
+                      setEditData({ ...editData, finished });
+                    }}
+                    renderInput={(params) => (
+                      <TextField size="small" {...params} />
+                    )}
+                    disabled={editData.type === "annual"}
+                  />
+                </Stack>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  sx={{ mt: 1 }}
+                >
+                  <Button variant="contained" onClick={handleSaveClick}>
+                    Save
+                  </Button>
+                  <Button color="error" onClick={handleResetClick}>
+                    출퇴근시각 지우기
+                  </Button>
+                  <Button onClick={handleClose}>Cancel</Button>
+                </Stack>
+              </List>
+            </Paper>
+          </Modal>
+        </>
+      </Box>
+    </LocalizationProvider>
   );
 };
+
 const AdminControlPanel = (props) => {
   const events = useContext(EventsContext);
   const [index, setIndex] = useState("sign-in-request");
