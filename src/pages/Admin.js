@@ -5,7 +5,13 @@ import {
   updateDoc,
   deleteDoc,
 } from "@firebase/firestore";
-import React, { useCallback, useContext, useEffect, useState } from "react";
+import React, {
+  // createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import {
   Box,
   Grid,
@@ -44,13 +50,16 @@ import {
   waitingUserRef,
 } from "../docFunctions";
 import {
+  annualEmoji,
+  halfEmoji,
   koreanWeekDays,
   PickersDayWithMarker,
+  sickEmoji,
   worktypeEmoji,
 } from "../components/Schedule";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
-import { EventsContext } from "../contexts/Context";
+import { EventsContext, UserContext } from "../contexts/Context";
 import { holidayType } from "../components/CustomRangeCalendar";
 
 const Admin = () => {
@@ -261,6 +270,27 @@ const UserDisplay = (props) => {
             <ListItem>
               <Status user={user} editable={true} />
             </ListItem>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <ListItemText
+                primary={annualEmoji}
+                secondary="연차"
+                sx={{ textAlign: "center" }}
+              />
+              <ListItemText
+                primary={halfEmoji}
+                secondary="반차"
+                sx={{ textAlign: "center" }}
+              />
+              <ListItemText
+                primary={sickEmoji}
+                secondary="병가"
+                sx={{ textAlign: "center" }}
+              />
+            </Stack>
             <StaticDatePicker
               displayStaticWrapperAs="desktop"
               value={date}
@@ -285,6 +315,7 @@ const UserDisplay = (props) => {
             />
             <Box sx={{ height: 200 }}>
               <SelectedDateInfo
+                selectedUser={user}
                 date={date}
                 data={
                   monthData[date.format("YYYYMMDD")] || initialDailyData(date)
@@ -449,14 +480,59 @@ const UserDisplay = (props) => {
 };
 
 const SelectedDateInfo = (props) => {
-  const { date, data } = props;
+  const user = useContext(UserContext);
+  const { date, data, selectedUser } = props;
+  const events = useContext(EventsContext);
+  const { type } = data;
+  const htype = holidayType(moment(date), events);
+  const dateKey = date.format("YYYYMMDD");
+
+  const startText =
+    htype === "default" ? moment(data.start.toDate()).format("HH:mm") : "-";
+  const finishText =
+    htype === "default" ? moment(data.finish.toDate()).format("HH:mm") : "-";
+  const startedText = data.started
+    ? `${moment(data.started.toDate()).format("HH:mm")} 출근`
+    : "-";
+  const finishedText = data.finished
+    ? `${moment(data.finished.toDate()).format("HH:mm")} 퇴근`
+    : "-";
+
   return (
-    <Box>
-      <Typography variant="h6">{date.format("M월 D일")}</Typography>
-      <Typography variant="body2">
+    <Box sx={{ p: 1 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <ListItemText
+          primary={`${date.format("M월 D일")} ${
+            type !== "work" ? worktypeEmoji(type) : ""
+          }`}
+          secondary={events[htype] ? events[htype][dateKey] : ""}
+          primaryTypographyProps={{ variant: "h6" }}
+        />
+        <Button disabled={user.uid === selectedUser.uid}>수정</Button>
+      </Stack>
+
+      <Stack direction="row" justifyContent="space-between" alignItems="center">
+        {type === "annual" ? (
+          <ListItemText primary="연차" sx={{ textAlign: "center" }} />
+        ) : (
+          <>
+            <ListItemText
+              sx={{ textAlign: "center" }}
+              primary={startText}
+              secondary={startedText}
+            />
+            <ListItemText
+              sx={{ textAlign: "center" }}
+              primary={finishText}
+              secondary={finishedText}
+            />
+          </>
+        )}
+      </Stack>
+      {/* <Typography variant="body2">
         {moment(data.start.toDate()).format("HH:mm")} ~{" "}
         {moment(data.finish.toDate()).format("HH:mm")}
-      </Typography>
+      </Typography> */}
     </Box>
   );
 };
