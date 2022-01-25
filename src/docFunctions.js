@@ -127,6 +127,10 @@ export const getPaydayPeriod = (payday, date) => {
   return period;
 };
 
+export const eventDocRef = doc(db, "calendar/event");
+export const holidayDocRef = doc(db, "calendar/holiday");
+export const vacationDocRef = doc(db, "calendar/vacation");
+
 export const appliedSchedule = (dateRange) => ({
   from: Timestamp.fromDate(dateRange[0].toDate()),
   to: Timestamp.fromDate(dateRange[1].toDate()),

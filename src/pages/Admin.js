@@ -36,11 +36,14 @@ import {
   Select,
   MenuItem,
   TextField,
+  Fab,
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
 import Status from "../components/Status";
 import { db } from "../myFirebase";
 import {
   CalendarPickerSkeleton,
+  DatePicker,
   LocalizationProvider,
   StaticDatePicker,
   TabContext,
@@ -52,12 +55,14 @@ import moment from "moment";
 import AdapterMoment from "@mui/lab/AdapterMoment";
 import {
   dayRef,
+  eventDocRef,
   fetchDayData,
   fetchMonthData,
   fetchUser,
   fetchWaitingList,
   initialDailyData,
   userDocRef,
+  vacationDocRef,
   waitingUserRef,
 } from "../docFunctions";
 import {
@@ -70,7 +75,12 @@ import {
 } from "../components/Schedule";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
-import { EventsContext, UserContext } from "../contexts/Context";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import {
+  CalendarContext,
+  CalendarHandler,
+  UserContext,
+} from "../contexts/Context";
 import { holidayType } from "../components/CustomRangeCalendar";
 
 const DataHandlerContext = createContext();
@@ -205,7 +215,7 @@ const UserListPanel = (props) => {
 
 const UserDisplay = (props) => {
   const { user } = props;
-  const events = useContext(EventsContext);
+  const calendar = useContext(CalendarContext);
   const [date, setDate] = useState(moment());
   const [schedule, setSchedule] = useState();
   const [monthData, setMonthData] = useState({});
@@ -407,10 +417,10 @@ const UserDisplay = (props) => {
                   (monthData && monthData[key]) ||
                   initialDailyData(moment(key));
                 const { type } = dailyData;
-                const htype = holidayType(moment(key), events);
+                const htype = holidayType(moment(key), calendar);
                 let secondaryText = koreanWeekDays[moment(key).day()];
                 if (htype === "vacation" || htype === "holiday")
-                  secondaryText += `, ${events[htype][key]}`;
+                  secondaryText += `, ${calendar[htype][key]}`;
                 const hideTimePrimary = htype !== "default";
                 const startPrimary = hideTimePrimary
                   ? ""
@@ -505,10 +515,10 @@ const UserDisplay = (props) => {
 const SelectedDateInfo = (props) => {
   const user = useContext(UserContext);
   const setMonthData = useContext(DataHandlerContext);
-  const events = useContext(EventsContext);
+  const calendar = useContext(CalendarContext);
   const { data, date, selectedUser } = props;
   const { type } = data;
-  const htype = holidayType(moment(date), events);
+  const htype = holidayType(moment(date), calendar);
 
   const [edit, setEdit] = useState(false);
   const dateKey = date.format("YYYYMMDD");
@@ -604,7 +614,7 @@ const SelectedDateInfo = (props) => {
   // }, []);
 
   return (
-    <LocalizationProvider dateAdapter={AdapterMoment}>
+    <>
       <Box sx={{ p: 1 }}>
         <Stack
           direction="row"
@@ -615,7 +625,7 @@ const SelectedDateInfo = (props) => {
             primary={`${date.format("M월 D일")} ${
               type !== "work" ? worktypeEmoji(type) : ""
             }`}
-            secondary={events[htype] ? events[htype][dateKey] : ""}
+            secondary={calendar[htype] ? calendar[htype][dateKey] : ""}
             primaryTypographyProps={{ variant: "h6" }}
           />
           <Button
@@ -779,15 +789,20 @@ const SelectedDateInfo = (props) => {
           </Modal>
         </>
       </Box>
-    </LocalizationProvider>
+    </>
   );
 };
 
 const AdminControlPanel = (props) => {
-  const events = useContext(EventsContext);
+  const calendar = useContext(CalendarContext);
+  const setCalendar = useContext(CalendarHandler);
   const [index, setIndex] = useState("sign-in-request");
   const [waitlist, setWaitlist] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [eventDate, setEventDate] = useState(moment());
+  const [eventText, setEventText] = useState("");
+  const [vacationDate, setVacationDate] = useState(moment());
+  const [vacationText, setVacationText] = useState("");
 
   useEffect(() => {
     fetchWaitingList()
@@ -819,18 +834,52 @@ const AdminControlPanel = (props) => {
     await deleteDoc(waitingUserRef(doc.id));
   };
 
+  const handleAddEvent = async () => {
+    const key = eventDate.format("YYYYMMDD");
+    const event = { ...calendar.event, [key]: eventText };
+    setCalendar((prev) => ({ ...prev, event }));
+    setEventText("");
+    await updateDoc(eventDocRef, event);
+  };
+
+  const handleAddVacation = async () => {
+    const key = vacationDate.format("YYYYMMDD");
+    const vacation = { ...calendar.vacation, [key]: vacationText };
+    setCalendar((prev) => ({ ...prev, vacation }));
+    setVacationText("");
+    await updateDoc(vacationDocRef, vacation);
+  };
+
+  const handleDeleteFromCalendar = async (calendarType, key) => {
+    if (calendarType === "event") {
+      const event = { ...calendar.event };
+      delete event[key];
+      setCalendar((prev) => ({ ...prev, event }));
+      await setDoc(eventDocRef, event);
+    } else if (calendarType === "vacation") {
+      const vacation = { ...calendar.vacation };
+      delete vacation[key];
+      setCalendar((prev) => ({ ...prev, vacation }));
+      await setDoc(vacationDocRef, vacation);
+    }
+  };
+
   return (
-    <Paper sx={{ height: "100%", p: 1, pt: 0 }} {...props}>
+    <Paper sx={{ height: 300, p: 1, pt: 0, overflowY: "auto" }} {...props}>
       <TabContext value={index}>
         <TabList
           onChange={(event, value) => setIndex(value)}
           variant="scrollable"
           scrollButtons="auto"
         >
-          <Tab label="회원가입 신청" value="sign-in-request" />
-          <Tab label="사내 일정" value="calendar" />
-          <Tab label="정산일" value="payday" />
-          <Tab label="휴무일" value="holiday" />
+          <Tab
+            label="회원가입 신청"
+            value="sign-in-request"
+            sx={{ mr: 0, p: 0 }}
+          />
+          <Tab label="사내 일정" value="event" sx={{ mr: 0, p: 0 }} />
+          <Tab label="휴무일" value="vacation" sx={{ mr: 0, p: 0 }} />
+          <Tab label="정산일" value="payday" sx={{ mr: 0, p: 0 }} />
         </TabList>
         <TabPanel value="sign-in-request" sx={{ p: 0 }}>
           {loading ? (
@@ -852,30 +901,118 @@ const AdminControlPanel = (props) => {
             )
           )}
         </TabPanel>
-        <TabPanel value="calendar" sx={{ p: 0 }}>
-          {Object.keys(events.event)
-            .filter((key) => moment(key).year() === moment().year())
-            .map((key) => (
-              <Typography key={key}>
-                {moment(key).format("M/D")} {events.event[key]}
-              </Typography>
-            ))}
+        <TabPanel value="event" sx={{ position: "relative", p: 0 }}>
+          <List>
+            <InputEvent
+              date={eventDate}
+              text={eventText}
+              onDateChange={setEventDate}
+              onTextChange={(event) => setEventText(event.target.value)}
+              onClick={handleAddEvent}
+            />
+            <ListSubheader>
+              <Divider light sx={{ m: 0 }}>
+                올해 사내 일정만 표기됩니다.
+              </Divider>
+            </ListSubheader>
+
+            {/* {Object.keys(calendar.event)
+              .filter((key) => moment(key).year() === moment().year())
+              .map((key) => (
+                <Stack key={key} direction="row" justifyContent="flex-start">
+                  <ListItemText secondary={moment(key).format("M/D")} />
+                  <ListItemText primary={calendar.event[key]} />
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => handleDeleteFromCalendar("event", key)}
+                  >
+                    <DeleteOutlineIcon />
+                  </IconButton>
+                </Stack>
+              ))} */}
+            <CalendarList
+              htype="event"
+              onDeleteClick={handleDeleteFromCalendar}
+            />
+          </List>
+        </TabPanel>
+        <TabPanel value="vacation" sx={{ p: 0 }}>
+          <List>
+            <InputEvent
+              date={vacationDate}
+              text={vacationText}
+              onDateChange={setVacationDate}
+              onTextChange={(event) => setVacationText(event.target.value)}
+              onClick={handleAddVacation}
+            />
+            <ListSubheader>
+              <Divider light sx={{ m: 0 }}>
+                올해 사내 휴무일만 표기됩니다.
+              </Divider>
+            </ListSubheader>
+            <CalendarList
+              htype="vacation"
+              onDeleteClick={handleDeleteFromCalendar}
+            />
+            {/* {Object.keys(calendar.vacation)
+              .filter((key) => moment(key).year() === moment().year())
+              .map((key) => (
+                <Typography key={key}>
+                  {moment(key).format("M/D")} {calendar.vacation[key]}
+                </Typography>
+              ))} */}
+          </List>
         </TabPanel>
         <TabPanel value="payday" sx={{ p: 0 }}>
           정산일
         </TabPanel>
-        <TabPanel value="holiday" sx={{ p: 0 }}>
-          {Object.keys(events.vacation)
-            .filter((key) => moment(key).year() === moment().year())
-            .map((key) => (
-              <Typography key={key}>
-                {moment(key).format("M/D")} {events.vacation[key]}
-              </Typography>
-            ))}
-        </TabPanel>
       </TabContext>
     </Paper>
   );
+};
+
+const InputEvent = ({ date, text, onDateChange, onTextChange, onClick }) => {
+  return (
+    <Stack direction="row" alignItems="center" justifyContent="center">
+      <Stack sx={{ mr: 3 }}>
+        <DatePicker
+          value={date}
+          onChange={onDateChange}
+          renderInput={(params) => <TextField variant="standard" {...params} />}
+        />
+        <TextField
+          variant="outlined"
+          size="small"
+          placeholder="내용을 입력하세요"
+          value={text}
+          onChange={onTextChange}
+        />
+      </Stack>
+      <Fab color="primary" size="small" onClick={onClick}>
+        <AddIcon />
+      </Fab>
+    </Stack>
+  );
+};
+
+const CalendarList = ({ htype, onDeleteClick }) => {
+  const calendar = useContext(CalendarContext);
+  return Object.keys(calendar[htype])
+    .filter((key) => moment(key).year() === moment().year())
+    .map((key) => (
+      <Stack key={key} direction="row" justifyContent="flex-start">
+        <ListItemText secondary={moment(key).format("M/D")} />
+        <ListItemText primary={calendar[htype][key]} />
+        <IconButton
+          size="small"
+          color="error"
+          onClick={() => onDeleteClick(htype, key)}
+        >
+          <DeleteOutlineIcon />
+        </IconButton>
+      </Stack>
+    ));
 };
 
 const WaitingUser = (props) => {

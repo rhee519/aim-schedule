@@ -28,7 +28,7 @@ import {
   QRcode,
   //  QRreader
 } from "./QR";
-import NotificationContainer from "./NotificationContainer";
+// import NotificationContainer from "./NotificationContainer";
 import { UserContext } from "../contexts/Context";
 
 // const ExpandMore = styled((props) => {
@@ -313,7 +313,7 @@ const Navigator = (props) => {
           </Typography>
 
           {/* NOTIFICATION */}
-          <NotificationContainer />
+          {/* <NotificationContainer /> */}
 
           {/* PROFILE */}
           <ProfileAvatar />

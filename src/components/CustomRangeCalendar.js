@@ -11,15 +11,15 @@ import {
 import moment from "moment";
 import React, { useMemo, useContext } from "react";
 import { initialDailyData } from "../docFunctions";
-import { EventsContext } from "../contexts/Context";
+import { CalendarContext } from "../contexts/Context";
 
 const weekdays = ["S", "M", "T", "W", "T", "F", "S"];
 
-export const holidayType = (date, events) => {
-  if (!moment.isMoment(date) || !events) return undefined;
+export const holidayType = (date, calendar) => {
+  if (!moment.isMoment(date) || !calendar) return undefined;
   const key = moment(date).format("YYYYMMDD");
-  if (events.holiday && events.holiday[key]) return "holiday";
-  else if (events.vacation && events.vacation[key]) return "vacation";
+  if (calendar.holiday && calendar.holiday[key]) return "holiday";
+  else if (calendar.vacation && calendar.vacation[key]) return "vacation";
   else if (date.day() === 0) return "sunday";
   else if (date.day() === 6) return "saturday";
   return "default";
@@ -52,7 +52,7 @@ export const CalendarContainer = styled(Paper)(({ theme }) => ({
 }));
 
 const CustomRangeCalendar = (props) => {
-  const events = useContext(EventsContext);
+  const calendar = useContext(CalendarContext);
   const { calendarStart, calendarEnd, value, onChange, dayComponent, data } =
     props;
   const DayComponent = dayComponent || CustomDayComponent;
@@ -96,7 +96,7 @@ const CustomRangeCalendar = (props) => {
                   (data && data[date.format("YYYYMMDD")]) ||
                   initialDailyData(date)
                 }
-                holidayType={holidayType(date, events)}
+                holidayType={holidayType(date, calendar)}
               />
             )}
           </Grid>

@@ -1,5 +1,4 @@
 import React, {
-  createContext,
   useCallback,
   useContext,
   useEffect,
@@ -11,7 +10,6 @@ import {
   DatePicker,
   DateRangePicker,
   LoadingButton,
-  LocalizationProvider,
   PickersDay,
   StaticDatePicker,
   StaticDateRangePicker,
@@ -19,7 +17,6 @@ import {
   TabList,
   TabPanel,
 } from "@mui/lab";
-import AdapterMoment from "@mui/lab/AdapterMoment";
 import {
   Box,
   TextField,
@@ -51,7 +48,11 @@ import {
   initialDailyData,
   userDocRef,
 } from "../docFunctions";
-import { EventsContext, UserContext } from "../contexts/Context";
+import {
+  CalendarContext,
+  ScheduleContext,
+  UserContext,
+} from "../contexts/Context";
 import { setDoc, updateDoc, Timestamp } from "@firebase/firestore";
 import CustomRangeCalendar, { holidayType } from "./CustomRangeCalendar";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
@@ -78,8 +79,6 @@ const isWeekend = (date) => {
 
 export const koreanWeekDays = ["일", "월", "화", "수", "목", "금", "토"];
 
-const ScheduleContext = createContext();
-
 const Schedule = () => {
   const user = useContext(UserContext);
   const [open, setOpen] = useState(false); // 근로 신청 창 open 여부
@@ -87,7 +86,7 @@ const Schedule = () => {
   const [date, setDate] = useState(moment()); // 선택된 날짜
   const [monthData, setMonthData] = useState({}); // 선택된 월의 데이터
   const [loading, setLoading] = useState(true); // monthData fetch 여부
-  const events = useContext(EventsContext); // 휴무, 공휴일, 행사, 정산 일정
+  const calendar = useContext(CalendarContext); // 휴무, 공휴일, 행사, 정산 일정
   const [schedule, setSchedule] = useState();
 
   const fetchSchedule = useCallback(async () => {
@@ -157,182 +156,177 @@ const Schedule = () => {
           </TabList>
         </Box>
 
-        <LocalizationProvider dateAdapter={AdapterMoment}>
-          <TabPanel value="schedule">
-            <Modal
-              sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
-              open={open}
-              onClose={handleClose}
+        {/* <LocalizationProvider dateAdapter={AdapterMoment}> */}
+        <TabPanel value="schedule">
+          <Modal
+            sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+            open={open}
+            onClose={handleClose}
+          >
+            <Paper
+              sx={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                width: "80%",
+                height: "80%",
+                overflowY: "scroll",
+              }}
             >
-              <Paper
+              {calendar && calendar.payday && (
+                <ApplicationDisplay onClose={handleClose} />
+              )}
+            </Paper>
+          </Modal>
+          <Grid container spacing={1} columns={12}>
+            <Grid
+              item
+              xs={12}
+              sx={{ display: "flex", justifyContent: "center" }}
+            >
+              <Stack
+                spacing={1}
                 sx={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  width: "80%",
-                  height: "80%",
-                  overflowY: "scroll",
+                  display: { xs: "block", md: "none" },
+                  width: "100%",
                 }}
               >
-                {events && events.payday && (
-                  <ApplicationDisplay onClose={handleClose} />
-                )}
-              </Paper>
-            </Modal>
-            <Grid container spacing={1} columns={12}>
-              <Grid
-                item
-                xs={12}
-                sx={{ display: "flex", justifyContent: "center" }}
-              >
-                <Stack
-                  spacing={1}
+                <Paper
                   sx={{
-                    display: { xs: "block", md: "none" },
-                    width: "100%",
+                    position: "relative",
+                    height: 340,
+                    overflowY: "hidden",
                   }}
                 >
-                  <Paper
+                  <StaticDatePicker
+                    displayStaticWrapperAs="desktop"
+                    loading={loading}
+                    minDate={moment("2021-01-01")}
+                    value={date}
+                    onChange={(newValue) => setDate(newValue)}
+                    renderLoading={() => <CalendarPickerSkeleton />}
+                    renderInput={(params) => (
+                      <TextField {...params} helperText={"날짜를 입력하세요"} />
+                    )}
+                    onMonthChange={refetchMonthData}
+                    renderDay={(day, _value, props) => {
+                      const key = day.format("YYYYMMDD");
+                      return (
+                        <PickersDayWithMarker
+                          {...props}
+                          type={
+                            monthData[key] ? monthData[key].type : undefined
+                          }
+                        />
+                      );
+                    }}
+                  />
+                  <Button
+                    onClick={() => setOpen(true)}
+                    variant="text"
                     sx={{
-                      position: "relative",
-                      height: 340,
-                      overflowY: "hidden",
+                      position: "absolute",
+                      right: 0,
+                      bottom: 0,
                     }}
                   >
-                    <StaticDatePicker
-                      displayStaticWrapperAs="desktop"
-                      loading={loading}
-                      minDate={moment("2021-01-01")}
-                      value={date}
-                      onChange={(newValue) => setDate(newValue)}
-                      renderLoading={() => <CalendarPickerSkeleton />}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          helperText={"날짜를 입력하세요"}
-                        />
-                      )}
-                      onMonthChange={refetchMonthData}
-                      renderDay={(day, _value, props) => {
-                        const key = day.format("YYYYMMDD");
-                        return (
-                          <PickersDayWithMarker
-                            {...props}
-                            type={
-                              monthData[key] ? monthData[key].type : undefined
-                            }
-                          />
-                        );
-                      }}
+                    <Typography variant="subtitle2">
+                      다음 달 근로 신청하기
+                    </Typography>
+                  </Button>
+                </Paper>
+                <Paper>
+                  {monthData && (
+                    <SelectedDayDisplay
+                      date={date}
+                      data={monthData[date.format("YYYYMMDD")]}
                     />
-                    <Button
-                      onClick={() => setOpen(true)}
-                      variant="text"
+                  )}
+                </Paper>
+              </Stack>
+              <Paper
+                sx={{
+                  display: { xs: "none", md: "block" },
+                  width: "100%",
+                  minWidth: 650,
+                }}
+              >
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  position="relative"
+                >
+                  <DatePicker
+                    displayStaticWrapperAs="desktop"
+                    loading={loading}
+                    minDate={moment("2021-01-01")}
+                    views={["year", "month"]}
+                    value={date}
+                    onChange={(newValue) => setDate(newValue)}
+                    renderLoading={() => <CalendarPickerSkeleton />}
+                    renderInput={(params) => (
+                      <TextField
+                        variant="standard"
+                        {...params}
+                        sx={{
+                          m: 1,
+                        }}
+                      />
+                    )}
+                    onMonthChange={refetchMonthData}
+                  />
+                  <Stack>
+                    <Box
                       sx={{
-                        position: "absolute",
-                        right: 0,
-                        bottom: 0,
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        alignItems: "center",
                       }}
                     >
+                      <IconButton
+                        size="small"
+                        onClick={() =>
+                          setDate(
+                            moment(date).subtract(1, "month").startOf("month")
+                          )
+                        }
+                      >
+                        <NavigateBeforeIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() =>
+                          setDate(moment(date).add(1, "month").startOf("month"))
+                        }
+                      >
+                        <NavigateNextIcon />
+                      </IconButton>
+                    </Box>
+                    <Button onClick={() => setOpen(true)} variant="text">
                       <Typography variant="subtitle2">
                         다음 달 근로 신청하기
                       </Typography>
                     </Button>
-                  </Paper>
-                  <Paper>
-                    {monthData && (
-                      <SelectedDayDisplay
-                        date={date}
-                        data={monthData[date.format("YYYYMMDD")]}
-                      />
-                    )}
-                  </Paper>
-                </Stack>
-                <Paper
-                  sx={{
-                    display: { xs: "none", md: "block" },
-                    width: "100%",
-                    minWidth: 650,
-                  }}
-                >
-                  <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    position="relative"
-                  >
-                    <DatePicker
-                      displayStaticWrapperAs="desktop"
-                      loading={loading}
-                      minDate={moment("2021-01-01")}
-                      views={["year", "month"]}
-                      value={date}
-                      onChange={(newValue) => setDate(newValue)}
-                      renderLoading={() => <CalendarPickerSkeleton />}
-                      renderInput={(params) => (
-                        <TextField
-                          variant="standard"
-                          {...params}
-                          sx={{
-                            m: 1,
-                          }}
-                        />
-                      )}
-                      onMonthChange={refetchMonthData}
-                    />
-                    <Stack>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          justifyContent: "flex-end",
-                          alignItems: "center",
-                        }}
-                      >
-                        <IconButton
-                          size="small"
-                          onClick={() =>
-                            setDate(
-                              moment(date).subtract(1, "month").startOf("month")
-                            )
-                          }
-                        >
-                          <NavigateBeforeIcon />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() =>
-                            setDate(
-                              moment(date).add(1, "month").startOf("month")
-                            )
-                          }
-                        >
-                          <NavigateNextIcon />
-                        </IconButton>
-                      </Box>
-                      <Button onClick={() => setOpen(true)} variant="text">
-                        <Typography variant="subtitle2">
-                          다음 달 근로 신청하기
-                        </Typography>
-                      </Button>
-                    </Stack>
-                  </Box>
-                  <CustomRangeCalendar
-                    calendarStart={moment(date).startOf("month")}
-                    calendarEnd={moment(date).endOf("month")}
-                    value={date}
-                    onChange={(newValue) => setDate(newValue)}
-                    dayComponent={LargeViewDayComponent}
-                    data={monthData}
-                  />
-                </Paper>
-              </Grid>
+                  </Stack>
+                </Box>
+                <CustomRangeCalendar
+                  calendarStart={moment(date).startOf("month")}
+                  calendarEnd={moment(date).endOf("month")}
+                  value={date}
+                  onChange={(newValue) => setDate(newValue)}
+                  dayComponent={LargeViewDayComponent}
+                  data={monthData}
+                />
+              </Paper>
             </Grid>
-          </TabPanel>
-          <TabPanel value="calculate">
-            <Calculate />
-          </TabPanel>
-        </LocalizationProvider>
+          </Grid>
+        </TabPanel>
+        <TabPanel value="calculate">
+          <Calculate />
+        </TabPanel>
+        {/* </LocalizationProvider> */}
       </TabContext>
     </ScheduleContext.Provider>
   );
@@ -350,8 +344,8 @@ const LargeViewDayComponent = (props) => {
   );
   // console.log(value, hideContent);
   const { type } = data;
-  const events = useContext(EventsContext);
-  const htype = holidayType(value, events);
+  const calendar = useContext(CalendarContext);
+  const htype = holidayType(value, calendar);
   const key = value.format("YYYYMMDD");
   const startedTime = data.started
     ? moment(data.started.toDate()).format("HH:mm")
@@ -431,7 +425,7 @@ const LargeViewDayComponent = (props) => {
                     // }}
                     // primary={events[htype][key]}
                   >
-                    {events[htype][key]}
+                    {calendar[htype][key]}
                   </Typography>
                   {/* <Stack flexDirection="row">
                     <ListItemText
@@ -516,8 +510,8 @@ const LargeViewDayComponent = (props) => {
 
 export const PickersDayWithMarker = (props) => {
   const { day, type, outsideCurrentMonth, selected } = props;
-  const events = useContext(EventsContext);
-  const htype = holidayType(day, events);
+  const calendar = useContext(CalendarContext);
+  const htype = holidayType(day, calendar);
 
   const color = outsideCurrentMonth
     ? "text.disabled"
@@ -558,7 +552,7 @@ const SelectedDayDisplay = ({ date, data }) => {
 
 const ApplicationDisplay = ({ onClose }) => {
   const user = useContext(UserContext);
-  const events = useContext(EventsContext);
+  const calendar = useContext(CalendarContext);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState();
   const [range, setRange] = useState([null, null]);
@@ -645,7 +639,7 @@ const ApplicationDisplay = ({ onClose }) => {
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterMoment}>
+    <>
       <Stack direction="row" justifyContent="space-between" sx={{ p: 1 }}>
         <Stack>
           <Typography variant="h6">
@@ -718,10 +712,10 @@ const ApplicationDisplay = ({ onClose }) => {
               )} ~ ${selectedRange[1].format("Y년 M월 D일")}`}</Typography>
             </ListSubheader>
             {Object.keys(data).map((date, index) => {
-              const htype = holidayType(moment(date), events);
+              const htype = holidayType(moment(date), calendar);
               let secondaryText = koreanWeekDays[moment(date).day()];
               if (htype === "holiday" || htype === "vacation")
-                secondaryText += `, ${events[htype][date]}`;
+                secondaryText += `, ${calendar[htype][date]}`;
 
               return (
                 <Box key={index}>
@@ -815,13 +809,13 @@ const ApplicationDisplay = ({ onClose }) => {
             })}
           </List>
         ))}
-    </LocalizationProvider>
+    </>
   );
 };
 
 const Calculate = (props) => {
   const user = useContext(UserContext);
-  const events = useContext(EventsContext);
+  const calendar = useContext(CalendarContext);
   const [dateRange, setDateRange] = useState([null, null]); // 근로 시간 확인 & 급여 정산
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState([]);
@@ -860,7 +854,7 @@ const Calculate = (props) => {
             finished,
             // type
           } = data;
-          const htype = holidayType(moment(key), events);
+          const htype = holidayType(moment(key), calendar);
           if (htype !== "default") console.log("off day");
           else {
             const work = finish.toDate().getTime() - start.toDate().getTime();
@@ -941,7 +935,7 @@ const Calculate = (props) => {
         {showDetail &&
           data.map(({ key, data }) => {
             const d = moment(key);
-            const htype = holidayType(d, events);
+            const htype = holidayType(d, calendar);
             return (
               <Box key={key}>
                 <Typography>{d.format("M월 D일")}</Typography>
@@ -955,7 +949,7 @@ const Calculate = (props) => {
                 ) : htype === "sick" ? (
                   <Typography>병가</Typography>
                 ) : htype === "holiday" || htype === "vacation" ? (
-                  <Typography>{events[htype][key]}</Typography>
+                  <Typography>{calendar[htype][key]}</Typography>
                 ) : (
                   <Typography>{htype}</Typography>
                 )}

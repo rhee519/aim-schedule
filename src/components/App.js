@@ -4,7 +4,11 @@ import { auth, db } from "../myFirebase";
 import AppRouter from "./AppRouter";
 import Loading from "./Loading";
 import { doc, getDoc, setDoc, updateDoc } from "@firebase/firestore";
-import { EventsContext, UserContext } from "../contexts/Context";
+import {
+  CalendarContext,
+  CalendarHandler,
+  UserContext,
+} from "../contexts/Context";
 import { Box } from "@mui/material";
 import {
   fetchCalendarEvents,
@@ -12,6 +16,8 @@ import {
   userDocRef,
 } from "../docFunctions";
 import { QRreader } from "./QR";
+import { LocalizationProvider } from "@mui/lab";
+import AdapterMoment from "@mui/lab/AdapterMoment";
 
 const Error = (error) => {
   console.log("from App.js");
@@ -22,7 +28,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [userData, setUserData] = useState();
   const [scanner, setScanner] = useState(false);
-  const [events, setEvents] = useState();
+  const [calendar, setCalendar] = useState();
 
   const fetchUserData = useCallback(async (user) => {
     if (!user) {
@@ -111,7 +117,7 @@ function App() {
                 .then((snapshot) => {
                   const e = {};
                   snapshot.forEach((doc) => (e[doc.id] = doc.data()));
-                  setEvents(e);
+                  setCalendar(e);
                 })
                 .then(() => setIsLoading(false));
             })
@@ -138,11 +144,15 @@ function App() {
 
   return (
     <UserContext.Provider value={userData}>
-      <EventsContext.Provider value={events}>
-        <Box position="relative">
-          {isLoading ? <Loading /> : scanner ? <QRreader /> : <AppRouter />}
-        </Box>
-      </EventsContext.Provider>
+      <CalendarContext.Provider value={calendar}>
+        <CalendarHandler.Provider value={setCalendar}>
+          <LocalizationProvider dateAdapter={AdapterMoment}>
+            <Box position="relative">
+              {isLoading ? <Loading /> : scanner ? <QRreader /> : <AppRouter />}
+            </Box>
+          </LocalizationProvider>
+        </CalendarHandler.Provider>
+      </CalendarContext.Provider>
     </UserContext.Provider>
   );
 }

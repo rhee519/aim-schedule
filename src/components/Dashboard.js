@@ -11,7 +11,7 @@ import {
   Stack,
   ListItem,
 } from "@mui/material";
-import { EventsContext, UserContext } from "../contexts/Context";
+import { CalendarContext, UserContext } from "../contexts/Context";
 import moment from "moment";
 import CustomRangeCalendar, {
   DayComponentText,
@@ -21,12 +21,7 @@ import { Doughnut } from "react-chartjs-2";
 import "chart.js/auto";
 import { fetchMonthData, initialDailyData } from "../docFunctions";
 import { blue, red, grey } from "@mui/material/colors";
-import {
-  CalendarPickerSkeleton,
-  LocalizationProvider,
-  StaticDatePicker,
-} from "@mui/lab";
-import AdapterMoment from "@mui/lab/AdapterMoment";
+import { CalendarPickerSkeleton, StaticDatePicker } from "@mui/lab";
 import { PickersDayWithMarker, worktypeEmoji } from "./Schedule";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
@@ -81,7 +76,7 @@ const Dashboard = () => {
   }, [refetchData]);
 
   return (
-    <LocalizationProvider dateAdapter={AdapterMoment}>
+    <>
       <Box
         sx={{
           flexGrow: 1,
@@ -122,15 +117,15 @@ const Dashboard = () => {
           </Grid>
         </Grid>
       </Box>
-    </LocalizationProvider>
+    </>
   );
 };
 
 const DaySummary = (props) => {
   const { date, data } = props;
   const key = date.format("YYYYMMDD");
-  const events = useContext(EventsContext);
-  const htype = holidayType(date, events);
+  const calendar = useContext(CalendarContext);
+  const htype = holidayType(date, calendar);
   const { start, started, finish, finished, type } =
     data || initialDailyData(date);
   const noon = moment(date).startOf("day").hour(12).toDate();
@@ -205,7 +200,7 @@ const DaySummary = (props) => {
                   transform: "translate(-50%, -50%)",
                 }}
               >
-                {events[htype][key]}
+                {calendar[htype][key]}
               </Typography>
               <Doughnut
                 options={{
