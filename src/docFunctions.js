@@ -6,6 +6,7 @@ import {
   Timestamp,
 } from "@firebase/firestore";
 import moment from "moment";
+import { holidayType } from "./components/CustomRangeCalendar";
 import { db } from "./myFirebase";
 
 export const userDocRef = (uid) => doc(db, `userlist/${uid}`);
@@ -25,14 +26,25 @@ export const initialUserData = (user) => ({
 // 일간 근로 데이터 생성할 때 기본값
 // 날짜값은 Google Firebase에서 제공하는 class Timestamp 타입으로 저장!
 // 그래야 생성할 때와 fetch할 때 type 차이에서 오는 오류를 방지할 수 있음!
-export const initialDailyData = (date) => ({
-  start: Timestamp.fromDate(moment(date).startOf("d").hour(9).toDate()),
-  started: null,
-  finish: Timestamp.fromDate(moment(date).startOf("d").hour(18).toDate()),
-  finished: null,
-  log: [],
-  type: "work",
-});
+export const initialDailyData = (date, calendar) => {
+  const d = moment(date);
+  const key = d.format("YYYYMMDD");
+  const htype = holidayType(d, calendar);
+  const type =
+    htype === "saturday" ||
+    htype === "sunday" ||
+    (calendar[htype] && calendar[htype][key])
+      ? "offday"
+      : "work";
+  return {
+    start: Timestamp.fromDate(moment(d).startOf("d").hour(9).toDate()),
+    started: null,
+    finish: Timestamp.fromDate(moment(d).startOf("d").hour(18).toDate()),
+    finished: null,
+    log: [],
+    type,
+  };
+};
 
 // user의 월간 근로데이터 collection 레퍼런스
 export const monthDocRef = (uid, date) => {
@@ -131,9 +143,10 @@ export const eventDocRef = doc(db, "calendar/event");
 export const holidayDocRef = doc(db, "calendar/holiday");
 export const vacationDocRef = doc(db, "calendar/vacation");
 
-export const appliedSchedule = (dateRange) => ({
+export const appliedSchedule = (dateRange, workOnHoliday) => ({
   from: Timestamp.fromDate(dateRange[0].toDate()),
   to: Timestamp.fromDate(dateRange[1].toDate()),
+  workOnHoliday,
   status: "waiting",
   createdAt: Timestamp.now(),
 });

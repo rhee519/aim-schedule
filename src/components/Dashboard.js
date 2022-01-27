@@ -127,7 +127,7 @@ const DaySummary = (props) => {
   const calendar = useContext(CalendarContext);
   const htype = holidayType(date, calendar);
   const { start, started, finish, finished, type } =
-    data || initialDailyData(date);
+    data || initialDailyData(date, calendar);
   const noon = moment(date).startOf("day").hour(12).toDate();
   const outerOffset =
     (((start.toDate().getTime() - noon.getTime()) / 3600000) * 30) % 360;

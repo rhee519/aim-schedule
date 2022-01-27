@@ -11,7 +11,7 @@ import QrReader from "react-qr-reader";
 import { doc, getDoc, setDoc, updateDoc } from "@firebase/firestore";
 import { Box, Paper, Button, Typography } from "@mui/material";
 import { db } from "../myFirebase";
-import { UserContext } from "../contexts/Context";
+import { CalendarContext, UserContext } from "../contexts/Context";
 import moment from "moment";
 import { dayRef, initialDailyData } from "../docFunctions";
 import AudioSuccess from "../resources/qr-success.mp3";
@@ -104,6 +104,7 @@ const QRreader = () => {
   const audioError = useMemo(() => new Audio(AudioError), []);
 
   const history = useHistory();
+  const calendar = useContext(CalendarContext);
 
   const clearData = useCallback(() => {
     // n초 동안 현재 userData를 유지한다.
@@ -178,7 +179,7 @@ const QRreader = () => {
                     const { finish, log } = data;
                     log.push({ time: finish, type: "out" });
                     updateDoc(docRef, { finished: finish, log });
-                    CheckIn(uid);
+                    CheckIn(uid, calendar);
                     updateDoc(userRef, { lastLoginAt: new Date() });
                     setText(
                       `${userName}님 출근! 오늘은 퇴근할 때 잊지 말고 QR체크 부탁드려요.`
@@ -207,7 +208,7 @@ const QRreader = () => {
             playAudio(STATUS_SUCCESS);
           } else {
             // 출근
-            CheckIn(uid);
+            CheckIn(uid, calendar);
             updateDoc(userRef, { isWorking: true, lastLoginAt: new Date() });
             setText(`${userName}님 출근!`);
             setStatus(STATUS_SUCCESS);
@@ -230,7 +231,7 @@ const QRreader = () => {
         console.log(error);
         clearData();
       });
-  }, [scannedData, clearData, playAudio]);
+  }, [scannedData, clearData, playAudio, calendar]);
 
   const onLogOutClick = async () => {
     await auth.signOut().then(() => {
@@ -334,7 +335,7 @@ const QRreader = () => {
   );
 };
 
-const CheckIn = async (uid) => {
+const CheckIn = async (uid, calendar) => {
   const docRef = dayRef(uid, moment());
   await getDoc(docRef).then(async (docSnap) => {
     const time = new Date();
@@ -347,7 +348,11 @@ const CheckIn = async (uid) => {
     } else {
       const log = [];
       log.push({ time, type: "in" });
-      await setDoc(docRef, { ...initialDailyData(time), started: time, log });
+      await setDoc(docRef, {
+        ...initialDailyData(time, calendar),
+        started: time,
+        log,
+      });
     }
   });
 };

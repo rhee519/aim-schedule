@@ -37,6 +37,9 @@ import {
   Modal,
   IconButton,
   Tab,
+  Checkbox,
+  FormGroup,
+  FormControlLabel,
 } from "@mui/material";
 import moment from "moment";
 import {
@@ -78,6 +81,12 @@ const isWeekend = (date) => {
 };
 
 export const koreanWeekDays = ["일", "월", "화", "수", "목", "금", "토"];
+
+// 근로 신청 가능한 시각 (ex. 20.5 == 오후 8시 30분)
+const availableTimes = [
+  9, 9.5, 10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15, 15.5, 16, 16.5,
+  17, 17.5, 18, 18.5, 19, 19.5, 20, 20.5, 21, 21.5, 22,
+];
 
 const Schedule = () => {
   const user = useContext(UserContext);
@@ -170,6 +179,7 @@ const Schedule = () => {
                 left: "50%",
                 transform: "translate(-50%, -50%)",
                 width: "80%",
+                minWidth: 400,
                 height: "80%",
                 overflowY: "scroll",
               }}
@@ -564,7 +574,7 @@ const ApplicationDisplay = ({ onClose }) => {
       const responses = [];
       for (let d = moment(from); d.isSameOrBefore(to); d.add(1, "d")) {
         const key = moment(d).format("YYYYMMDD");
-        const initData = initialDailyData(moment(d));
+        const initData = initialDailyData(moment(d), calendar);
         responses.push(
           fetchDayData(user.uid, moment(d)).then(async (docSnap) => ({
             key,
@@ -587,13 +597,14 @@ const ApplicationDisplay = ({ onClose }) => {
         })
         .then(() => setLoading(false));
     },
-    [user.uid]
+    [user.uid, calendar]
   );
 
   const handleStartChange = (event, date) => {
-    // const docRef = dayRef(user.uid, date);
+    const hour = Math.floor(event.target.value);
+    const minute = event.target.value - hour === 0 ? 0 : 30;
     const start = Timestamp.fromDate(
-      moment(date).startOf("d").hour(event.target.value).toDate()
+      moment(date).startOf("d").hour(hour).minute(minute).toDate()
     );
     const newData = { ...data[date], start };
     setData((prev) => ({ ...prev, [date]: newData }));
@@ -601,10 +612,12 @@ const ApplicationDisplay = ({ onClose }) => {
   };
 
   const handleFinishChange = (event, date) => {
-    // const docRef = dayRef(user.uid, date);
+    const hour = Math.floor(event.target.value);
+    const minute = event.target.value - hour === 0 ? 0 : 30;
     const finish = Timestamp.fromDate(
-      moment(date).startOf("d").hour(event.target.value).toDate()
+      moment(date).startOf("d").hour(hour).minute(minute).toDate()
     );
+
     const newData = { ...data[date], finish };
     setData((prev) => ({ ...prev, [date]: newData }));
     // await updateDoc(docRef, newData);
@@ -632,8 +645,18 @@ const ApplicationDisplay = ({ onClose }) => {
     });
 
     // 해당 기간에 근로 신청을 새롭게 했음을 업데이트
+    let workOnHoliday = false;
+    Object.keys(data).forEach((key) => {
+      const htype = holidayType(moment(key), calendar);
+      const { type } = data[key];
+      if (htype !== "default" && type !== "offday") {
+        workOnHoliday = true;
+        return;
+      }
+    });
+
+    const schedule = appliedSchedule(selectedRange, workOnHoliday);
     const userRef = userDocRef(user.uid);
-    const schedule = appliedSchedule(selectedRange);
     await updateDoc(userRef, { schedule });
     onClose();
   };
@@ -646,7 +669,7 @@ const ApplicationDisplay = ({ onClose }) => {
             💳 급여 정산일은 매월 25일입니다.
           </Typography>
           <Typography variant="h6">
-            ⚠️ SAVE를 클릭하지 않으면 데이터가 날아갑니다!
+            ⚠️ SAVE를 클릭하지 않으면 데이터가 DB에 저장되지 않습니다!
           </Typography>
         </Stack>
         <Box>
@@ -711,97 +734,175 @@ const ApplicationDisplay = ({ onClose }) => {
                 "Y년 M월 D일"
               )} ~ ${selectedRange[1].format("Y년 M월 D일")}`}</Typography>
             </ListSubheader>
-            {Object.keys(data).map((date, index) => {
-              const htype = holidayType(moment(date), calendar);
-              let secondaryText = koreanWeekDays[moment(date).day()];
-              if (htype === "holiday" || htype === "vacation")
-                secondaryText += `, ${calendar[htype][date]}`;
+            {Object.keys(data).map((key, index) => {
+              const date = moment(key);
+              const weekend = isWeekend(key);
+              const htype = holidayType(date, calendar);
+              const offday = htype === "holiday" || htype === "vacation";
+              const holidayText = offday ? calendar[htype][key] : "";
+              const secondaryText =
+                koreanWeekDays[date.day()] + ` ${holidayText}`;
 
               return (
                 <Box key={index}>
                   <ListItem>
                     <ListItemText
                       variant="body2"
-                      primary={moment(date).format("M월 D일")}
+                      primary={date.format("M월 D일")}
                       secondary={secondaryText}
                     />
+                    {(offday || weekend) && (
+                      <ListItemText
+                        variant="body2"
+                        // primary="신청"
+                        secondary={"신청 시 관리자 승인 필요"}
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          textAlign: "center",
+                        }}
+                      >
+                        <FormGroup>
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                sx={{ p: 0 }}
+                                checked={data[key].type !== "offday"}
+                                onChange={(event) => {
+                                  const dailyData = { ...data[key] };
+                                  dailyData.type = event.target.checked
+                                    ? "work"
+                                    : "offday";
+                                  setData({ ...data, [key]: dailyData });
+                                }}
+                              />
+                            }
+                            label="근로 신청하기"
+                          />
+                        </FormGroup>
+                      </ListItemText>
+                    )}
 
-                    {!isWeekend(date) && htype === "default" && (
+                    {
+                      // !isWeekend(date) && htype === "default" &&
                       <Box>
                         <FormControl variant="standard">
                           <InputLabel>근로 형태</InputLabel>
                           <Select
-                            value={data[date].type}
+                            value={data[key].type}
                             onChange={(event) => handleTypeChange(event, date)}
-                            disabled={data[date].type === "sick"}
+                            disabled={
+                              data[key].type === "sick" ||
+                              data[key].type === "offday"
+                            }
+                            sx={{ width: 90 }}
                           >
                             <MenuItem value="work">근로</MenuItem>
                             <MenuItem value="annual">연차</MenuItem>
                             <MenuItem value="half">반차</MenuItem>
+                            <MenuItem value="alt">대체 휴무</MenuItem>
+                            <MenuItem value="offday" disabled>
+                              휴일
+                            </MenuItem>
                             <MenuItem value="sick" disabled>
                               병가
                             </MenuItem>
                           </Select>
                         </FormControl>
 
-                        <FormControl variant="standard">
+                        <FormControl variant="standard" sx={{ ml: 1 }}>
                           <InputLabel>출근</InputLabel>
                           <Select
-                            value={data[date].start.toDate().getHours()}
+                            value={
+                              data[key].start.toDate().getHours() +
+                              (data[key].start.toDate().getMinutes() === 0
+                                ? 0
+                                : 0.5)
+                            }
                             label="출근"
                             onChange={(event) => handleStartChange(event, date)}
                             disabled={
-                              data[date].type === "annual" ||
-                              data[date].type === "sick"
+                              data[key].type === "annual" ||
+                              data[key].type === "sick" ||
+                              data[key].type === "alt" ||
+                              data[key].type === "offday"
                             }
+                            sx={{ width: 80 }}
                           >
-                            <MenuItem value={9}>9시</MenuItem>
-                            <MenuItem value={10}>10시</MenuItem>
-                            <MenuItem value={11}>11시</MenuItem>
-                            <MenuItem value={12}>12시</MenuItem>
-                            <MenuItem value={13}>13시</MenuItem>
-                            <MenuItem value={14}>14시</MenuItem>
-                            <MenuItem value={15}>15시</MenuItem>
-                            <MenuItem value={16}>16시</MenuItem>
-                            <MenuItem value={17}>17시</MenuItem>
-                            <MenuItem value={18}>18시</MenuItem>
-                            <MenuItem value={19}>19시</MenuItem>
-                            <MenuItem value={20}>20시</MenuItem>
-                            <MenuItem value={21}>21시</MenuItem>
-                            <MenuItem value={22}>22시</MenuItem>
+                            {availableTimes.map((value, index) => {
+                              const hour = Math.floor(value);
+                              const minute = value - hour === 0 ? 0 : 30;
+                              const timeString = `${hour}:${minute
+                                .toString()
+                                .padStart(2, "0")}`;
+                              const finishValue =
+                                data[key].finish.toDate().getHours() +
+                                (data[key].finish.toDate().getMinutes() === 0
+                                  ? 0
+                                  : 0.5);
+                              const disabled =
+                                hour + minute / 60 >= finishValue;
+                              return (
+                                <MenuItem
+                                  key={index}
+                                  value={value}
+                                  disabled={disabled}
+                                >
+                                  {timeString}
+                                </MenuItem>
+                              );
+                            })}
                           </Select>
                         </FormControl>
-                        <FormControl variant="standard">
+                        <FormControl variant="standard" sx={{ ml: 1 }}>
                           <InputLabel>퇴근</InputLabel>
                           <Select
-                            value={data[date].finish.toDate().getHours()}
+                            value={
+                              data[key].finish.toDate().getHours() +
+                              (data[key].finish.toDate().getMinutes() === 0
+                                ? 0
+                                : 0.5)
+                            }
                             label="퇴근"
                             onChange={(event) =>
                               handleFinishChange(event, date)
                             }
                             disabled={
-                              data[date].type === "annual" ||
-                              data[date].type === "sick"
+                              data[key].type === "annual" ||
+                              data[key].type === "sick" ||
+                              data[key].type === "alt" ||
+                              data[key].type === "offday"
                             }
+                            sx={{ width: 80 }}
                           >
-                            <MenuItem value={9}>9시</MenuItem>
-                            <MenuItem value={10}>10시</MenuItem>
-                            <MenuItem value={11}>11시</MenuItem>
-                            <MenuItem value={12}>12시</MenuItem>
-                            <MenuItem value={13}>13시</MenuItem>
-                            <MenuItem value={14}>14시</MenuItem>
-                            <MenuItem value={15}>15시</MenuItem>
-                            <MenuItem value={16}>16시</MenuItem>
-                            <MenuItem value={17}>17시</MenuItem>
-                            <MenuItem value={18}>18시</MenuItem>
-                            <MenuItem value={19}>19시</MenuItem>
-                            <MenuItem value={20}>20시</MenuItem>
-                            <MenuItem value={21}>21시</MenuItem>
-                            <MenuItem value={22}>22시</MenuItem>
+                            {availableTimes.map((value, index) => {
+                              const hour = Math.floor(value);
+                              const minute = value - hour === 0 ? 0 : 30;
+                              const timeString = `${hour}:${minute
+                                .toString()
+                                .padStart(2, "0")}`;
+                              const startValue =
+                                data[key].start.toDate().getHours() +
+                                (data[key].start.toDate().getMinutes() === 0
+                                  ? 0
+                                  : 0.5);
+                              const disabled = hour + minute / 60 <= startValue;
+                              return (
+                                <MenuItem
+                                  key={index}
+                                  value={value}
+                                  disabled={disabled}
+                                >
+                                  {timeString}
+                                </MenuItem>
+                              );
+                            })}
                           </Select>
                         </FormControl>
                       </Box>
-                    )}
+                    }
                   </ListItem>
                   <Divider variant="fullWidth" />
                 </Box>
@@ -836,7 +937,7 @@ const Calculate = (props) => {
       responses.push(
         fetchDayData(user.uid, moment(d)).then((docSnap) => {
           if (docSnap.exists()) return { key, data: docSnap.data() };
-          else return { key, data: initialDailyData(moment(key)) };
+          else return { key, data: initialDailyData(moment(key), calendar) };
         })
       );
     }

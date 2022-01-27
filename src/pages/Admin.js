@@ -347,7 +347,8 @@ const UserDisplay = (props) => {
                   selectedUser={user}
                   date={date}
                   data={
-                    monthData[date.format("YYYYMMDD")] || initialDailyData(date)
+                    monthData[date.format("YYYYMMDD")] ||
+                    initialDailyData(date, calendar)
                   }
                 />
               </Box>
@@ -365,21 +366,17 @@ const UserDisplay = (props) => {
               {!loadingSchedule &&
                 (schedule ? (
                   <>
-                    <ListItemText
-                      primary="최근 근로 신청"
-                      secondary={moment(schedule.createdAt.toDate()).format(
-                        "M월 D일 HH:mm 신청함"
-                      )}
-                    />
                     <Stack
                       direction="row"
                       justifyContent="space-between"
                       alignItems="center"
                     >
-                      <Typography>
-                        {moment(schedule.from.toDate()).format("M월 D일")} -{" "}
-                        {moment(schedule.to.toDate()).format("M월 D일")}
-                      </Typography>
+                      <ListItemText
+                        primary="최근 근로 신청"
+                        secondary={moment(schedule.createdAt.toDate()).format(
+                          "M월 D일 HH:mm 신청함"
+                        )}
+                      />
                       {schedule.status === "waiting" ? (
                         <Box>
                           <Button
@@ -405,6 +402,22 @@ const UserDisplay = (props) => {
                         <></>
                       )}
                     </Stack>
+                    <Stack
+                      // direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      {schedule.workOnHoliday && (
+                        <Typography variant="h6">
+                          🚨 휴일 근로 신청이 있습니다!
+                        </Typography>
+                      )}
+                      <Typography>
+                        신청기간:{" "}
+                        {moment(schedule.from.toDate()).format("M월 D일")} -{" "}
+                        {moment(schedule.to.toDate()).format("M월 D일")}
+                      </Typography>
+                    </Stack>
                   </>
                 ) : (
                   <Typography>아직 근로 신청을 하지 않았습니다.</Typography>
@@ -415,13 +428,17 @@ const UserDisplay = (props) => {
               {Object.keys(monthData).map((key, index) => {
                 const dailyData =
                   (monthData && monthData[key]) ||
-                  initialDailyData(moment(key));
+                  initialDailyData(moment(key), calendar);
                 const { type } = dailyData;
                 const htype = holidayType(moment(key), calendar);
-                let secondaryText = koreanWeekDays[moment(key).day()];
+                const notice =
+                  htype !== "default" && type !== "offday" ? "🚨" : undefined;
+
+                let secondaryText = notice || koreanWeekDays[moment(key).day()];
                 if (htype === "vacation" || htype === "holiday")
                   secondaryText += `, ${calendar[htype][key]}`;
-                const hideTimePrimary = htype !== "default";
+                const hideTimePrimary =
+                  htype !== "default" && type === "offday";
                 const startPrimary = hideTimePrimary
                   ? ""
                   : moment(dailyData.start.toDate()).format("HH:mm");
@@ -430,14 +447,14 @@ const UserDisplay = (props) => {
                   : moment(dailyData.finish.toDate()).format("HH:mm");
                 const startedSecondary = dailyData.started
                   ? `${moment(dailyData.started.toDate()).format("HH:mm")} 출근`
-                  : htype === "default"
+                  : !hideTimePrimary
                   ? "-"
                   : "";
                 const finishedSecondary = dailyData.finished
                   ? `${moment(dailyData.finished.toDate()).format(
                       "HH:mm"
                     )} 퇴근`
-                  : htype === "default"
+                  : !hideTimePrimary
                   ? "-"
                   : "";
 

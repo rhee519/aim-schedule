@@ -94,7 +94,7 @@ const CustomRangeCalendar = (props) => {
                 onClick={() => onChange(date)}
                 data={
                   (data && data[date.format("YYYYMMDD")]) ||
-                  initialDailyData(date)
+                  initialDailyData(date, calendar)
                 }
                 holidayType={holidayType(date, calendar)}
               />
