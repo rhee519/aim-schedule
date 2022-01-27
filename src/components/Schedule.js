@@ -96,7 +96,7 @@ const Schedule = () => {
   const [monthData, setMonthData] = useState({}); // 선택된 월의 데이터
   const [loading, setLoading] = useState(true); // monthData fetch 여부
   const calendar = useContext(CalendarContext); // 휴무, 공휴일, 행사, 정산 일정
-  const [schedule, setSchedule] = useState();
+  const [schedule, setSchedule] = useState(); // 근로 신청 내용
 
   const fetchSchedule = useCallback(async () => {
     fetchUser(user.uid).then((docSnap) => {
@@ -202,6 +202,44 @@ const Schedule = () => {
                   width: "100%",
                 }}
               >
+                {schedule && (
+                  <>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <ListItemText
+                        primary="최근 근로 신청"
+                        secondary={moment(schedule.createdAt.toDate()).format(
+                          "M월 D일 HH:mm 신청함"
+                        )}
+                      />
+                      <ListItemText
+                        sx={{ textAlign: "right" }}
+                        secondary={
+                          schedule.status === "waiting"
+                            ? "대기중"
+                            : schedule.status === "confirmed"
+                            ? "승인됨"
+                            : schedule.status === "rejected"
+                            ? "반려됨"
+                            : ""
+                        }
+                      />
+                    </Stack>
+                    {schedule.workOnHoliday && (
+                      <Typography variant="h6">
+                        🚨 휴일 근로 신청이 있습니다!
+                      </Typography>
+                    )}
+                    <Typography>
+                      신청기간:{" "}
+                      {moment(schedule.from.toDate()).format("M월 D일")} -{" "}
+                      {moment(schedule.to.toDate()).format("M월 D일")}
+                    </Typography>
+                  </>
+                )}
                 <Paper
                   sx={{
                     position: "relative",
@@ -262,6 +300,47 @@ const Schedule = () => {
                   minWidth: 650,
                 }}
               >
+                {schedule && (
+                  <Box sx={{ width: "100%", display: "flex", p: 1 }}>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      sx={{ width: 250 }}
+                    >
+                      <ListItemText
+                        primary="최근 근로 신청"
+                        secondary={moment(schedule.createdAt.toDate()).format(
+                          "M월 D일 HH:mm 신청함"
+                        )}
+                      />
+                      <ListItemText
+                        sx={{ textAlign: "right" }}
+                        secondary={
+                          schedule.status === "waiting"
+                            ? "대기중"
+                            : schedule.status === "confirmed"
+                            ? "승인됨"
+                            : schedule.status === "rejected"
+                            ? "반려됨"
+                            : ""
+                        }
+                      />
+                    </Stack>
+                    <Stack alignItems="flex-end" flexGrow={1}>
+                      {schedule.workOnHoliday && (
+                        <Typography variant="h6">
+                          🚨 휴일 근로 신청이 있습니다!
+                        </Typography>
+                      )}
+                      <Typography>
+                        신청기간:{" "}
+                        {moment(schedule.from.toDate()).format("M월 D일")} -{" "}
+                        {moment(schedule.to.toDate()).format("M월 D일")}
+                      </Typography>
+                    </Stack>
+                  </Box>
+                )}
                 <Box
                   display="flex"
                   justifyContent="space-between"
@@ -400,7 +479,7 @@ const LargeViewDayComponent = (props) => {
         boxSizing: "border-box",
         border: today ? "1px solid" : "none",
         borderColor: today ? "primary.main" : "none",
-        borderRadius: today ? 3 : 0,
+        borderRadius: 3,
       }}
     >
       {!outOfRange && (
