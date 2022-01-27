@@ -131,14 +131,14 @@ const Schedule = () => {
       fetchMonthData(user.uid, date)
         .then((snapshot) => {
           const data = {};
-          for (
-            let d = moment(date).startOf("month");
-            d.isSame(moment(date), "month");
-            d.add(1, "d")
-          ) {
-            const key = d.format("YYYYMMDD");
-            data[key] = undefined;
-          }
+          // for (
+          //   let d = moment(date).startOf("month");
+          //   d.isSame(moment(date), "month");
+          //   d.add(1, "d")
+          // ) {
+          //   const key = d.format("YYYYMMDD");
+          //   data[key] = undefined;
+          // }
           snapshot.forEach(
             (doc) =>
               (data[moment(date).date(doc.id).format("YYYYMMDD")] = doc.data())
@@ -344,35 +344,52 @@ const Schedule = () => {
 
 const LargeViewDayComponent = (props) => {
   const schedule = useContext(ScheduleContext);
+  const calendar = useContext(CalendarContext);
   const { value, today, outOfRange, data } = props;
   const hideContent = useMemo(
     () =>
-      schedule
+      data && schedule
         ? moment(value).isAfter(schedule.to.toDate(), "d")
-        : Boolean(!(data && data.started)),
+        : true,
     [schedule, data, value]
   );
-  // console.log(value, hideContent);
-  const { type } = data;
-  const calendar = useContext(CalendarContext);
+
+  const { type } = data || initialDailyData(value, calendar);
   const htype = holidayType(value, calendar);
   const key = value.format("YYYYMMDD");
-  const startedTime = data.started
-    ? moment(data.started.toDate()).format("HH:mm")
-    : htype !== "default"
-    ? ""
-    : "-";
-  const finishedTime = data.finished
-    ? moment(data.finished.toDate()).format("HH:mm")
-    : htype !== "default"
-    ? ""
-    : "-";
+  // console.log(value, calendar.event[key]);
+
+  const startTime =
+    data && data.start && moment(data.start.toDate()).format("HH:mm");
+
+  const finishTime =
+    data && data.finish && moment(data.finish.toDate()).format("HH:mm");
+
+  const startedTime =
+    data && data.started
+      ? moment(data.started.toDate()).format("HH:mm")
+      : type === "work" || type === "half" || type === "sick"
+      ? "-"
+      : "";
+
+  const finishedTime =
+    data && data.finished
+      ? moment(data.finished.toDate()).format("HH:mm")
+      : type === "work" || type === "half" || type === "sick"
+      ? "-"
+      : "";
+
   const dateColor =
     htype === "holiday" || htype === "vacation" || value.day() === 0
       ? "error.main"
       : value.day() === 6
       ? "primary.main"
       : "text.primary";
+
+  const titleList = [];
+  if (calendar.event[key]) titleList.push(calendar.event[key]);
+  if (calendar[htype] && calendar[htype][key])
+    titleList.push(calendar[htype][key]);
 
   return (
     <Box
@@ -411,71 +428,34 @@ const LargeViewDayComponent = (props) => {
           />
           {type !== "annual" && (
             <List>
-              {(htype === "holiday" || htype === "vacation") && (
-                <ListItem sx={{ flexDirection: "column" }}>
-                  <Typography
-                    fontSize={10}
-                    textAlign="center"
-                    sx={{ width: "100%", position: "absolute", top: 0 }}
-                    // sx={{
-                    //   position: "absolute",
-                    //   t: 0,
-                    //   right: 0,
-                    // }}
-                    // sx={{
-                    //   m: 0,
-                    //   "& .MuiListItemText-primary": {
-                    //     fontSize: 10,
-                    //     textAlign: "center",
-                    //   },
-                    //   "& .MuiListItemText-secondary": {
-                    //     fontSize: 10,
-                    //     textAlign: "center",
-                    //   },
-                    // }}
-                    // primary={events[htype][key]}
-                  >
-                    {calendar[htype][key]}
-                  </Typography>
-                  {/* <Stack flexDirection="row">
-                    <ListItemText
-                      sx={{
-                        m: 0,
-                        "& .MuiListItemText-primary": {
-                          fontSize: 10,
-                          textAlign: "center",
-                        },
-                        "& .MuiListItemText-secondary": {
-                          fontSize: 10,
-                          textAlign: "center",
-                        },
-                      }}
-                      secondary="hi"
-                    />
-                    <ListItemText
-                      sx={{
-                        m: 0,
-                        "& .MuiListItemText-primary": {
-                          fontSize: 10,
-                          textAlign: "center",
-                        },
-                        "& .MuiListItemText-secondary": {
-                          fontSize: 10,
-                          textAlign: "center",
-                        },
-                      }}
-                      secondary="hi"
-                    />
-                  </Stack> */}
-                </ListItem>
-              )}
+              <ListItem sx={{ flexDirection: "column" }}>
+                <Stack sx={{ width: "100%", position: "absolute", top: 0 }}>
+                  {titleList.map((title, index) => (
+                    <Typography
+                      key={index}
+                      fontSize={10}
+                      textAlign="center"
+                      sx={{ p: 0, m: 0 }}
+                    >
+                      {title}
+                    </Typography>
+                  ))}
+                </Stack>
+
+                {/* <Typography
+                  fontSize={10}
+                  textAlign="center"
+                  sx={{ width: "100%", position: "absolute", top: 0 }}
+                >
+                </Typography> */}
+              </ListItem>
 
               {!hideContent && (
                 <ListItem>
                   <ListItemText
                     primary={
-                      !(isWeekend(value) || htype !== "default") &&
-                      moment(data.start.toDate()).format("HH:mm")
+                      (type === "work" || type === "half" || type === "sick") &&
+                      startTime
                     }
                     secondary={startedTime}
                     sx={{
@@ -492,8 +472,8 @@ const LargeViewDayComponent = (props) => {
                   />
                   <ListItemText
                     primary={
-                      !(isWeekend(value) || htype !== "default") &&
-                      moment(data.finish.toDate()).format("HH:mm")
+                      (type === "work" || type === "half" || type === "sick") &&
+                      finishTime
                     }
                     secondary={finishedTime}
                     sx={{

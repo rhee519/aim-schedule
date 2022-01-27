@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import moment from "moment";
 import React, { useMemo, useContext } from "react";
-import { initialDailyData } from "../docFunctions";
+// import { initialDailyData } from "../docFunctions";
 import { CalendarContext } from "../contexts/Context";
 
 const weekdays = ["S", "M", "T", "W", "T", "F", "S"];
@@ -92,10 +92,7 @@ const CustomRangeCalendar = (props) => {
                 }
                 selected={value && value.format("YMD") === date.format("YMD")}
                 onClick={() => onChange(date)}
-                data={
-                  (data && data[date.format("YYYYMMDD")]) ||
-                  initialDailyData(date, calendar)
-                }
+                data={data && data[date.format("YYYYMMDD")]}
                 holidayType={holidayType(date, calendar)}
               />
             )}
