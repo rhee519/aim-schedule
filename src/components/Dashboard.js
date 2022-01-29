@@ -5,7 +5,7 @@ import {
   Paper as MuiPaper,
   Typography,
   experimentalStyled as styled,
-  // IconButton,
+  IconButton,
   TextField,
   ListItemText,
   Stack,
@@ -14,12 +14,16 @@ import {
 import { CalendarContext, UserContext } from "../contexts/Context";
 import moment from "moment";
 import CustomRangeCalendar, {
-  // DayComponentText,
+  DayComponentText,
   holidayType,
 } from "./CustomRangeCalendar";
 import { Doughnut } from "react-chartjs-2";
 import "chart.js/auto";
-import { fetchMonthData, initialDailyData } from "../docFunctions";
+import {
+  fetchDayData,
+  fetchMonthData,
+  initialDailyData,
+} from "../docFunctions";
 import { blue, red, grey, green } from "@mui/material/colors";
 import { CalendarPickerSkeleton, StaticDatePicker } from "@mui/lab";
 import { PickersDayWithMarker, worktypeEmoji } from "./Schedule";
@@ -36,30 +40,49 @@ const Paper = styled(MuiPaper)(({ theme }) => ({
 const Dashboard = () => {
   const user = useContext(UserContext);
   const [date, setDate] = useState(moment()); // datepicker에서 선택한 날짜
-  const [data, setData] = useState({}); // 선택된 날짜가 포함된 월간 데이터
+  const [data, setData] = useState({}); // 선택된 날짜가 포함된 월간+주간 데이터
   const [loading, setLoading] = useState(true);
 
   const handleChange = (value) => setDate(value);
   const fetchData = useCallback(
     async (date) => {
       setLoading(true);
-      setDate(date);
+      console.log("fetched");
       fetchMonthData(user.uid, date)
         .then((snapshot) => {
-          const data = {};
+          // 이번 달 근로 정보 fetch
+          const newData = {};
+          snapshot.forEach(
+            (doc) =>
+              (newData[moment(date).date(doc.id).format("YYYYMMDD")] =
+                doc.data())
+          );
+          setData((prev) => ({ ...prev, ...newData }));
+        })
+        .then(() => {
+          // 이번 주 근로 정보 fetch
+          const weekStart = moment(date).startOf("week");
+          const weekEnd = moment(date).endOf("week");
+          const responses = [];
           for (
-            let d = moment(date).startOf("month").startOf("week");
-            d.isSameOrBefore(moment(date).endOf("month").endOf("week"), "day");
+            let d = moment(weekStart);
+            d.isSameOrBefore(moment(weekEnd));
             d.add(1, "d")
           ) {
             const key = d.format("YYYYMMDD");
-            data[key] = undefined;
+            responses.push(
+              fetchDayData(user.uid, d).then((docSnap) => ({
+                key,
+                data: docSnap.exists() ? docSnap.data() : undefined,
+              }))
+            );
           }
-          snapshot.forEach(
-            (doc) =>
-              (data[moment(date).date(doc.id).format("YYYYMMDD")] = doc.data())
-          );
-          setData((prev) => ({ ...prev, ...data }));
+
+          Promise.all(responses).then((snapshot) => {
+            const newData = {};
+            snapshot.forEach(({ key, data }) => (newData[key] = data));
+            setData((prev) => ({ ...prev, ...newData }));
+          });
         })
         .then(() => setLoading(false));
     },
@@ -67,10 +90,11 @@ const Dashboard = () => {
   );
 
   useEffect(() => {
+    setLoading(true);
     fetchData(moment());
     return () => {
+      setDate(moment());
       setData();
-      setDate();
       setLoading();
     };
   }, [fetchData]);
@@ -197,12 +221,8 @@ const DaySummary = (props) => {
       ? (finished.toDate().getTime() - started.toDate().getTime()) / 3600000
       : (moment(date).toDate().getTime() - started.toDate().getTime()) / 3600000
     : 0;
-  const diffMinutes = Math.round((workedtime - worktime) * 60);
-  const diffString =
-    diffMinutes > 0
-      ? `+${Math.floor(diffMinutes / 60)}시간 ${diffMinutes % 60}분`
-      : `-${Math.floor(-diffMinutes / 60)}시간 ${-diffMinutes % 60}분`;
   const emoji = worktypeEmoji(type);
+  const wText = worktimeText(data);
 
   return (
     <Stack spacing={1}>
@@ -213,7 +233,7 @@ const DaySummary = (props) => {
           primaryTypographyProps={{ fontSize: 20 }}
         />
         <ListItemText
-          primary={workedtime > 0 ? diffString : emoji}
+          primary={wText ? wText.difference : emoji}
           primaryTypographyProps={{ fontSize: 14, textAlign: "right" }}
           secondary={calendar.event[key]}
           secondaryTypographyProps={{ fontSize: 14, textAlign: "right" }}
@@ -566,9 +586,10 @@ const WorkTimeStatus = (props) => {
 };
 
 const WeekSummary = (props) => {
-  const { value, onChange } = props;
-  const startDate = moment().startOf("week");
-  const endDate = moment().endOf("week");
+  const { value, onChange, data } = props;
+
+  const startDate = moment(value).startOf("week");
+  const endDate = moment(value).endOf("week");
   return (
     <>
       <CalendarLabel calendarStart={startDate} calendarEnd={endDate} />
@@ -577,41 +598,53 @@ const WeekSummary = (props) => {
         calendarEnd={endDate}
         value={value}
         onChange={onChange}
-        // dayComponent={DayComponentProgress}
+        dayComponent={WeekDayComponent}
+        data={data}
       />
-      <p>주간 정보 표시</p>
     </>
   );
 };
 
-// const DayComponentProgress = (props) => {
-//   const { value, today, outOfRange, selected, onClick } = props;
+const WeekDayComponent = (props) => {
+  const { value, today, outOfRange, selected, onClick, data } = props;
+  // const key = value.format("YYYYMMDD");
+  // const showText = Boolean(data);
+  const wText = worktimeText(data);
 
-//   return (
-//     <Box>
-//       <IconButton
-//         size="small"
-//         sx={{
-//           width: 36,
-//           height: 36,
-//           bgcolor: selected ? "primary.main" : "none",
-//           "&:hover": {
-//             bgcolor: selected ? "primary.main" : "",
-//           },
-//         }}
-//         disabled={outOfRange}
-//         onClick={onClick}
-//       >
-//         <DayComponentText
-//           value={value}
-//           today={today}
-//           outOfRange={outOfRange}
-//           selected={selected}
-//         />
-//       </IconButton>
-//     </Box>
-//   );
-// };
+  return (
+    <Stack
+      // justifyContent="center"
+      alignItems="center"
+      sx={{
+        width: "100%",
+        // height: 70,
+        // bgcolor: "green",
+      }}
+    >
+      <IconButton
+        size="small"
+        sx={{
+          width: 36,
+          height: 36,
+          bgcolor: selected ? "primary.main" : "none",
+          "&:hover": {
+            bgcolor: selected ? "primary.main" : "",
+          },
+        }}
+        disabled={outOfRange}
+        onClick={onClick}
+      >
+        <DayComponentText
+          value={value}
+          today={today}
+          outOfRange={outOfRange}
+          selected={selected}
+        />
+      </IconButton>
+      {wText && <ListItemText secondary={wText.difference} />}
+    </Stack>
+  );
+};
 
 const MonthSummary = (props) => {
   const { value, onChange, data, fetch, loading } = props;
@@ -653,5 +686,35 @@ const CalendarLabel = ({ calendarStart, calendarEnd }) => (
     <Typography variant="caption">{calendarEnd.format("Do")}</Typography>
   </Box>
 );
+
+const worktimeText = (data) => {
+  if (!data) return null;
+
+  const { start, started, finish, finished } = data;
+
+  const workMinutes =
+    (finish.toDate().getTime() - start.toDate().getTime()) / 60000;
+  const workedMinutes = started
+    ? finished
+      ? (finished.toDate().getTime() - started.toDate().getTime()) / 60000
+      : moment(started.toDate()).isSame(moment(), "d")
+      ? (moment().toDate().getTime() - started.toDate().getTime()) / 60000
+      : 0
+    : 0;
+  const diffMinutes = Math.round(workedMinutes - workMinutes);
+
+  const timeHour = Math.floor(workedMinutes / 60);
+  const timeMinute = Math.round(workedMinutes % 60);
+  const time = timeHour > 0 ? `${timeHour}h ${timeMinute}m` : `${timeMinute}m`;
+
+  const diffHour = Math.floor(Math.abs(diffMinutes) / 60);
+  const diffMinute = Math.round(Math.abs(diffMinutes) % 60);
+  const difference =
+    diffMinutes > 0
+      ? `+${(diffHour && diffHour) || ""}h ${diffMinute}m`
+      : `-${(diffHour && diffHour) || ""}h ${diffMinute}m`;
+
+  return { time, difference };
+};
 
 export default Dashboard;
