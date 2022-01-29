@@ -1009,7 +1009,7 @@ const InputEvent = ({ date, text, onDateChange, onTextChange, onClick }) => {
           onChange={onTextChange}
         />
       </Stack>
-      <Fab color="primary" size="small" onClick={onClick}>
+      <Fab color="primary" size="small" onClick={onClick} disabled={!text}>
         <AddIcon />
       </Fab>
     </Stack>

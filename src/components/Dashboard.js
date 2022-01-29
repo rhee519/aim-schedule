@@ -5,7 +5,7 @@ import {
   Paper as MuiPaper,
   Typography,
   experimentalStyled as styled,
-  IconButton,
+  // IconButton,
   TextField,
   ListItemText,
   Stack,
@@ -14,13 +14,13 @@ import {
 import { CalendarContext, UserContext } from "../contexts/Context";
 import moment from "moment";
 import CustomRangeCalendar, {
-  DayComponentText,
+  // DayComponentText,
   holidayType,
 } from "./CustomRangeCalendar";
 import { Doughnut } from "react-chartjs-2";
 import "chart.js/auto";
 import { fetchMonthData, initialDailyData } from "../docFunctions";
-import { blue, red, grey } from "@mui/material/colors";
+import { blue, red, grey, green } from "@mui/material/colors";
 import { CalendarPickerSkeleton, StaticDatePicker } from "@mui/lab";
 import { PickersDayWithMarker, worktypeEmoji } from "./Schedule";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
@@ -40,7 +40,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   const handleChange = (value) => setDate(value);
-  const refetchData = useCallback(
+  const fetchData = useCallback(
     async (date) => {
       setLoading(true);
       setDate(date);
@@ -67,13 +67,13 @@ const Dashboard = () => {
   );
 
   useEffect(() => {
-    refetchData(moment());
+    fetchData(moment());
     return () => {
       setData();
-      setDate(moment());
+      setDate();
       setLoading();
     };
-  }, [refetchData]);
+  }, [fetchData]);
 
   return (
     <>
@@ -105,13 +105,13 @@ const Dashboard = () => {
             </Paper>
           </Grid>
           <Grid item xs={12} sm={12} md={6}>
-            <Paper>
+            <Paper sx={{ overflow: "hidden" }}>
               <MonthSummary
                 value={date}
                 onChange={handleChange}
                 loading={loading}
                 data={data}
-                fetch={refetchData}
+                fetch={fetchData}
               />
             </Paper>
           </Grid>
@@ -121,11 +121,67 @@ const Dashboard = () => {
   );
 };
 
+const clock = {
+  id: "clock",
+  label: "clock",
+  data: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+  backgroundColor: "gray",
+  weight: 0.2,
+};
+
+const DATA_TEMPLATE_WORKTIME = {
+  id: "worktime",
+  label: "",
+  backgroundColor: [blue[500], "lightgray"],
+  borderWidth: 2,
+  weight: 1,
+};
+
+const DATA_TEMPLATE_REAL_WORKTIME = {
+  id: "real-worktime",
+  label: "",
+  backgroundColor: [green[400], "lightgray"],
+  borderWidth: 0,
+  weight: 1,
+};
+
+const DATA_TEMPLATE_OFFDAY = {
+  id: "offday",
+  label: "",
+  data: [1],
+  backgroundColor: [red[400]],
+  weight: 1,
+  borderWidth: 2,
+  rotation: 0,
+};
+
+const DATA_TEMPLATE_SICK = {
+  id: "sick",
+  label: "",
+  data: [1],
+  backgroundColor: [grey[600]],
+  weight: 1,
+  borderWidth: 2,
+  rotation: 0,
+};
+
+const OPTION_TEMPLATE = {
+  layout: { margin: 0 },
+  cutout: "70%",
+  plugins: {
+    tooltip: {
+      enabled: false,
+    },
+  },
+};
+
 const DaySummary = (props) => {
   const { date, data } = props;
   const key = date.format("YYYYMMDD");
   const calendar = useContext(CalendarContext);
   const htype = holidayType(date, calendar);
+  const eventTitle =
+    (htype === "holiday" || htype === "vacation") && calendar[htype][key];
   const { start, started, finish, finished, type } =
     data || initialDailyData(date, calendar);
   const noon = moment(date).startOf("day").hour(12).toDate();
@@ -148,401 +204,364 @@ const DaySummary = (props) => {
       : `-${Math.floor(-diffMinutes / 60)}시간 ${-diffMinutes % 60}분`;
   const emoji = worktypeEmoji(type);
 
-  const clock = {
-    id: "clock",
-    label: "clock",
-    data: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    backgroundColor: "gray",
-    weight: 0.2,
-  };
-
   return (
     <Stack spacing={1}>
-      <ListItem sx={{ m: 0 }}>
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          sx={{ width: "100%" }}
-        >
-          <Typography
-            variant="h5"
-            sx={{
-              // position: "absolute",
-              // top: 0,
-              // left: 0,
-              // width: "80%",
-              textAlign: "left",
-              // m: 1,
-            }}
-          >
-            {date.format("M월 D일")}
-          </Typography>
-          <Typography variant="body2">
-            {workedtime > 0 ? diffString : emoji}
-          </Typography>
-        </Stack>
+      <ListItem sx={{ m: 0, height: 50 }}>
+        <ListItemText
+          primary={date.format("M월 D일")}
+          secondary={eventTitle}
+          primaryTypographyProps={{ fontSize: 20 }}
+        />
+        <ListItemText
+          primary={workedtime > 0 ? diffString : emoji}
+          primaryTypographyProps={{ fontSize: 14, textAlign: "right" }}
+          secondary={calendar.event[key]}
+          secondaryTypographyProps={{ fontSize: 14, textAlign: "right" }}
+        />
       </ListItem>
       <Box
         sx={{
           maxHeight: 400,
           maxWidth: 300,
+          position: "relative",
         }}
       >
-        <Box sx={{ position: "relative" }}>
-          {htype === "holiday" || htype === "vacation" ? (
-            <>
-              <Typography
-                variant="h5"
-                sx={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                }}
-              >
-                {calendar[htype][key]}
-              </Typography>
-              <Doughnut
-                options={{
-                  layout: {
-                    margin: 0,
+        <WorkTimeStatus data={data} date={date} />
+        <Doughnut
+          options={{
+            ...OPTION_TEMPLATE,
+            plugins: {
+              tooltip: {
+                enabled: Boolean(started),
+                // enabled: (props1, props2) => {
+                //   return true;
+                // },
+                callbacks: {
+                  label: (context) => {
+                    let label = "";
+                    const id = context.dataset.id;
+                    if (id === "worktime") {
+                      label = `오늘의 근로: ${moment(start.toDate()).format(
+                        "HH:mm"
+                      )} - ${moment(finish.toDate()).format("HH:mm")}`;
+                    } else if (id === "real-worktime") {
+                      label = `실제 근로: `;
+                      if (started) {
+                        label += ` ${moment(started.toDate()).format("HH:mm")}`;
+                        if (finished) {
+                          label += ` - ${moment(finished.toDate()).format(
+                            "HH:mm"
+                          )}`;
+                        } else {
+                          label += " ~";
+                        }
+                      }
+                    } else if (id === "clock") {
+                      const idx =
+                        context.dataIndex === 0
+                          ? context.dataIndex + 12
+                          : context.dataIndex;
+                      const next = idx === 12 ? 1 : idx + 1;
+                      label = `${idx}:00 - ${next}:00`;
+                    }
+                    return label;
                   },
-                  cutout: "70%",
-                  plugins: {
-                    tooltip: {
-                      enabled: false,
-                    },
-                  },
-                }}
-                data={{
-                  datasets: [
-                    clock,
-                    {
-                      id: htype,
-                      label: "",
-                      data: [1],
-                      backgroundColor: [red[400]],
-                      weight: 2,
-                      borderWidth: 0,
-                    },
-                  ],
-                }}
-              />
-            </>
-          ) : type === "work" ? (
-            <>
-              <Box
-                sx={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                }}
-              >
-                <ListItemText
-                  primary={moment(start.toDate()).format("HH:mm")}
-                  secondary={
-                    started ? moment(started.toDate()).format("HH:mm") : ""
+                },
+              },
+            },
+          }}
+          data={{
+            datasets: [
+              clock,
+              type === "work" || type === "half"
+                ? {
+                    ...DATA_TEMPLATE_WORKTIME,
+                    data: [worktime, Math.max(12 - worktime, 0)],
+                    rotation: outerOffset,
                   }
-                  sx={{
-                    "& .MuiListItemText-primary": {
-                      fontSize: 20,
+                : type === "annual" || type === "offday"
+                ? DATA_TEMPLATE_OFFDAY
+                : DATA_TEMPLATE_SICK,
+              {
+                ...DATA_TEMPLATE_REAL_WORKTIME,
+                data: [workedtime, Math.max(12 - workedtime, 0)],
+                rotation: innerOffset,
+              },
+            ],
+          }}
+        />
+        {/* {htype === "holiday" || htype === "vacation" ? (
+          <>
+            <Typography
+              variant="h5"
+              sx={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+              }}
+            >
+              {calendar[htype][key]}
+            </Typography>
+            <Doughnut
+              options={OPTION_TEMPLATE}
+              data={{
+                datasets: [clock, DATA_TEMPLATE_OFFDAY],
+              }}
+            />
+          </>
+        ) : type === "work" ? (
+          <>
+            <WorkTimeStatus data={data} date={date} />
+            <Doughnut
+              options={{
+                ...OPTION_TEMPLATE,
+                plugins: {
+                  tooltip: {
+                    enabled: (props1, props2) => {
+                      return true;
                     },
-                  }}
-                />
-                <KeyboardArrowDownIcon />
-                <ListItemText
-                  primary={moment(finish.toDate()).format("HH:mm")}
-                  secondary={
-                    finished ? moment(finished.toDate()).format("HH:mm") : ""
-                  }
-                  sx={{
-                    "& .MuiListItemText-primary": {
-                      fontSize: 20,
-                    },
-                  }}
-                />
-              </Box>
-              <Doughnut
-                style={{
-                  margin: 0,
-                  padding: 0,
-                  maxWidth: 700,
-                }}
-                options={{
-                  layout: {
-                    margin: 0,
-                  },
-                  cutout: "70%",
-                  plugins: {
-                    tooltip: {
-                      enabled: (props1, props2) => {
-                        return true;
-                      },
-                      callbacks: {
-                        label: (context) => {
-                          let label = "";
-                          const id = context.dataset.id;
-                          if (id === "worktime") {
-                            label = `오늘의 근로: ${moment(
-                              start.toDate()
-                            ).format("HH:mm")} - ${moment(
-                              finish.toDate()
-                            ).format("HH:mm")}`;
-                          } else if (id === "real-worktime") {
-                            label = `실제 근로: `;
-                            if (started) {
-                              label += ` ${moment(started.toDate()).format(
+                    callbacks: {
+                      label: (context) => {
+                        let label = "";
+                        const id = context.dataset.id;
+                        if (id === "worktime") {
+                          label = `오늘의 근로: ${moment(start.toDate()).format(
+                            "HH:mm"
+                          )} - ${moment(finish.toDate()).format("HH:mm")}`;
+                        } else if (id === "real-worktime") {
+                          label = `실제 근로: `;
+                          if (started) {
+                            label += ` ${moment(started.toDate()).format(
+                              "HH:mm"
+                            )}`;
+                            if (finished) {
+                              label += ` - ${moment(finished.toDate()).format(
                                 "HH:mm"
                               )}`;
-                              if (finished) {
-                                label += ` - ${moment(finished.toDate()).format(
-                                  "HH:mm"
-                                )}`;
-                              } else {
-                                label += " ~";
-                              }
+                            } else {
+                              label += " ~";
                             }
-                          } else if (id === "clock") {
-                            const idx =
-                              context.dataIndex === 0
-                                ? context.dataIndex + 12
-                                : context.dataIndex;
-                            const next = idx === 12 ? 1 : idx + 1;
-                            label = `${idx}:00 - ${next}:00`;
                           }
-                          return label;
-                        },
+                        } else if (id === "clock") {
+                          const idx =
+                            context.dataIndex === 0
+                              ? context.dataIndex + 12
+                              : context.dataIndex;
+                          const next = idx === 12 ? 1 : idx + 1;
+                          label = `${idx}:00 - ${next}:00`;
+                        }
+                        return label;
                       },
                     },
                   },
-                }}
-                data={{
-                  datasets: [
-                    clock,
-                    {
-                      id: "worktime",
-                      label: "",
-                      data: [worktime, 0, Math.max(12 - worktime, 0)],
-                      rotation: outerOffset,
-                      backgroundColor: [blue[500], red[400], "lightgray"],
-                      borderWidth: 2,
-                      weight: 1,
-                    },
-                    {
-                      id: "real-worktime",
-                      label: "",
-                      data: [0, workedtime, Math.max(12 - workedtime, 0)],
-                      rotation: innerOffset,
-                      backgroundColor: [blue[500], red[400], "lightgray"],
-                      borderWidth: 0,
-                      weight: 1,
-                    },
-                  ],
-                }}
-              />
-            </>
-          ) : type === "annual" ? (
-            <>
-              <Typography
-                variant="h4"
-                sx={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                }}
-              >
-                연차
-              </Typography>
-              <Doughnut
-                options={{
-                  layout: {
-                    margin: 0,
+                },
+              }}
+              data={{
+                datasets: [
+                  clock,
+                  {
+                    ...DATA_TEMPLATE_WORKTIME,
+                    data: [worktime, Math.max(12 - worktime, 0)],
+                    rotation: outerOffset,
                   },
-                  cutout: "70%",
-                  plugins: {
-                    tooltip: {
-                      enabled: false,
-                    },
+                  {
+                    ...DATA_TEMPLATE_REAL_WORKTIME,
+                    data: [workedtime, Math.max(12 - workedtime, 0)],
+                    rotation: innerOffset,
                   },
-                }}
-                data={{
-                  datasets: [
-                    clock,
-                    {
-                      id: "annual",
-                      label: "",
-                      data: [1],
-                      // rotation: outerOffset,
-                      backgroundColor: [red[400]],
-                      weight: 2,
-                      borderWidth: 0,
-                    },
-                  ],
-                }}
-              />
-            </>
-          ) : type === "half" ? (
-            <>
-              <Box
-                sx={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                }}
-              >
-                <ListItemText
-                  primary={moment(start.toDate()).format("HH:mm")}
-                  secondary={
-                    started ? moment(started.toDate()).format("HH:mm") : ""
-                  }
-                  sx={{
-                    "& .MuiListItemText-primary": {
-                      fontSize: 20,
-                    },
-                  }}
-                />
-                <KeyboardArrowDownIcon />
-                <ListItemText
-                  primary={moment(finish.toDate()).format("HH:mm")}
-                  secondary={
-                    finished ? moment(finished.toDate()).format("HH:mm") : ""
-                  }
-                  sx={{
-                    "& .MuiListItemText-primary": {
-                      fontSize: 20,
-                    },
-                  }}
-                />
-              </Box>
-              <Doughnut
-                style={{
-                  margin: 0,
-                  padding: 0,
-                  maxWidth: 700,
-                }}
-                options={{
-                  layout: {
-                    margin: 0,
+                ],
+              }}
+            />
+          </>
+        ) : type === "annual" ? (
+          <>
+            <Typography
+              variant="h4"
+              sx={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+              }}
+            >
+              연차
+            </Typography>
+            <Doughnut
+              options={OPTION_TEMPLATE}
+              data={{
+                datasets: [
+                  clock,
+                  {
+                    ...DATA_TEMPLATE_OFFDAY,
+                    id: "annual",
                   },
-                  cutout: "70%",
-                  plugins: {
-                    tooltip: {
-                      enabled: (props1, props2) => {
-                        return true;
-                      },
-                      callbacks: {
-                        label: (context) => {
-                          let label = "";
-                          const id = context.dataset.id;
-                          if (id === "worktime") {
-                            label = `오늘의 근로: ${moment(
-                              start.toDate()
-                            ).format("HH:mm")} - ${moment(
-                              finish.toDate()
-                            ).format("HH:mm")}`;
-                          } else if (id === "real-worktime") {
-                            label = `실제 근로: `;
-                            if (started) {
-                              label += ` ${moment(started.toDate()).format(
+                ],
+              }}
+            />
+          </>
+        ) : type === "half" ? (
+          <>
+            <WorkTimeStatus data={data} date={date} />
+            <Doughnut
+              options={{
+                ...OPTION_TEMPLATE,
+                plugins: {
+                  tooltip: {
+                    enabled: (props1, props2) => {
+                      return true;
+                    },
+                    callbacks: {
+                      label: (context) => {
+                        let label = "";
+                        const id = context.dataset.id;
+                        if (id === "worktime") {
+                          label = `오늘의 근로: ${moment(start.toDate()).format(
+                            "HH:mm"
+                          )} - ${moment(finish.toDate()).format("HH:mm")}`;
+                        } else if (id === "real-worktime") {
+                          label = `실제 근로: `;
+                          if (started) {
+                            label += ` ${moment(started.toDate()).format(
+                              "HH:mm"
+                            )}`;
+                            if (finished) {
+                              label += ` - ${moment(finished.toDate()).format(
                                 "HH:mm"
                               )}`;
-                              if (finished) {
-                                label += ` - ${moment(finished.toDate()).format(
-                                  "HH:mm"
-                                )}`;
-                              } else {
-                                label += " ~";
-                              }
+                            } else {
+                              label += " ~";
                             }
-                          } else if (id === "clock") {
-                            const idx =
-                              context.dataIndex === 0
-                                ? context.dataIndex + 12
-                                : context.dataIndex;
-                            const next = idx === 12 ? 1 : idx + 1;
-                            label = `${idx}:00 - ${next}:00`;
                           }
-                          return label;
-                        },
+                        } else if (id === "clock") {
+                          const idx =
+                            context.dataIndex === 0
+                              ? context.dataIndex + 12
+                              : context.dataIndex;
+                          const next = idx === 12 ? 1 : idx + 1;
+                          label = `${idx}:00 - ${next}:00`;
+                        }
+                        return label;
                       },
                     },
                   },
-                }}
-                data={{
-                  datasets: [
-                    clock,
-                    {
-                      id: "worktime",
-                      label: "",
-                      data: [worktime, 0, Math.max(12 - worktime, 0)],
-                      rotation: outerOffset,
-                      backgroundColor: [blue[500], red[400], "lightgray"],
-                      borderWidth: 2,
-                      weight: 1,
-                    },
-                    {
-                      id: "real-worktime",
-                      label: "",
-                      data: [0, workedtime, Math.max(12 - workedtime, 0)],
-                      rotation: innerOffset,
-                      backgroundColor: [blue[500], red[400], "lightgray"],
-                      borderWidth: 0,
-                      weight: 1,
-                    },
-                  ],
-                }}
-              />
-            </>
-          ) : type === "sick" ? (
-            <>
-              <Typography
-                variant="h4"
-                sx={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                }}
-              >
-                병가
-              </Typography>
-              <Doughnut
-                options={{
-                  layout: {
-                    margin: 0,
+                },
+              }}
+              data={{
+                datasets: [
+                  clock,
+                  {
+                    ...DATA_TEMPLATE_WORKTIME,
+                    data: [worktime, Math.max(12 - worktime, 0)],
+                    rotation: outerOffset,
                   },
-                  cutout: "70%",
-                  plugins: {
-                    tooltip: {
-                      enabled: false,
-                    },
+                  {
+                    ...DATA_TEMPLATE_REAL_WORKTIME,
+                    data: [0, workedtime, Math.max(12 - workedtime, 0)],
+                    rotation: innerOffset,
                   },
-                }}
-                data={{
-                  datasets: [
-                    clock,
-                    {
-                      id: "sick",
-                      label: "",
-                      data: [1],
-                      // rotation: outerOffset,
-                      backgroundColor: [grey[600]],
-                      weight: 2,
-                      borderWidth: 0,
-                    },
-                  ],
-                }}
-              />
-            </>
-          ) : (
-            <>type 오류!</>
-          )}
-        </Box>
+                ],
+              }}
+            />
+          </>
+        ) : type === "sick" ? (
+          <>
+            <Typography
+              variant="h4"
+              sx={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+              }}
+            >
+              병가
+            </Typography>
+            <Doughnut
+              options={OPTION_TEMPLATE}
+              data={{
+                datasets: [clock, DATA_TEMPLATE_SICK],
+              }}
+            />
+          </>
+        ) : (
+          <>type 오류!</>
+        )} */}
       </Box>
     </Stack>
+  );
+};
+
+const WorkTimeStatus = (props) => {
+  const {
+    data,
+    // date
+  } = props;
+  const Container = (props) => (
+    <Box
+      sx={{
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+      }}
+      {...props}
+    />
+  );
+
+  if (!data)
+    return (
+      <Container>
+        <ListItemText
+          primary="😁"
+          primaryTypographyProps={{ fontSize: 20 }}
+          secondary={
+            <>
+              근로 정보가 없습니다.
+              <br />
+              근로 신청을 해주세요!
+            </>
+          }
+        />
+      </Container>
+    );
+
+  const { start, started, finish, finished, type } = data;
+  // const htype = holidayType(date);
+  const worked = Boolean(started);
+  const startText =
+    type === "offday" ? "-" : moment(start.toDate()).format("HH:mm");
+  const finishText =
+    type === "offday" ? "-" : moment(finish.toDate()).format("HH:mm");
+  const startedText = started ? moment(started.toDate()).format("HH:mm") : "";
+  const finishedText = finished
+    ? moment(finished.toDate()).format("HH:mm")
+    : "";
+
+  return (
+    <Container>
+      {type === "work" || worked ? (
+        <>
+          <ListItemText
+            primary={startText}
+            secondary={startedText}
+            primaryTypographyProps={{ fontSize: 20 }}
+          />
+          <KeyboardArrowDownIcon />
+          <ListItemText
+            primary={finishText}
+            secondary={finishedText}
+            primaryTypographyProps={{ fontSize: 20 }}
+          />
+        </>
+      ) : (
+        <ListItemText
+          primary="😉"
+          primaryTypographyProps={{ fontSize: 20 }}
+          secondary="출퇴근 기록이 없습니다."
+        />
+      )}
+    </Container>
   );
 };
 
@@ -558,65 +577,64 @@ const WeekSummary = (props) => {
         calendarEnd={endDate}
         value={value}
         onChange={onChange}
-        dayComponent={DayComponentProgress}
+        // dayComponent={DayComponentProgress}
       />
       <p>주간 정보 표시</p>
     </>
   );
 };
 
-const DayComponentProgress = (props) => {
-  const { value, today, outOfRange, selected, onClick } = props;
+// const DayComponentProgress = (props) => {
+//   const { value, today, outOfRange, selected, onClick } = props;
 
-  return (
-    <Box>
-      <IconButton
-        size="small"
-        sx={{
-          width: 36,
-          height: 36,
-          bgcolor: selected ? "primary.main" : "none",
-          "&:hover": {
-            bgcolor: selected ? "primary.main" : "",
-          },
-        }}
-        disabled={outOfRange}
-        onClick={onClick}
-      >
-        <DayComponentText
-          value={value}
-          today={today}
-          outOfRange={outOfRange}
-          selected={selected}
-        />
-      </IconButton>
-    </Box>
-  );
-};
+//   return (
+//     <Box>
+//       <IconButton
+//         size="small"
+//         sx={{
+//           width: 36,
+//           height: 36,
+//           bgcolor: selected ? "primary.main" : "none",
+//           "&:hover": {
+//             bgcolor: selected ? "primary.main" : "",
+//           },
+//         }}
+//         disabled={outOfRange}
+//         onClick={onClick}
+//       >
+//         <DayComponentText
+//           value={value}
+//           today={today}
+//           outOfRange={outOfRange}
+//           selected={selected}
+//         />
+//       </IconButton>
+//     </Box>
+//   );
+// };
 
 const MonthSummary = (props) => {
   const { value, onChange, data, fetch, loading } = props;
   return (
-    <>
-      <StaticDatePicker
-        displayStaticWrapperAs="desktop"
-        value={value}
-        onChange={onChange}
-        renderInput={(props) => <TextField {...props} variant="standard" />}
-        renderDay={(day, _value, props) => {
-          const key = day.format("YYYYMMDD");
-          return (
-            <PickersDayWithMarker
-              {...props}
-              type={data[key] ? data[key].type : undefined}
-            />
-          );
-        }}
-        onMonthChange={(date) => fetch(date)}
-        loading={loading}
-        renderLoading={() => <CalendarPickerSkeleton />}
-      />
-    </>
+    <StaticDatePicker
+      displayStaticWrapperAs="desktop"
+      value={value}
+      onChange={onChange}
+      minDate={moment("2021-01-01")}
+      renderInput={(props) => <TextField {...props} variant="standard" />}
+      renderDay={(day, _value, props) => {
+        const key = day.format("YYYYMMDD");
+        return (
+          <PickersDayWithMarker
+            {...props}
+            type={data[key] ? data[key].type : undefined}
+          />
+        );
+      }}
+      onMonthChange={(date) => fetch(date)}
+      loading={loading}
+      renderLoading={() => <CalendarPickerSkeleton />}
+    />
   );
 };
 
