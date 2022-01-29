@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import {
   Box,
   Avatar,
@@ -17,20 +17,34 @@ import { StyledBadge } from "./Styles";
 import EditIcon from "@mui/icons-material/Edit";
 import { doc, updateDoc } from "@firebase/firestore";
 import { db } from "../myFirebase";
+import { DatePicker } from "@mui/lab";
+import { UserHandler } from "../contexts/Context";
+import moment from "moment";
+
+const TEXTFIELD_WIDTH = 200;
 
 const Status = ({ user, editable }) => {
   const [edit, setEdit] = useState(false);
   const [typedPosition, setTypedPosition] = useState();
+  const [selectedDate, setSelectedtDate] = useState(
+    user.startDate ? moment(user.startDate.toDate()) : null
+  );
+  const [salary, setSalary] = useState(user.salary || 0);
+  const setUser = useContext(UserHandler);
 
   const handleSaveClick = async (event) => {
-    // event.preventDefault();
     const docRef = doc(db, `userlist/${user.uid}`);
+    const startDate = selectedDate.toDate();
+    const position = typedPosition;
     const newUserData = {
       ...user,
-      position: typedPosition,
+      position,
+      startDate,
+      salary,
     };
+    setUser(newUserData);
     await updateDoc(docRef, newUserData);
-    // setUserdata(newUserData);
+
     handleClose();
   };
 
@@ -112,15 +126,50 @@ const Status = ({ user, editable }) => {
               size="small"
               value={typedPosition}
               onChange={(event) => setTypedPosition(event.target.value)}
+              sx={{ width: TEXTFIELD_WIDTH }}
             />
           </ListItem>
           <ListItem>
-            <ListItemText primary="입사일" />
-            <TextField placeholder="준비중" disabled size="small" />
+            <ListItemText
+              primary="입사일"
+              secondary={
+                user.startDate
+                  ? moment(user.startDate.toDate()).format("Y년 M월 D일 입사")
+                  : "입사일 정보 없음"
+              }
+            />
+            <DatePicker
+              value={selectedDate}
+              onChange={(newDate) => setSelectedtDate(newDate)}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  size="small"
+                  sx={{ width: TEXTFIELD_WIDTH }}
+                />
+              )}
+            />
           </ListItem>
           <ListItem>
-            <ListItemText primary="급여(월)" />
-            <TextField placeholder="준비중" disabled size="small" />
+            <ListItemText
+              primary="급여 (월)"
+              secondary={
+                user.salary
+                  ? `${user.salary.toLocaleString()}원`
+                  : "급여 정보 없음"
+              }
+            />
+            <TextField
+              size="small"
+              type="number"
+              value={salary}
+              onChange={(event) => {
+                if (event.target.value.length > 8) return;
+                const newSalary = parseInt(event.target.value);
+                setSalary(newSalary);
+              }}
+              sx={{ width: TEXTFIELD_WIDTH }}
+            />
           </ListItem>
         </Paper>
       </Modal>

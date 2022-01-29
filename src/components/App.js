@@ -8,6 +8,7 @@ import {
   CalendarContext,
   CalendarHandler,
   UserContext,
+  UserHandler,
 } from "../contexts/Context";
 import { Box } from "@mui/material";
 import {
@@ -144,15 +145,23 @@ function App() {
 
   return (
     <UserContext.Provider value={userData}>
-      <CalendarContext.Provider value={calendar}>
-        <CalendarHandler.Provider value={setCalendar}>
-          <LocalizationProvider dateAdapter={AdapterMoment}>
-            <Box position="relative">
-              {isLoading ? <Loading /> : scanner ? <QRreader /> : <AppRouter />}
-            </Box>
-          </LocalizationProvider>
-        </CalendarHandler.Provider>
-      </CalendarContext.Provider>
+      <UserHandler.Provider value={setUserData}>
+        <CalendarContext.Provider value={calendar}>
+          <CalendarHandler.Provider value={setCalendar}>
+            <LocalizationProvider dateAdapter={AdapterMoment}>
+              <Box position="relative">
+                {isLoading ? (
+                  <Loading />
+                ) : scanner ? (
+                  <QRreader />
+                ) : (
+                  <AppRouter />
+                )}
+              </Box>
+            </LocalizationProvider>
+          </CalendarHandler.Provider>
+        </CalendarContext.Provider>
+      </UserHandler.Provider>
     </UserContext.Provider>
   );
 }

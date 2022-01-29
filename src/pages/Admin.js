@@ -125,6 +125,9 @@ const Admin = () => {
     });
     return () => {
       unsubscribe();
+      setLoading(true);
+      setUserList([]);
+      setSelectedUser();
     };
   }, [fetchUserList]);
 
