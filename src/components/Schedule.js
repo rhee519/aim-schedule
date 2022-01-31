@@ -8,7 +8,6 @@ import React, {
 import {
   CalendarPickerSkeleton,
   DatePicker,
-  DateRangePicker,
   LoadingButton,
   PickersDay,
   StaticDatePicker,
@@ -42,6 +41,8 @@ import {
   FormControlLabel,
   Badge,
   ThemeProvider,
+  ToggleButtonGroup,
+  ToggleButton,
 } from "@mui/material";
 import moment from "moment";
 import {
@@ -600,7 +601,6 @@ export const PickersDayWithMarker = (props) => {
   const key = day.format("YYYYMMDD");
   const timeAcceptRange = 30 * 60 * 1000;
   const isFuture = moment().isBefore(day);
-  // console.log(key, isFuture);
 
   const worktimeInMs = data
     ? data.finish.toDate().getTime() - data.start.toDate().getTime()
@@ -685,13 +685,18 @@ const ApplicationDisplay = ({ onClose }) => {
   const user = useContext(UserContext);
   const calendar = useContext(CalendarContext);
   const [loading, setLoading] = useState(true);
+  const [showData, setShowData] = useState(false);
   const [data, setData] = useState();
-  const [range, setRange] = useState([null, null]);
-  const [selectedRange, setSelectedRange] = useState([null, null]);
+  const [startDate, setStartDate] = useState();
+  const [endDate, setEndDate] = useState();
+  const [selectedDateRange, setSelectedDateRange] = useState([null, null]);
+  const [period, setPeriod] = useState("1");
 
   const fetchRangeData = useCallback(
     async (from, to) => {
+      setShowData(true);
       setLoading(true);
+      setSelectedDateRange([from, to]);
       const responses = [];
       for (let d = moment(from); d.isSameOrBefore(to); d.add(1, "d")) {
         const key = moment(d).format("YYYYMMDD");
@@ -729,7 +734,6 @@ const ApplicationDisplay = ({ onClose }) => {
     );
     const newData = { ...data[date], start };
     setData((prev) => ({ ...prev, [date]: newData }));
-    // await updateDoc(docRef, newData);
   };
 
   const handleFinishChange = (event, date) => {
@@ -741,15 +745,12 @@ const ApplicationDisplay = ({ onClose }) => {
 
     const newData = { ...data[date], finish };
     setData((prev) => ({ ...prev, [date]: newData }));
-    // await updateDoc(docRef, newData);
   };
 
   const handleTypeChange = (event, date) => {
-    // const docRef = dayRef(user.uid, date);
     const type = event.target.value;
     const newData = { ...data[date], type };
     setData((prev) => ({ ...prev, [date]: newData }));
-    // await updateDoc(docRef, newData);
   };
 
   const handleSaveClick = async (event) => {
@@ -776,11 +777,29 @@ const ApplicationDisplay = ({ onClose }) => {
       }
     });
 
-    const schedule = appliedSchedule(selectedRange, workOnHoliday);
+    const schedule = appliedSchedule([startDate, endDate], workOnHoliday);
     const userRef = userDocRef(user.uid);
     await updateDoc(userRef, { schedule });
     onClose();
   };
+
+  // 선택된 기간 (endDate) 갱신하기
+  useEffect(() => {
+    if (startDate === null) setEndDate(null);
+    else {
+      const months = parseInt(period);
+      setEndDate(moment(startDate).subtract(1, "d").add(months, "M"));
+    }
+  }, [startDate, period]);
+
+  // clean-up
+  useEffect(() => {
+    return () => {
+      setLoading(true);
+      setShowData(false);
+      setData({});
+    };
+  }, []);
 
   return (
     <>
@@ -797,21 +816,17 @@ const ApplicationDisplay = ({ onClose }) => {
           <Button
             onClick={handleSaveClick}
             variant="contained"
-            disabled={!Boolean(selectedRange[0]) || !Boolean(selectedRange[1])}
+            disabled={!Boolean(startDate || endDate)}
           >
             SAVE
           </Button>
           <Button onClick={onClose}>CANCEL</Button>
         </Box>
       </Stack>
-      <DateRangePicker
-        startText="시작일"
-        endText="종료일"
-        value={range}
-        onChange={(newValue) => {
-          setRange(newValue);
-        }}
-        renderInput={(startProps, endProps) => (
+      <DatePicker
+        value={startDate}
+        onChange={(newDate) => setStartDate(newDate)}
+        renderInput={(params) => (
           <Stack
             direction="row"
             alignItems="center"
@@ -819,18 +834,32 @@ const ApplicationDisplay = ({ onClose }) => {
             sx={{ width: "100%" }}
           >
             <Stack direction="row" alignItems="center">
-              <TextField {...startProps} />
+              <TextField {...params} />
               <Box sx={{ mx: 2 }}> 부터 </Box>
-              <TextField {...endProps} />
-              <Box sx={{ mx: 2 }}> 까지 </Box>
+              <Stack>
+                <ToggleButtonGroup
+                  value={period}
+                  size="small"
+                  exclusive
+                  onChange={(event, newPeriod) => {
+                    if (!newPeriod) return;
+                    setPeriod(newPeriod);
+                  }}
+                >
+                  <ToggleButton value="1">1개월</ToggleButton>
+                  <ToggleButton value="2">2개월</ToggleButton>
+                  <ToggleButton value="3">3개월</ToggleButton>
+                </ToggleButtonGroup>
+                <ListItemText
+                  secondary={endDate && endDate.format("~ Y년 M월 D일까지")}
+                />
+              </Stack>
               <Button
                 variant="contained"
                 size="large"
-                disabled={!Boolean(range[0]) || !Boolean(range[1])}
-                onClick={() => {
-                  setSelectedRange(range);
-                  fetchRangeData(range[0], range[1]);
-                }}
+                disabled={!Boolean(startDate)}
+                onClick={() => fetchRangeData(startDate, endDate)}
+                sx={{ m: 1 }}
               >
                 조회
               </Button>
@@ -838,8 +867,7 @@ const ApplicationDisplay = ({ onClose }) => {
           </Stack>
         )}
       />
-      {Boolean(selectedRange[0]) &&
-        Boolean(selectedRange[1]) &&
+      {showData &&
         (loading ? (
           <>loading...</>
         ) : (
@@ -851,9 +879,9 @@ const ApplicationDisplay = ({ onClose }) => {
                 justifyContent: "space-between",
               }}
             >
-              <Typography variant="body1">{`${selectedRange[0].format(
+              <Typography variant="body1">{`${selectedDateRange[0].format(
                 "Y년 M월 D일"
-              )} ~ ${selectedRange[1].format("Y년 M월 D일")}`}</Typography>
+              )} ~ ${selectedDateRange[1].format("Y년 M월 D일")}`}</Typography>
             </ListSubheader>
             {Object.keys(data).map((key, index) => {
               const date = moment(key);
@@ -871,11 +899,11 @@ const ApplicationDisplay = ({ onClose }) => {
                       variant="body2"
                       primary={date.format("M월 D일")}
                       secondary={secondaryText}
+                      sx={{ width: 100 }}
                     />
                     {(offday || weekend) && (
                       <ListItemText
                         variant="body2"
-                        // primary="신청"
                         secondary={"신청 시 관리자 승인 필요"}
                         sx={{
                           display: "flex",
