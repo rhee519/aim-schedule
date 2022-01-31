@@ -722,9 +722,9 @@ const worktimeText = (data) => {
   const diffHour = Math.floor(Math.abs(diffMinutes) / 60);
   const diffMinute = Math.round(Math.abs(diffMinutes) % 60);
   const difference =
-    diffMinutes > 0
-      ? `+${(diffHour && diffHour) || ""}h ${diffMinute}m`
-      : `-${(diffHour && diffHour) || ""}h ${diffMinute}m`;
+    (diffMinutes > 0 ? "+" : "-") +
+    (diffHour ? `${diffHour}h ` : "") +
+    (!diffHour || diffMinute ? `${diffMinute}m` : "");
 
   return { time, difference };
 };
