@@ -5,16 +5,18 @@ import {
   Paper as MuiPaper,
   Typography,
   experimentalStyled as styled,
-  IconButton,
+  // IconButton,
   TextField,
   ListItemText,
   Stack,
   ListItem,
+  ThemeProvider,
 } from "@mui/material";
 import { CalendarContext, UserContext } from "../contexts/Context";
 import moment from "moment";
 import CustomRangeCalendar, {
-  DayComponentText,
+  CustomDayComponent,
+  // DayComponentText,
   holidayType,
 } from "./CustomRangeCalendar";
 import { Doughnut } from "react-chartjs-2";
@@ -28,6 +30,7 @@ import { blue, red, grey, green } from "@mui/material/colors";
 import { CalendarPickerSkeleton, StaticDatePicker } from "@mui/lab";
 import { PickersDayWithMarker, worktypeEmoji } from "./Schedule";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import { badgeTheme } from "../theme";
 
 const Paper = styled(MuiPaper)(({ theme }) => ({
   ...theme.typography.body2,
@@ -591,7 +594,7 @@ const WeekSummary = (props) => {
   const startDate = moment(value).startOf("week");
   const endDate = moment(value).endOf("week");
   return (
-    <>
+    <ThemeProvider theme={badgeTheme}>
       <CalendarLabel calendarStart={startDate} calendarEnd={endDate} />
       <CustomRangeCalendar
         calendarStart={startDate}
@@ -601,12 +604,12 @@ const WeekSummary = (props) => {
         dayComponent={WeekDayComponent}
         data={data}
       />
-    </>
+    </ThemeProvider>
   );
 };
 
 const WeekDayComponent = (props) => {
-  const { value, today, outOfRange, selected, onClick, data } = props;
+  const { value, data } = props;
   // const key = value.format("YYYYMMDD");
   // const showText = Boolean(data);
   const wText = worktimeText(data);
@@ -621,7 +624,13 @@ const WeekDayComponent = (props) => {
         // bgcolor: "green",
       }}
     >
-      <IconButton
+      {/* <CustomDayComponent {...props} /> */}
+      <PickersDayWithMarker
+        {...props}
+        day={value}
+        dayComponent={CustomDayComponent}
+      />
+      {/* <IconButton
         size="small"
         sx={{
           width: 36,
@@ -640,7 +649,7 @@ const WeekDayComponent = (props) => {
           outOfRange={outOfRange}
           selected={selected}
         />
-      </IconButton>
+      </IconButton> */}
       {wText && <ListItemText secondary={wText.difference} />}
     </Stack>
   );
@@ -649,25 +658,28 @@ const WeekDayComponent = (props) => {
 const MonthSummary = (props) => {
   const { value, onChange, data, fetch, loading } = props;
   return (
-    <StaticDatePicker
-      displayStaticWrapperAs="desktop"
-      value={value}
-      onChange={onChange}
-      minDate={moment("2021-01-01")}
-      renderInput={(props) => <TextField {...props} variant="standard" />}
-      renderDay={(day, _value, props) => {
-        const key = day.format("YYYYMMDD");
-        return (
-          <PickersDayWithMarker
-            {...props}
-            type={data[key] ? data[key].type : undefined}
-          />
-        );
-      }}
-      onMonthChange={(date) => fetch(date)}
-      loading={loading}
-      renderLoading={() => <CalendarPickerSkeleton />}
-    />
+    <ThemeProvider theme={badgeTheme}>
+      <StaticDatePicker
+        displayStaticWrapperAs="desktop"
+        value={value}
+        onChange={onChange}
+        minDate={moment("2021-01-01")}
+        renderInput={(props) => <TextField {...props} variant="standard" />}
+        renderDay={(day, _value, props) => {
+          const key = day.format("YYYYMMDD");
+          return (
+            <PickersDayWithMarker
+              {...props}
+              // type={data[key] ? data[key].type : undefined}
+              data={data[key]}
+            />
+          );
+        }}
+        onMonthChange={(date) => fetch(date)}
+        loading={loading}
+        renderLoading={() => <CalendarPickerSkeleton />}
+      />
+    </ThemeProvider>
   );
 };
 

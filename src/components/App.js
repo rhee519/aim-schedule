@@ -10,7 +10,7 @@ import {
   UserContext,
   UserHandler,
 } from "../contexts/Context";
-import { Box } from "@mui/material";
+import { Box, ThemeProvider } from "@mui/material";
 import {
   fetchCalendarEvents,
   initialUserData,
@@ -19,6 +19,7 @@ import {
 import { QRreader } from "./QR";
 import { LocalizationProvider } from "@mui/lab";
 import AdapterMoment from "@mui/lab/AdapterMoment";
+import { defaultTheme } from "../theme";
 
 const Error = (error) => {
   console.log("from App.js");
@@ -144,25 +145,27 @@ function App() {
   }, [fetchUserData]);
 
   return (
-    <UserContext.Provider value={userData}>
-      <UserHandler.Provider value={setUserData}>
-        <CalendarContext.Provider value={calendar}>
-          <CalendarHandler.Provider value={setCalendar}>
-            <LocalizationProvider dateAdapter={AdapterMoment}>
-              <Box position="relative">
-                {isLoading ? (
-                  <Loading />
-                ) : scanner ? (
-                  <QRreader />
-                ) : (
-                  <AppRouter />
-                )}
-              </Box>
-            </LocalizationProvider>
-          </CalendarHandler.Provider>
-        </CalendarContext.Provider>
-      </UserHandler.Provider>
-    </UserContext.Provider>
+    <ThemeProvider theme={defaultTheme}>
+      <UserContext.Provider value={userData}>
+        <UserHandler.Provider value={setUserData}>
+          <CalendarContext.Provider value={calendar}>
+            <CalendarHandler.Provider value={setCalendar}>
+              <LocalizationProvider dateAdapter={AdapterMoment}>
+                <Box position="relative">
+                  {isLoading ? (
+                    <Loading />
+                  ) : scanner ? (
+                    <QRreader />
+                  ) : (
+                    <AppRouter />
+                  )}
+                </Box>
+              </LocalizationProvider>
+            </CalendarHandler.Provider>
+          </CalendarContext.Provider>
+        </UserHandler.Provider>
+      </UserContext.Provider>
+    </ThemeProvider>
   );
 }
 

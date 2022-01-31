@@ -7,6 +7,7 @@ import {
   Typography,
   experimentalStyled as styled,
   Paper,
+  Badge,
 } from "@mui/material";
 import moment from "moment";
 import React, { useMemo, useContext } from "react";
@@ -104,38 +105,48 @@ const CustomRangeCalendar = (props) => {
 };
 
 export const CustomDayComponent = (props) => {
-  const { value, today, outOfRange, selected, onClick, data, holidayType } =
-    props;
+  const { value, today, outOfRange, selected, onClick, data } = props;
+  const calendar = useContext(CalendarContext);
+  // const htype = holidayType(value);
   const key = moment(value).format("YYYYMMDD");
+  const eventExists = calendar.event[key] || 0;
 
   return (
-    <IconButton
-      size="small"
-      sx={{
-        width: 36,
-        height: 36,
-        bgcolor: selected ? "primary.main" : "none",
-        "&:hover": {
-          bgcolor: selected ? "primary.main" : "",
-        },
-      }}
-      disabled={outOfRange}
-      onClick={onClick}
+    <Badge
+      variant="dot"
+      color="error"
+      overlap="circular"
+      badgeContent={eventExists}
     >
-      <DayComponentText
-        value={value}
-        today={today}
-        outOfRange={outOfRange}
-        selected={selected}
-        data={data && data[key]}
-        holidayType={holidayType}
-      />
-    </IconButton>
+      <IconButton
+        size="small"
+        sx={{
+          width: 36,
+          height: 36,
+          bgcolor: selected ? "primary.main" : "none",
+          "&:hover": {
+            bgcolor: selected ? "primary.main" : "",
+          },
+        }}
+        disabled={outOfRange}
+        onClick={onClick}
+      >
+        <DayComponentText
+          value={value}
+          today={today}
+          outOfRange={outOfRange}
+          selected={selected}
+          data={data && data[key]}
+        />
+      </IconButton>
+    </Badge>
   );
 };
 
 export const DayComponentText = (props) => {
-  const { value, today, outOfRange, selected, holidayType } = props;
+  const { value, today, outOfRange, selected } = props;
+  const calendar = useContext(CalendarContext);
+  const htype = holidayType(value, calendar);
   const showMonth = value.month() !== moment(value).subtract(1, "d").month();
   const showYear = value.year() !== moment(value).subtract(1, "d").year();
   return (
@@ -155,9 +166,7 @@ export const DayComponentText = (props) => {
               ? "text.disabled"
               : selected
               ? "background.paper"
-              : holidayType === "holiday" ||
-                holidayType === "vacation" ||
-                value.day() === 0
+              : htype === "holiday" || htype === "vacation" || value.day() === 0
               ? "error.main"
               : value.day() === 6
               ? "primary.main"

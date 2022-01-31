@@ -40,6 +40,8 @@ import {
   Checkbox,
   FormGroup,
   FormControlLabel,
+  Badge,
+  ThemeProvider,
 } from "@mui/material";
 import moment from "moment";
 import {
@@ -61,6 +63,7 @@ import CustomRangeCalendar, { holidayType } from "./CustomRangeCalendar";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import PriceCheckIcon from "@mui/icons-material/PriceCheck";
+import { badgeTheme } from "../theme";
 
 // 현재 @mui/lab 버전에서는 MonthPicker 에러때문에 월 선택창을 띄우는 것이 불가능!
 // 기능은 정상이지만, 에러 메시지가 계속 출력됨.
@@ -156,178 +159,79 @@ const Schedule = () => {
   };
 
   return (
-    <ScheduleContext.Provider value={schedule}>
-      <TabContext value={index}>
-        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-          <TabList onChange={(event, value) => setIndex(value)}>
-            <Tab label="스케줄 확인" value="schedule" />
-            <Tab label="근로시간 확인 & 급여 가계산" value="calculate" />
-          </TabList>
-        </Box>
+    <ThemeProvider theme={badgeTheme}>
+      <ScheduleContext.Provider value={schedule}>
+        <TabContext value={index}>
+          <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+            <TabList onChange={(event, value) => setIndex(value)}>
+              <Tab label="스케줄 확인" value="schedule" />
+              <Tab label="근로시간 확인 & 급여 가계산" value="calculate" />
+            </TabList>
+          </Box>
 
-        {/* <LocalizationProvider dateAdapter={AdapterMoment}> */}
-        <TabPanel value="schedule">
-          <Modal
-            sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
-            open={open}
-            onClose={handleClose}
-          >
-            <Paper
-              sx={{
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                width: "80%",
-                minWidth: 400,
-                height: "80%",
-                overflowY: "scroll",
-              }}
+          {/* <LocalizationProvider dateAdapter={AdapterMoment}> */}
+          <TabPanel value="schedule">
+            <Modal
+              sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+              open={open}
+              onClose={handleClose}
             >
-              {calendar && calendar.payday && (
-                <ApplicationDisplay onClose={handleClose} />
-              )}
-            </Paper>
-          </Modal>
-          <Grid container spacing={1} columns={12}>
-            <Grid
-              item
-              xs={12}
-              sx={{ display: "flex", justifyContent: "center" }}
-            >
-              <Stack
-                spacing={1}
-                sx={{
-                  display: { xs: "block", md: "none" },
-                  width: "100%",
-                }}
-              >
-                {schedule && (
-                  <>
-                    <Stack
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                    >
-                      <ListItemText
-                        primary="최근 근로 신청"
-                        secondary={moment(schedule.createdAt.toDate()).format(
-                          "M월 D일 HH:mm 신청함"
-                        )}
-                      />
-                      <ListItemText
-                        sx={{ textAlign: "right" }}
-                        secondary={
-                          schedule.status === "waiting"
-                            ? "대기중"
-                            : schedule.status === "confirmed"
-                            ? "승인됨"
-                            : schedule.status === "rejected"
-                            ? "반려됨"
-                            : ""
-                        }
-                      />
-                    </Stack>
-                    {schedule.workOnHoliday && (
-                      <Typography variant="h6">
-                        🚨 휴일 근로 신청이 있습니다!
-                      </Typography>
-                    )}
-                    <Typography>
-                      신청기간:{" "}
-                      {moment(schedule.from.toDate()).format("M월 D일")} -{" "}
-                      {moment(schedule.to.toDate()).format("M월 D일")}
-                    </Typography>
-                  </>
-                )}
-                <Paper
-                  sx={{
-                    position: "relative",
-                    height: 340,
-                    overflowY: "hidden",
-                  }}
-                >
-                  <StaticDatePicker
-                    displayStaticWrapperAs="desktop"
-                    loading={loading}
-                    minDate={moment("2021-01-01")}
-                    value={date}
-                    onChange={(newValue) => setDate(newValue)}
-                    renderLoading={() => <CalendarPickerSkeleton />}
-                    renderInput={(params) => (
-                      <TextField {...params} helperText={"날짜를 입력하세요"} />
-                    )}
-                    onMonthChange={refetchMonthData}
-                    renderDay={(day, _value, props) => {
-                      const key = day.format("YYYYMMDD");
-                      return (
-                        <PickersDayWithMarker
-                          {...props}
-                          type={
-                            monthData[key] ? monthData[key].type : undefined
-                          }
-                        />
-                      );
-                    }}
-                  />
-                  <Button
-                    onClick={() => setOpen(true)}
-                    variant="text"
-                    sx={{
-                      position: "absolute",
-                      right: 0,
-                      bottom: 0,
-                    }}
-                  >
-                    <Typography variant="subtitle2">
-                      다음 달 근로 신청하기
-                    </Typography>
-                  </Button>
-                </Paper>
-                <Paper>
-                  {monthData && (
-                    <SelectedDayDisplay
-                      date={date}
-                      data={monthData[date.format("YYYYMMDD")]}
-                    />
-                  )}
-                </Paper>
-              </Stack>
               <Paper
                 sx={{
-                  display: { xs: "none", md: "block" },
-                  width: "100%",
-                  minWidth: 650,
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: "80%",
+                  minWidth: 400,
+                  height: "80%",
+                  overflowY: "scroll",
                 }}
               >
-                {schedule && (
-                  <Box sx={{ width: "100%", display: "flex", p: 1 }}>
-                    <Stack
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                      sx={{ width: 250 }}
-                    >
-                      <ListItemText
-                        primary="최근 근로 신청"
-                        secondary={moment(schedule.createdAt.toDate()).format(
-                          "M월 D일 HH:mm 신청함"
-                        )}
-                      />
-                      <ListItemText
-                        sx={{ textAlign: "right" }}
-                        secondary={
-                          schedule.status === "waiting"
-                            ? "대기중"
-                            : schedule.status === "confirmed"
-                            ? "승인됨"
-                            : schedule.status === "rejected"
-                            ? "반려됨"
-                            : ""
-                        }
-                      />
-                    </Stack>
-                    <Stack alignItems="flex-end" flexGrow={1}>
+                {calendar && calendar.payday && (
+                  <ApplicationDisplay onClose={handleClose} />
+                )}
+              </Paper>
+            </Modal>
+            <Grid container spacing={1} columns={12}>
+              <Grid
+                item
+                xs={12}
+                sx={{ display: "flex", justifyContent: "center" }}
+              >
+                <Stack
+                  spacing={1}
+                  sx={{
+                    display: { xs: "block", md: "none" },
+                    width: "100%",
+                  }}
+                >
+                  {schedule && (
+                    <>
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                      >
+                        <ListItemText
+                          primary="최근 근로 신청"
+                          secondary={moment(schedule.createdAt.toDate()).format(
+                            "M월 D일 HH:mm 신청함"
+                          )}
+                        />
+                        <ListItemText
+                          sx={{ textAlign: "right" }}
+                          secondary={
+                            schedule.status === "waiting"
+                              ? "대기중"
+                              : schedule.status === "confirmed"
+                              ? "승인됨"
+                              : schedule.status === "rejected"
+                              ? "반려됨"
+                              : ""
+                          }
+                        />
+                      </Stack>
                       {schedule.workOnHoliday && (
                         <Typography variant="h6">
                           🚨 휴일 근로 신청이 있습니다!
@@ -338,86 +242,193 @@ const Schedule = () => {
                         {moment(schedule.from.toDate()).format("M월 D일")} -{" "}
                         {moment(schedule.to.toDate()).format("M월 D일")}
                       </Typography>
-                    </Stack>
-                  </Box>
-                )}
-                <Box
-                  display="flex"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  position="relative"
-                >
-                  <DatePicker
-                    displayStaticWrapperAs="desktop"
-                    loading={loading}
-                    minDate={moment("2021-01-01")}
-                    views={["year", "month"]}
-                    value={date}
-                    onChange={(newValue) => setDate(newValue)}
-                    renderLoading={() => <CalendarPickerSkeleton />}
-                    renderInput={(params) => (
-                      <TextField
-                        variant="standard"
-                        {...params}
-                        sx={{
-                          m: 1,
-                        }}
-                      />
-                    )}
-                    onMonthChange={refetchMonthData}
-                  />
-                  <Stack>
-                    <Box
+                    </>
+                  )}
+                  <Paper
+                    sx={{
+                      position: "relative",
+                      height: 340,
+                      overflowY: "hidden",
+                    }}
+                  >
+                    <StaticDatePicker
+                      displayStaticWrapperAs="desktop"
+                      loading={loading}
+                      minDate={moment("2021-01-01")}
+                      value={date}
+                      onChange={(newValue) => setDate(newValue)}
+                      renderLoading={() => <CalendarPickerSkeleton />}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          helperText={"날짜를 입력하세요"}
+                        />
+                      )}
+                      onMonthChange={refetchMonthData}
+                      renderDay={(day, _value, props) => {
+                        const key = day.format("YYYYMMDD");
+                        return (
+                          <PickersDayWithMarker
+                            {...props}
+                            data={monthData[key]}
+                            // type={
+                            //   monthData[key] ? monthData[key].type : undefined
+                            // }
+                          />
+                        );
+                      }}
+                    />
+                    <Button
+                      onClick={() => setOpen(true)}
+                      variant="text"
                       sx={{
-                        display: "flex",
-                        justifyContent: "flex-end",
-                        alignItems: "center",
+                        position: "absolute",
+                        right: 0,
+                        bottom: 0,
                       }}
                     >
-                      <IconButton
-                        size="small"
-                        onClick={() =>
-                          setDate(
-                            moment(date).subtract(1, "month").startOf("month")
-                          )
-                        }
-                      >
-                        <NavigateBeforeIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() =>
-                          setDate(moment(date).add(1, "month").startOf("month"))
-                        }
-                      >
-                        <NavigateNextIcon />
-                      </IconButton>
-                    </Box>
-                    <Button onClick={() => setOpen(true)} variant="text">
                       <Typography variant="subtitle2">
                         다음 달 근로 신청하기
                       </Typography>
                     </Button>
-                  </Stack>
-                </Box>
-                <CustomRangeCalendar
-                  calendarStart={moment(date).startOf("month")}
-                  calendarEnd={moment(date).endOf("month")}
-                  value={date}
-                  onChange={(newValue) => setDate(newValue)}
-                  dayComponent={LargeViewDayComponent}
-                  data={monthData}
-                />
-              </Paper>
+                  </Paper>
+                  <Paper>
+                    {monthData && (
+                      <SelectedDayDisplay
+                        date={date}
+                        data={monthData[date.format("YYYYMMDD")]}
+                      />
+                    )}
+                  </Paper>
+                </Stack>
+                <Paper
+                  sx={{
+                    display: { xs: "none", md: "block" },
+                    width: "100%",
+                    minWidth: 650,
+                  }}
+                >
+                  {schedule && (
+                    <Box sx={{ width: "100%", display: "flex", p: 1 }}>
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                        sx={{ width: 250 }}
+                      >
+                        <ListItemText
+                          primary="최근 근로 신청"
+                          secondary={moment(schedule.createdAt.toDate()).format(
+                            "M월 D일 HH:mm 신청함"
+                          )}
+                        />
+                        <ListItemText
+                          sx={{ textAlign: "right" }}
+                          secondary={
+                            schedule.status === "waiting"
+                              ? "대기중"
+                              : schedule.status === "confirmed"
+                              ? "승인됨"
+                              : schedule.status === "rejected"
+                              ? "반려됨"
+                              : ""
+                          }
+                        />
+                      </Stack>
+                      <Stack alignItems="flex-end" flexGrow={1}>
+                        {schedule.workOnHoliday && (
+                          <Typography variant="h6">
+                            🚨 휴일 근로 신청이 있습니다!
+                          </Typography>
+                        )}
+                        <Typography>
+                          신청기간:{" "}
+                          {moment(schedule.from.toDate()).format("M월 D일")} -{" "}
+                          {moment(schedule.to.toDate()).format("M월 D일")}
+                        </Typography>
+                      </Stack>
+                    </Box>
+                  )}
+                  <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    position="relative"
+                  >
+                    <DatePicker
+                      displayStaticWrapperAs="desktop"
+                      loading={loading}
+                      minDate={moment("2021-01-01")}
+                      views={["year", "month"]}
+                      value={date}
+                      onChange={(newValue) => setDate(newValue)}
+                      renderLoading={() => <CalendarPickerSkeleton />}
+                      renderInput={(params) => (
+                        <TextField
+                          variant="standard"
+                          {...params}
+                          sx={{
+                            m: 1,
+                          }}
+                        />
+                      )}
+                      onMonthChange={refetchMonthData}
+                    />
+                    <Stack>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "flex-end",
+                          alignItems: "center",
+                        }}
+                      >
+                        <IconButton
+                          size="small"
+                          onClick={() =>
+                            setDate(
+                              moment(date).subtract(1, "month").startOf("month")
+                            )
+                          }
+                        >
+                          <NavigateBeforeIcon />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() =>
+                            setDate(
+                              moment(date).add(1, "month").startOf("month")
+                            )
+                          }
+                        >
+                          <NavigateNextIcon />
+                        </IconButton>
+                      </Box>
+                      <Button onClick={() => setOpen(true)} variant="text">
+                        <Typography variant="subtitle2">
+                          다음 달 근로 신청하기
+                        </Typography>
+                      </Button>
+                    </Stack>
+                  </Box>
+                  <CustomRangeCalendar
+                    calendarStart={moment(date).startOf("month")}
+                    calendarEnd={moment(date).endOf("month")}
+                    value={date}
+                    onChange={(newValue) => setDate(newValue)}
+                    dayComponent={LargeViewDayComponent}
+                    data={monthData}
+                  />
+                </Paper>
+              </Grid>
             </Grid>
-          </Grid>
-        </TabPanel>
-        <TabPanel value="calculate">
-          <Calculate />
-        </TabPanel>
-        {/* </LocalizationProvider> */}
-      </TabContext>
-    </ScheduleContext.Provider>
+          </TabPanel>
+          <TabPanel value="calculate">
+            <Calculate />
+          </TabPanel>
+          {/* </LocalizationProvider> */}
+        </TabContext>
+      </ScheduleContext.Provider>
+    </ThemeProvider>
   );
 };
 
@@ -578,11 +589,39 @@ const LargeViewDayComponent = (props) => {
 };
 
 export const PickersDayWithMarker = (props) => {
-  const { day, type, outsideCurrentMonth, selected } = props;
+  // Marker Color Guide
+  // 좌상단: 근로 시간 충족 여부(충족: success, 초과: warning, 미달: secondary)
+  // 우상단: 사내 일정 여부(일정 있으면 error, 없으면 미표시)
+  const { day, data, outsideCurrentMonth, selected, dayComponent } = props;
+  const DayComponent = dayComponent;
+  const type = data ? data.type : undefined;
   const calendar = useContext(CalendarContext);
   const htype = holidayType(day, calendar);
+  const key = day.format("YYYYMMDD");
+  const timeAcceptRange = 30 * 60 * 1000;
+  const isFuture = moment().isBefore(day);
+  // console.log(key, isFuture);
 
-  const color = outsideCurrentMonth
+  const worktimeInMs = data
+    ? data.finish.toDate().getTime() - data.start.toDate().getTime()
+    : 0;
+  const workedtimeInMs =
+    data && data.started && data.finished
+      ? data.finished.toDate().getTime() - data.started.toDate().getTime()
+      : 0;
+  const timeDiffInMs = workedtimeInMs - worktimeInMs;
+
+  const hideBadge = Boolean(!data || outsideCurrentMonth || isFuture);
+
+  const timeStatusColor =
+    Math.abs(timeDiffInMs) <= timeAcceptRange
+      ? "success"
+      : timeDiffInMs > 0
+      ? "warning"
+      : "secondary";
+  const eventsExists = (!outsideCurrentMonth && calendar.event[key]) || 0;
+
+  const pickersDayTextColor = outsideCurrentMonth
     ? "text.disabled"
     : selected
     ? "background.paper"
@@ -593,9 +632,32 @@ export const PickersDayWithMarker = (props) => {
     : "text.primary";
 
   return (
-    <PickersDay {...props} sx={{ color, fontSize: 12 }}>
-      {worktypeEmoji(type)}
-    </PickersDay>
+    <Badge
+      variant="dot"
+      overlap="circular"
+      color={timeStatusColor}
+      badgeContent={false}
+      anchorOrigin={{ vertical: "top", horizontal: "left" }}
+      invisible={hideBadge}
+    >
+      <Badge
+        variant="dot"
+        overlap="circular"
+        color="error"
+        badgeContent={eventsExists}
+      >
+        {dayComponent ? (
+          <DayComponent {...props} />
+        ) : (
+          <PickersDay
+            {...props}
+            sx={{ color: pickersDayTextColor, fontSize: 12 }}
+          >
+            {worktypeEmoji(type)}
+          </PickersDay>
+        )}
+      </Badge>
+    </Badge>
   );
 };
 

@@ -37,6 +37,7 @@ import {
   MenuItem,
   TextField,
   Fab,
+  ThemeProvider,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import Status from "../components/Status";
@@ -82,6 +83,7 @@ import {
   UserContext,
 } from "../contexts/Context";
 import { holidayType } from "../components/CustomRangeCalendar";
+import { badgeTheme } from "../theme";
 
 const DataHandlerContext = createContext();
 
@@ -323,28 +325,31 @@ const UserDisplay = (props) => {
                   sx={{ textAlign: "center" }}
                 />
               </Stack>
-              <StaticDatePicker
-                displayStaticWrapperAs="desktop"
-                value={date}
-                minDate={moment("2021-01-01")}
-                onChange={(date) => setDate(date)}
-                loading={loading}
-                renderLoading={() => <CalendarPickerSkeleton />}
-                renderInput={(params) => null}
-                renderDay={(day, _value, props) => {
-                  const key = day.format("YYYYMMDD");
-                  return (
-                    <PickersDayWithMarker
-                      {...props}
-                      type={monthData[key] ? monthData[key].type : undefined}
-                    />
-                  );
-                }}
-                onMonthChange={(date) => {
-                  setLastSelectedDate(date);
-                  refetchMonthData(date);
-                }}
-              />
+              <ThemeProvider theme={badgeTheme}>
+                <StaticDatePicker
+                  displayStaticWrapperAs="desktop"
+                  value={date}
+                  minDate={moment("2021-01-01")}
+                  onChange={(date) => setDate(date)}
+                  loading={loading}
+                  renderLoading={() => <CalendarPickerSkeleton />}
+                  renderInput={(params) => null}
+                  renderDay={(day, _value, props) => {
+                    const key = day.format("YYYYMMDD");
+                    return (
+                      <PickersDayWithMarker
+                        {...props}
+                        // type={monthData[key] ? monthData[key].type : undefined}
+                        data={monthData[key]}
+                      />
+                    );
+                  }}
+                  onMonthChange={(date) => {
+                    setLastSelectedDate(date);
+                    refetchMonthData(date);
+                  }}
+                />
+              </ThemeProvider>
               <Box sx={{ height: 200 }}>
                 <SelectedDateInfo
                   selectedUser={user}
