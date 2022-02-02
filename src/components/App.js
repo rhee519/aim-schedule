@@ -13,6 +13,7 @@ import {
 import { Box, ThemeProvider } from "@mui/material";
 import {
   fetchCalendarEvents,
+  holidayDocRef,
   initialUserData,
   userDocRef,
 } from "../docFunctions";
@@ -20,6 +21,9 @@ import { QRreader } from "./QR";
 import { LocalizationProvider } from "@mui/lab";
 import AdapterMoment from "@mui/lab/AdapterMoment";
 import { defaultTheme } from "../theme";
+
+const axios = require("axios");
+const port = 12345;
 
 const Error = (error) => {
   console.log("from App.js");
@@ -117,11 +121,21 @@ function App() {
             .then(() => {
               fetchCalendarEvents()
                 .then((snapshot) => {
-                  const e = {};
-                  snapshot.forEach((doc) => (e[doc.id] = doc.data()));
-                  setCalendar(e);
+                  const cal = {};
+                  snapshot.forEach((doc) => (cal[doc.id] = doc.data()));
+                  return cal;
                 })
-                .then(() => setIsLoading(false));
+                .then((calendar) => {
+                  axios
+                    .get(`http://localhost:${port}`)
+                    .then((res) => {
+                      const holiday = { ...calendar.holiday, ...res.data };
+                      // console.log(calendar);
+                      updateDoc(holidayDocRef, holiday);
+                      setCalendar({ ...calendar, holiday });
+                    })
+                    .then(() => setIsLoading(false));
+                });
             })
             .then(() => {
               if (user)

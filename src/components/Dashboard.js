@@ -50,7 +50,6 @@ const Dashboard = () => {
   const fetchData = useCallback(
     async (date) => {
       setLoading(true);
-      console.log("fetched");
       fetchMonthData(user.uid, date)
         .then((snapshot) => {
           // 이번 달 근로 정보 fetch
