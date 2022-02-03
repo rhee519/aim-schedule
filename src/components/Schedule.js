@@ -86,10 +86,35 @@ const isWeekend = (date) => {
 
 export const koreanWeekDays = ["일", "월", "화", "수", "목", "금", "토"];
 
-// 근로 신청 가능한 시각 (ex. 20.5 == 오후 8시 30분)
+// 근로 신청 가능한 시각
 const availableTimes = [
-  9, 9.5, 10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15, 15.5, 16, 16.5,
-  17, 17.5, 18, 18.5, 19, 19.5, 20, 20.5, 21, 21.5, 22,
+  "09:00",
+  "09:30",
+  "10:00",
+  "10:30",
+  "11:00",
+  "11:30",
+  "12:00",
+  "12:30",
+  "13:00",
+  "13:30",
+  "14:00",
+  "14:30",
+  "15:00",
+  "15:30",
+  "16:00",
+  "16:30",
+  "17:00",
+  "17:30",
+  "18:00",
+  "18:30",
+  "19:00",
+  "19:30",
+  "20:00",
+  "20:30",
+  "21:00",
+  "21:30",
+  "22:00",
 ];
 
 const Schedule = () => {
@@ -725,30 +750,30 @@ const ApplicationDisplay = ({ onClose }) => {
   );
 
   const handleStartChange = (event, date) => {
-    const hour = Math.floor(event.target.value);
-    const minute = event.target.value - hour === 0 ? 0 : 30;
+    const key = moment(date).format("YYYYMMDD");
+    const [hour, minute] = event.target.value.split(":");
     const start = Timestamp.fromDate(
       moment(date).startOf("d").hour(hour).minute(minute).toDate()
     );
-    const newData = { ...data[date], start };
-    setData((prev) => ({ ...prev, [date]: newData }));
+    const newData = { ...data[key], start };
+    setData((prev) => ({ ...prev, [key]: newData }));
   };
 
   const handleFinishChange = (event, date) => {
-    const hour = Math.floor(event.target.value);
-    const minute = event.target.value - hour === 0 ? 0 : 30;
+    const key = moment(date).format("YYYYMMDD");
+    const [hour, minute] = event.target.value.split(":");
     const finish = Timestamp.fromDate(
       moment(date).startOf("d").hour(hour).minute(minute).toDate()
     );
-
-    const newData = { ...data[date], finish };
-    setData((prev) => ({ ...prev, [date]: newData }));
+    const newData = { ...data[key], finish };
+    setData((prev) => ({ ...prev, [key]: newData }));
   };
 
   const handleTypeChange = (event, date) => {
+    const key = moment(date).format("YYYYMMDD");
     const type = event.target.value;
-    const newData = { ...data[date], type };
-    setData((prev) => ({ ...prev, [date]: newData }));
+    const newData = { ...data[key], type };
+    setData((prev) => ({ ...prev, [key]: newData }));
   };
 
   const handleSaveClick = async (event) => {
@@ -962,12 +987,9 @@ const ApplicationDisplay = ({ onClose }) => {
                         <FormControl variant="standard" sx={{ ml: 1 }}>
                           <InputLabel>출근</InputLabel>
                           <Select
-                            value={
-                              data[key].start.toDate().getHours() +
-                              (data[key].start.toDate().getMinutes() === 0
-                                ? 0
-                                : 0.5)
-                            }
+                            value={moment(data[key].start.toDate()).format(
+                              "HH:mm"
+                            )}
                             label="출근"
                             onChange={(event) => handleStartChange(event, date)}
                             disabled={
@@ -979,25 +1001,17 @@ const ApplicationDisplay = ({ onClose }) => {
                             sx={{ width: 80 }}
                           >
                             {availableTimes.map((value, index) => {
-                              const hour = Math.floor(value);
-                              const minute = value - hour === 0 ? 0 : 30;
-                              const timeString = `${hour}:${minute
-                                .toString()
-                                .padStart(2, "0")}`;
-                              const finishValue =
-                                data[key].finish.toDate().getHours() +
-                                (data[key].finish.toDate().getMinutes() === 0
-                                  ? 0
-                                  : 0.5);
-                              const disabled =
-                                hour + minute / 60 >= finishValue;
+                              const finishTime = moment(
+                                data[key].finish.toDate()
+                              ).format("HH:mm");
+                              const disabled = value >= finishTime;
                               return (
                                 <MenuItem
                                   key={index}
                                   value={value}
                                   disabled={disabled}
                                 >
-                                  {timeString}
+                                  {value}
                                 </MenuItem>
                               );
                             })}
@@ -1006,12 +1020,9 @@ const ApplicationDisplay = ({ onClose }) => {
                         <FormControl variant="standard" sx={{ ml: 1 }}>
                           <InputLabel>퇴근</InputLabel>
                           <Select
-                            value={
-                              data[key].finish.toDate().getHours() +
-                              (data[key].finish.toDate().getMinutes() === 0
-                                ? 0
-                                : 0.5)
-                            }
+                            value={moment(data[key].finish.toDate()).format(
+                              "HH:mm"
+                            )}
                             label="퇴근"
                             onChange={(event) =>
                               handleFinishChange(event, date)
@@ -1025,24 +1036,17 @@ const ApplicationDisplay = ({ onClose }) => {
                             sx={{ width: 80 }}
                           >
                             {availableTimes.map((value, index) => {
-                              const hour = Math.floor(value);
-                              const minute = value - hour === 0 ? 0 : 30;
-                              const timeString = `${hour}:${minute
-                                .toString()
-                                .padStart(2, "0")}`;
-                              const startValue =
-                                data[key].start.toDate().getHours() +
-                                (data[key].start.toDate().getMinutes() === 0
-                                  ? 0
-                                  : 0.5);
-                              const disabled = hour + minute / 60 <= startValue;
+                              const startTime = moment(
+                                data[key].start.toDate()
+                              ).format("HH:mm");
+                              const disabled = value <= startTime;
                               return (
                                 <MenuItem
                                   key={index}
                                   value={value}
                                   disabled={disabled}
                                 >
-                                  {timeString}
+                                  {value}
                                 </MenuItem>
                               );
                             })}

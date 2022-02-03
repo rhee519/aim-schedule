@@ -648,7 +648,7 @@ const SelectedDateInfo = (props) => {
         >
           <ListItemText
             primary={`${date.format("M월 D일")} ${
-              type !== "work" ? worktypeEmoji(type) : ""
+              (type !== "work" && worktypeEmoji(type)) || ""
             }`}
             secondary={calendar[htype] ? calendar[htype][dateKey] : ""}
             primaryTypographyProps={{ variant: "h6" }}
