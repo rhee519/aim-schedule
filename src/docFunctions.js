@@ -150,3 +150,18 @@ export const appliedSchedule = (dateRange, workOnHoliday) => ({
   status: "waiting",
   createdAt: Timestamp.now(),
 });
+
+// export const fetchAnnualWorkData = async (uid, date) => {
+//   const data = {};
+//   const responses = [];
+//   for (
+//     let d = moment(date).startOf("year");
+//     d.isSameOrBefore(moment(date).endOf("year"), "year");
+//     d.add(1, "month")
+//   ) {
+//     console.log(d.format("YYYYMMDD"));
+//     responses.push(fetchMonthData(monthDocRef(uid, d)));
+//   }
+
+//   return Promise.all(responses);
+// };

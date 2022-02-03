@@ -896,6 +896,12 @@ const AdminControlPanel = (props) => {
           onChange={(event, value) => setIndex(value)}
           variant="scrollable"
           scrollButtons="auto"
+          // sx={{
+          //   display: "flex",
+          //   justifyContent: "center",
+          //   alignItems: "center",
+          //   bgcolor: "green",
+          // }}
         >
           <Tab
             label="회원가입 신청"
@@ -904,7 +910,7 @@ const AdminControlPanel = (props) => {
           />
           <Tab label="사내 일정" value="event" sx={{ mr: 0, p: 0 }} />
           <Tab label="휴무일" value="vacation" sx={{ mr: 0, p: 0 }} />
-          <Tab label="정산일" value="payday" sx={{ mr: 0, p: 0 }} />
+          {/* <Tab label="정산일" value="payday" sx={{ mr: 0, p: 0 }} /> */}
         </TabList>
         <TabPanel value="sign-in-request" sx={{ p: 0 }}>
           {loading ? (
@@ -940,22 +946,6 @@ const AdminControlPanel = (props) => {
                 올해 사내 일정만 표기됩니다.
               </Divider>
             </ListSubheader>
-
-            {/* {Object.keys(calendar.event)
-              .filter((key) => moment(key).year() === moment().year())
-              .map((key) => (
-                <Stack key={key} direction="row" justifyContent="flex-start">
-                  <ListItemText secondary={moment(key).format("M/D")} />
-                  <ListItemText primary={calendar.event[key]} />
-                  <IconButton
-                    size="small"
-                    color="error"
-                    onClick={() => handleDeleteFromCalendar("event", key)}
-                  >
-                    <DeleteOutlineIcon />
-                  </IconButton>
-                </Stack>
-              ))} */}
             <CalendarList
               htype="event"
               onDeleteClick={handleDeleteFromCalendar}
@@ -980,18 +970,11 @@ const AdminControlPanel = (props) => {
               htype="vacation"
               onDeleteClick={handleDeleteFromCalendar}
             />
-            {/* {Object.keys(calendar.vacation)
-              .filter((key) => moment(key).year() === moment().year())
-              .map((key) => (
-                <Typography key={key}>
-                  {moment(key).format("M/D")} {calendar.vacation[key]}
-                </Typography>
-              ))} */}
           </List>
         </TabPanel>
-        <TabPanel value="payday" sx={{ p: 0 }}>
+        {/* <TabPanel value="payday" sx={{ p: 0 }}>
           정산일
-        </TabPanel>
+        </TabPanel> */}
       </TabContext>
     </Paper>
   );

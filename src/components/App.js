@@ -123,6 +123,7 @@ function App() {
                 .then((snapshot) => {
                   const cal = {};
                   snapshot.forEach((doc) => (cal[doc.id] = doc.data()));
+                  setCalendar(cal);
                   return cal;
                 })
                 .then((calendar) => {
@@ -134,7 +135,8 @@ function App() {
                       updateDoc(holidayDocRef, holiday);
                       setCalendar({ ...calendar, holiday });
                     })
-                    .then(() => setIsLoading(false));
+                    .then(() => setIsLoading(false))
+                    .catch((error) => setIsLoading(false));
                 });
             })
             .then(() => {

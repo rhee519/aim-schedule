@@ -135,14 +135,6 @@ const Schedule = () => {
       fetchMonthData(user.uid, date)
         .then((snapshot) => {
           const data = {};
-          // for (
-          //   let d = moment(date).startOf("month");
-          //   d.isSame(moment(date), "month");
-          //   d.add(1, "d")
-          // ) {
-          //   const key = d.format("YYYYMMDD");
-          //   data[key] = undefined;
-          // }
           snapshot.forEach(
             (doc) =>
               (data[moment(date).date(doc.id).format("YYYYMMDD")] = doc.data())
@@ -158,6 +150,12 @@ const Schedule = () => {
     refetchMonthData(date);
     setOpen(false);
   };
+
+  // useEffect(() => {
+  //   fetchAnnualWorkData(user.uid, moment()).then((snapshot) =>
+  //     snapshot.forEach((doc) => console.log(doc))
+  //   );
+  // }, [user.uid]);
 
   return (
     <ThemeProvider theme={badgeTheme}>
