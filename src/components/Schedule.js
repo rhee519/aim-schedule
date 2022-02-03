@@ -48,6 +48,7 @@ import moment from "moment";
 import {
   appliedSchedule,
   dayRef,
+  fetchAnnualData,
   fetchDayData,
   fetchMonthData,
   fetchUser,
@@ -126,14 +127,28 @@ const Schedule = () => {
   const [loading, setLoading] = useState(true); // monthData fetch 여부
   const calendar = useContext(CalendarContext); // 휴무, 공휴일, 행사, 정산 일정
   const [schedule, setSchedule] = useState(); // 근로 신청 내용
+  const [annualData, setAnnualData] = useState({}); // 연간 근로 데이터
+  const annualCount = useMemo(() => {
+    let count = 0;
+    Object.keys(annualData).forEach((key) => {
+      const { type } = annualData[key];
+      if (type === "annual") count += 1;
+      else if (type === "half") count += 0.5;
+    });
+    return count;
+  }, [annualData]);
 
   const fetchSchedule = useCallback(async () => {
     fetchUser(user.uid).then((docSnap) => {
       setSchedule(docSnap.data().schedule);
     });
   }, [user.uid]);
+
   // 최초 월 단위 데이터 & schedule fetch
+  // 올해 데이터도 fetch (연차 개수 파악)
   useEffect(() => {
+    fetchAnnualData(user.uid, moment()).then((data) => setAnnualData(data));
+
     fetchMonthData(user.uid, moment())
       .then((snapshot) => {
         const data = {};
@@ -175,12 +190,6 @@ const Schedule = () => {
     refetchMonthData(date);
     setOpen(false);
   };
-
-  // useEffect(() => {
-  //   fetchAnnualWorkData(user.uid, moment()).then((snapshot) =>
-  //     snapshot.forEach((doc) => console.log(doc))
-  //   );
-  // }, [user.uid]);
 
   return (
     <ThemeProvider theme={badgeTheme}>
@@ -369,6 +378,9 @@ const Schedule = () => {
                           신청기간:{" "}
                           {moment(schedule.from.toDate()).format("M월 D일")} -{" "}
                           {moment(schedule.to.toDate()).format("M월 D일")}
+                        </Typography>
+                        <Typography>
+                          {moment().year()}년 사용한 연차: {annualCount}일
                         </Typography>
                       </Stack>
                     </Box>

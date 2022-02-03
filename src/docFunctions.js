@@ -151,17 +151,28 @@ export const appliedSchedule = (dateRange, workOnHoliday) => ({
   createdAt: Timestamp.now(),
 });
 
-// export const fetchAnnualWorkData = async (uid, date) => {
-//   const data = {};
-//   const responses = [];
-//   for (
-//     let d = moment(date).startOf("year");
-//     d.isSameOrBefore(moment(date).endOf("year"), "year");
-//     d.add(1, "month")
-//   ) {
-//     console.log(d.format("YYYYMMDD"));
-//     responses.push(fetchMonthData(monthDocRef(uid, d)));
-//   }
+export const fetchAnnualDataResponses = async (uid, date) => {
+  const responses = [];
+  for (
+    let d = moment(date).startOf("year");
+    d.isSameOrBefore(moment(date).endOf("year"));
+    d.add(1, "month")
+  ) {
+    responses.push(fetchMonthData(uid, d));
+  }
+  return Promise.all(responses);
+};
 
-//   return Promise.all(responses);
-// };
+export const fetchAnnualData = async (uid, date) => {
+  return fetchAnnualDataResponses(uid, date).then((responses) => {
+    const data = {};
+    responses.forEach((snapshot) => {
+      snapshot.forEach((doc) => {
+        const docData = doc.data();
+        const key = moment(docData.start.toDate()).format("YYYYMMDD");
+        data[key] = docData;
+      });
+    });
+    return data;
+  });
+};
