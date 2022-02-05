@@ -202,7 +202,6 @@ const Schedule = () => {
             </TabList>
           </Box>
 
-          {/* <LocalizationProvider dateAdapter={AdapterMoment}> */}
           <TabPanel value="schedule">
             <Modal
               sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
@@ -239,44 +238,11 @@ const Schedule = () => {
                     width: "100%",
                   }}
                 >
-                  {schedule && (
-                    <>
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        alignItems="center"
-                      >
-                        <ListItemText
-                          primary="최근 근로 신청"
-                          secondary={moment(schedule.createdAt.toDate()).format(
-                            "M월 D일 HH:mm 신청함"
-                          )}
-                        />
-                        <ListItemText
-                          sx={{ textAlign: "right" }}
-                          secondary={
-                            schedule.status === "waiting"
-                              ? "대기중"
-                              : schedule.status === "confirmed"
-                              ? "승인됨"
-                              : schedule.status === "rejected"
-                              ? "반려됨"
-                              : ""
-                          }
-                        />
-                      </Stack>
-                      {schedule.workOnHoliday && (
-                        <Typography variant="h6">
-                          🚨 휴일 근로 신청이 있습니다!
-                        </Typography>
-                      )}
-                      <Typography>
-                        신청기간:{" "}
-                        {moment(schedule.from.toDate()).format("M월 D일")} -{" "}
-                        {moment(schedule.to.toDate()).format("M월 D일")}
-                      </Typography>
-                    </>
-                  )}
+                  <RecentScheduleApplication schedule={schedule} />
+                  <RecentScheduleStatusText
+                    schedule={schedule}
+                    annualCount={annualCount}
+                  />
                   <Paper
                     sx={{
                       position: "relative",
@@ -304,9 +270,6 @@ const Schedule = () => {
                           <PickersDayWithMarker
                             {...props}
                             data={monthData[key]}
-                            // type={
-                            //   monthData[key] ? monthData[key].type : undefined
-                            // }
                           />
                         );
                       }}
@@ -341,50 +304,13 @@ const Schedule = () => {
                     minWidth: 650,
                   }}
                 >
-                  {schedule && (
-                    <Box sx={{ width: "100%", display: "flex", p: 1 }}>
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        alignItems="center"
-                        sx={{ width: 250 }}
-                      >
-                        <ListItemText
-                          primary="최근 근로 신청"
-                          secondary={moment(schedule.createdAt.toDate()).format(
-                            "M월 D일 HH:mm 신청함"
-                          )}
-                        />
-                        <ListItemText
-                          sx={{ textAlign: "right" }}
-                          secondary={
-                            schedule.status === "waiting"
-                              ? "대기중"
-                              : schedule.status === "confirmed"
-                              ? "승인됨"
-                              : schedule.status === "rejected"
-                              ? "반려됨"
-                              : ""
-                          }
-                        />
-                      </Stack>
-                      <Stack alignItems="flex-end" flexGrow={1}>
-                        {schedule.workOnHoliday && (
-                          <Typography variant="h6">
-                            🚨 휴일 근로 신청이 있습니다!
-                          </Typography>
-                        )}
-                        <Typography>
-                          신청기간:{" "}
-                          {moment(schedule.from.toDate()).format("M월 D일")} -{" "}
-                          {moment(schedule.to.toDate()).format("M월 D일")}
-                        </Typography>
-                        <Typography>
-                          {moment().year()}년 사용한 연차: {annualCount}일
-                        </Typography>
-                      </Stack>
-                    </Box>
-                  )}
+                  <Box sx={{ width: "100%", display: "flex", p: 1 }}>
+                    <RecentScheduleApplication schedule={schedule} />
+                    <RecentScheduleStatusText
+                      schedule={schedule}
+                      annualCount={annualCount}
+                    />
+                  </Box>
                   <Box
                     display="flex"
                     justifyContent="space-between"
@@ -461,12 +387,64 @@ const Schedule = () => {
           <TabPanel value="calculate">
             <Calculate />
           </TabPanel>
-          {/* </LocalizationProvider> */}
         </TabContext>
       </ScheduleContext.Provider>
     </ThemeProvider>
   );
 };
+
+const RecentScheduleApplication = ({ schedule }) =>
+  schedule ? (
+    <Stack
+      direction="row"
+      justifyContent="space-between"
+      alignItems="center"
+      sx={{ width: { sx: "100%", md: "50%" }, maxWidth: 400 }}
+    >
+      <ListItemText
+        primary="최근 근로 신청"
+        secondary={moment(schedule.createdAt.toDate()).format(
+          "M월 D일 HH:mm 신청함"
+        )}
+      />
+      <ListItemText
+        sx={{ textAlign: "right" }}
+        secondary={
+          schedule.status === "waiting"
+            ? "대기중"
+            : schedule.status === "confirmed"
+            ? "승인됨"
+            : schedule.status === "rejected"
+            ? "반려됨"
+            : ""
+        }
+      />
+    </Stack>
+  ) : (
+    <></>
+  );
+
+export const RecentScheduleStatusText = ({ sx, schedule, annualCount }) =>
+  schedule && annualCount ? (
+    <Stack
+      alignItems={{ sx: "flex-start", md: "flex-end" }}
+      flexGrow={1}
+      sx={sx}
+    >
+      {schedule.workOnHoliday && (
+        <Typography variant="h6">🚨 휴일 근로 신청이 있습니다!</Typography>
+      )}
+      <Typography>
+        신청기간: {moment(schedule.from.toDate()).format("M월 D일")} -{" "}
+        {moment(schedule.to.toDate()).format("M월 D일")}
+      </Typography>
+      <Typography>
+        {moment().year()}년 사용한 연차: {annualCount}일
+      </Typography>
+    </Stack>
+  ) : (
+    <></>
+  );
 
 const LargeViewDayComponent = (props) => {
   const schedule = useContext(ScheduleContext);

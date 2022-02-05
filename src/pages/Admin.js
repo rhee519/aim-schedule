@@ -12,6 +12,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import {
@@ -57,6 +58,7 @@ import AdapterMoment from "@mui/lab/AdapterMoment";
 import {
   dayRef,
   eventDocRef,
+  fetchAnnualData,
   fetchDayData,
   fetchMonthData,
   fetchUser,
@@ -71,6 +73,7 @@ import {
   halfEmoji,
   koreanWeekDays,
   PickersDayWithMarker,
+  RecentScheduleStatusText,
   sickEmoji,
   worktypeEmoji,
 } from "../components/Schedule";
@@ -227,6 +230,16 @@ const UserDisplay = (props) => {
   const [loading, setLoading] = useState(true);
   const [loadingSchedule, setLoadingSchedule] = useState(true);
   const [lastSelectedDate, setLastSelectedDate] = useState(moment());
+  const [annualData, setAnnualData] = useState({}); // 연간 근로 데이터
+  const annualCount = useMemo(() => {
+    let count = 0;
+    Object.keys(annualData).forEach((key) => {
+      const { type } = annualData[key];
+      if (type === "annual") count += 1;
+      else if (type === "half") count += 0.5;
+    });
+    return count;
+  }, [annualData]);
 
   const fetchSchedule = useCallback(async () => {
     setLoadingSchedule(true);
@@ -275,8 +288,9 @@ const UserDisplay = (props) => {
   };
 
   useEffect(() => {
+    fetchAnnualData(user.uid, moment()).then((data) => setAnnualData(data));
     fetchSchedule();
-  }, [fetchSchedule]);
+  }, [fetchSchedule, user.uid]);
 
   useEffect(() => {
     refetchMonthData(lastSelectedDate);
@@ -337,11 +351,7 @@ const UserDisplay = (props) => {
                   renderDay={(day, _value, props) => {
                     const key = day.format("YYYYMMDD");
                     return (
-                      <PickersDayWithMarker
-                        {...props}
-                        // type={monthData[key] ? monthData[key].type : undefined}
-                        data={monthData[key]}
-                      />
+                      <PickersDayWithMarker {...props} data={monthData[key]} />
                     );
                   }}
                   onMonthChange={(date) => {
@@ -410,22 +420,11 @@ const UserDisplay = (props) => {
                         <></>
                       )}
                     </Stack>
-                    <Stack
-                      // direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                    >
-                      {schedule.workOnHoliday && (
-                        <Typography variant="h6">
-                          🚨 휴일 근로 신청이 있습니다!
-                        </Typography>
-                      )}
-                      <Typography>
-                        신청기간:{" "}
-                        {moment(schedule.from.toDate()).format("M월 D일")} -{" "}
-                        {moment(schedule.to.toDate()).format("M월 D일")}
-                      </Typography>
-                    </Stack>
+                    <RecentScheduleStatusText
+                      schedule={schedule}
+                      annualCount={annualCount}
+                      sx={{ alignItems: "center" }}
+                    />
                   </>
                 ) : (
                   <Typography>아직 근로 신청을 하지 않았습니다.</Typography>
@@ -444,7 +443,15 @@ const UserDisplay = (props) => {
 
                 let secondaryText = notice || koreanWeekDays[moment(key).day()];
                 if (htype === "vacation" || htype === "holiday")
-                  secondaryText += `, ${calendar[htype][key]}`;
+                  secondaryText += ` | ${calendar[htype][key]}`;
+                const secondaryTextColor =
+                  htype === "vacation" ||
+                  htype === "holiday" ||
+                  htype === "sunday"
+                    ? "error"
+                    : htype === "saturday"
+                    ? "primary"
+                    : "text.primary";
                 const hideTimePrimary =
                   htype !== "default" && type === "offday";
                 const startPrimary = hideTimePrimary
@@ -485,15 +492,12 @@ const UserDisplay = (props) => {
                       <ListItemText
                         primary={moment(key).format("D일")}
                         secondary={`${secondaryText}`}
-                        sx={{
-                          textAlign: "center",
-                          "& .MuiListItemText-primary": {
-                            fontSize: 14,
-                          },
-                          "& .MuiListItemText-secondary": {
-                            fontSize: 12,
-                          },
+                        primaryTypographyProps={{ fontSize: 14 }}
+                        secondaryTypographyProps={{
+                          fontSize: 12,
+                          color: secondaryTextColor,
                         }}
+                        sx={{ textAlign: "center" }}
                       />
                     </Box>
                     <Box sx={{ display: "flex", width: "100%" }}>
@@ -650,8 +654,20 @@ const SelectedDateInfo = (props) => {
             primary={`${date.format("M월 D일")} ${
               (type !== "work" && worktypeEmoji(type)) || ""
             }`}
-            secondary={calendar[htype] ? calendar[htype][dateKey] : ""}
+            secondary={
+              calendar.event[dateKey]
+                ? calendar.event[dateKey]
+                : calendar[htype]
+                ? calendar[htype][dateKey]
+                : ""
+            }
             primaryTypographyProps={{ variant: "h6" }}
+            secondaryTypographyProps={{
+              color:
+                !calendar.event[dateKey] && calendar[htype]
+                  ? "error"
+                  : "text.secondary",
+            }}
           />
           <Button
             onClick={handleEditClick}
@@ -696,9 +712,6 @@ const SelectedDateInfo = (props) => {
                 left: "50%",
                 transform: "translate(-50%, -50%)",
                 p: 1,
-                // width: "80%",
-                // height: "80%",
-                // overflowY: "scroll",
               }}
             >
               <List sx={{ p: 0 }}>
@@ -718,6 +731,9 @@ const SelectedDateInfo = (props) => {
                     <MenuItem value="annual">연차</MenuItem>
                     <MenuItem value="half">반차</MenuItem>
                     <MenuItem value="sick">병가</MenuItem>
+                    <MenuItem value="offday" disabled>
+                      휴일
+                    </MenuItem>
                   </Select>
                 </FormControl>
                 <Stack direction="row" sx={{ mt: 1 }}>
