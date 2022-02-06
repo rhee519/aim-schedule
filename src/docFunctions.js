@@ -176,3 +176,66 @@ export const fetchAnnualData = async (uid, date) => {
     return data;
   });
 };
+
+export const fetchRangeDataResponses = async (uid, startDate, endDate) => {
+  if (!(uid && startDate && endDate)) return undefined;
+  const responses = [];
+  for (let d = moment(startDate); d.isSameOrBefore(endDate); d.add(1, "d")) {
+    responses.push(fetchDayData(uid, d));
+  }
+  return Promise.all(responses);
+};
+
+export const fetchRangeData = async (uid, startDate, endDate) => {
+  return fetchRangeDataResponses(uid, startDate, endDate).then((responses) => {
+    const data = {};
+    responses.forEach((doc) => {
+      const docData = doc.data();
+      const key = moment(docData.start.toDate()).format("YYYYMMDD");
+      data[key] = docData;
+    });
+    return data;
+  });
+};
+
+export const getWorkTime = (calendar, data, startDate, endDate) => {
+  if (!(calendar && startDate && endDate)) return undefined;
+  let standard = 0,
+    scheduled = 0,
+    actual = 0;
+  for (let d = moment(startDate); d.isSameOrBefore(endDate); d.add(1, "d")) {
+    const key = d.format("YYYYMMDD");
+    const htype = holidayType(d, calendar);
+
+    // 기준 근로시간 계산
+    if (htype === "default") standard += 8;
+    if (data[key]) {
+      const { type } = data[key];
+      if (type === "annual") scheduled += 8;
+      else if (type === "half") scheduled += 4;
+      else if (type === "work") {
+        // 신청한 근로시간 계산
+        let workHours =
+          (data[key].finish.toDate().getTime() -
+            data[key].start.toDate().getTime()) /
+          (1000 * 60 * 60);
+        if (workHours > 8) workHours -= 1; // 법정 휴게시간: 8시간 당 무급 휴게시간 1시간
+        if (workHours > 12) workHours = 12; // 일일 최대 근로시간: 12시간
+        scheduled += workHours;
+
+        // 실제로 기록된 근로시간 계산
+        let workedHours =
+          data[key].started && data[key].finished
+            ? (data[key].finished.toDate().getTime() -
+                data[key].started.toDate().getTime()) /
+              (1000 * 60 * 60)
+            : 0;
+        if (workedHours > 8) workedHours -= 1; // 법정 휴게시간: 8시간 당 무급 휴게시간 1시간
+        if (workedHours > 12) workedHours = 12; // 일일 최대 근로시간: 12시간
+        actual += workedHours;
+      }
+    }
+  }
+
+  return { standard, scheduled, actual };
+};

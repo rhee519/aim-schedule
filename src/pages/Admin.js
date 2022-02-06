@@ -69,12 +69,10 @@ import {
   waitingUserRef,
 } from "../docFunctions";
 import {
-  annualEmoji,
-  halfEmoji,
   koreanWeekDays,
   PickersDayWithMarker,
   RecentScheduleStatusText,
-  sickEmoji,
+  ScheduleCategory,
   worktypeEmoji,
 } from "../components/Schedule";
 import CheckIcon from "@mui/icons-material/Check";
@@ -318,27 +316,7 @@ const UserDisplay = (props) => {
               <ListItem>
                 <Status user={user} editable={true} />
               </ListItem>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-              >
-                <ListItemText
-                  primary={annualEmoji}
-                  secondary="연차"
-                  sx={{ textAlign: "center" }}
-                />
-                <ListItemText
-                  primary={halfEmoji}
-                  secondary="반차"
-                  sx={{ textAlign: "center" }}
-                />
-                <ListItemText
-                  primary={sickEmoji}
-                  secondary="병가"
-                  sx={{ textAlign: "center" }}
-                />
-              </Stack>
+              <ScheduleCategory />
               <ThemeProvider theme={badgeTheme}>
                 <StaticDatePicker
                   displayStaticWrapperAs="desktop"

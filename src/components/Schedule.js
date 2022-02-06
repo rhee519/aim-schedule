@@ -54,6 +54,8 @@ import {
   fetchUser,
   initialDailyData,
   userDocRef,
+  fetchRangeData,
+  getWorkTime,
 } from "../docFunctions";
 import {
   CalendarContext,
@@ -64,22 +66,55 @@ import { setDoc, updateDoc, Timestamp } from "@firebase/firestore";
 import CustomRangeCalendar, { holidayType } from "./CustomRangeCalendar";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
-import PriceCheckIcon from "@mui/icons-material/PriceCheck";
+import TimelapseIcon from "@mui/icons-material/Timelapse";
 import { badgeTheme } from "../theme";
 
 // 현재 @mui/lab 버전에서는 MonthPicker 에러때문에 월 선택창을 띄우는 것이 불가능!
 // 기능은 정상이지만, 에러 메시지가 계속 출력됨.
 // 주기적으로 확인 필요
 
-export const annualEmoji = "🔥";
-export const halfEmoji = "😎";
-export const sickEmoji = "😷";
+export const EMOJI_ANNUAL = "🔥";
+export const EMOJI_HALF = "😎";
+export const EMOJI_SICK = "😷";
+export const EMOJI_ALT = "😴";
 export const worktypeEmoji = (type) => {
-  if (type === "annual") return annualEmoji;
-  else if (type === "half") return halfEmoji;
-  else if (type === "sick") return sickEmoji;
+  if (type === "annual") return EMOJI_ANNUAL;
+  else if (type === "half") return EMOJI_HALF;
+  else if (type === "sick") return EMOJI_SICK;
+  else if (type === "alt") return EMOJI_ALT;
   else return undefined;
 };
+
+export const ScheduleCategory = () => (
+  <Stack
+    direction="row"
+    justifyContent="space-between"
+    alignItems="center"
+    sx={{ width: "100%" }}
+  >
+    <ListItemText
+      primary={EMOJI_ANNUAL}
+      secondary="연차"
+      sx={{ textAlign: "center" }}
+    />
+    <ListItemText
+      primary={EMOJI_HALF}
+      secondary="반차"
+      sx={{ textAlign: "center" }}
+    />
+    <ListItemText
+      primary={EMOJI_SICK}
+      secondary="병가"
+      sx={{ textAlign: "center" }}
+    />
+    <ListItemText
+      primary={EMOJI_ALT}
+      secondary="대체 휴무"
+      sx={{ textAlign: "center" }}
+    />
+  </Stack>
+);
+
 const isWeekend = (date) => {
   const d = moment(date);
   return d.day() === 0 || d.day() === 6;
@@ -703,41 +738,30 @@ const ApplicationDisplay = ({ onClose }) => {
   const [startDate, setStartDate] = useState();
   const [endDate, setEndDate] = useState();
   const [selectedDateRange, setSelectedDateRange] = useState([null, null]);
-  const [period, setPeriod] = useState("1");
+  // 조회한 신청 기간
+  const [period, setPeriod] = useState("1"); // 신청 개월수
 
-  const fetchRangeData = useCallback(
-    async (from, to) => {
-      setShowData(true);
-      setLoading(true);
-      setSelectedDateRange([from, to]);
-      const responses = [];
-      for (let d = moment(from); d.isSameOrBefore(to); d.add(1, "d")) {
-        const key = moment(d).format("YYYYMMDD");
-        const initData = initialDailyData(moment(d), calendar);
-        responses.push(
-          fetchDayData(user.uid, moment(d)).then(async (docSnap) => ({
-            key,
-            data: docSnap.exists() ? docSnap.data() : initData,
-            exists: docSnap.exists(),
-          }))
-        );
-      }
-
-      Promise.all(responses)
-        .then((snapshot) => {
-          const newData = {};
-          snapshot.forEach(({ key, data, exists }) => {
-            newData[key] = data;
-            // if (!exists) {
-            //   await setDoc(dayRef(user.uid, moment(key)), data);
-            // }
-          });
-          setData(newData);
-        })
-        .then(() => setLoading(false));
-    },
-    [user.uid, calendar]
-  );
+  const handleFetchClick = async () => {
+    setLoading(true);
+    setSelectedDateRange([startDate, endDate]);
+    fetchRangeData(user.uid, startDate, endDate)
+      .then((data) => {
+        const newData = { ...data };
+        for (
+          let d = moment(startDate);
+          d.isSameOrBefore(endDate);
+          d.add(1, "d")
+        ) {
+          const key = d.format("YYYYMMDD");
+          if (!newData[key]) newData[key] = initialDailyData(d, calendar);
+        }
+        setData(newData);
+      })
+      .then(() => {
+        setShowData(true);
+        setLoading(false);
+      });
+  };
 
   const handleStartChange = (event, date) => {
     const key = moment(date).format("YYYYMMDD");
@@ -829,13 +853,14 @@ const ApplicationDisplay = ({ onClose }) => {
           <Button
             onClick={handleSaveClick}
             variant="contained"
-            disabled={!Boolean(startDate || endDate)}
+            disabled={!showData}
           >
             SAVE
           </Button>
           <Button onClick={onClose}>CANCEL</Button>
         </Box>
       </Stack>
+      <Divider />
       <DatePicker
         value={startDate}
         onChange={(newDate) => setStartDate(newDate)}
@@ -844,7 +869,7 @@ const ApplicationDisplay = ({ onClose }) => {
             direction="row"
             alignItems="center"
             justifyContent="space-between"
-            sx={{ width: "100%" }}
+            sx={{ width: "100%", p: 1 }}
           >
             <Stack direction="row" alignItems="center">
               <TextField {...params} />
@@ -871,7 +896,7 @@ const ApplicationDisplay = ({ onClose }) => {
                 variant="contained"
                 size="large"
                 disabled={!Boolean(startDate)}
-                onClick={() => fetchRangeData(startDate, endDate)}
+                onClick={handleFetchClick}
                 sx={{ m: 1 }}
               >
                 조회
@@ -902,9 +927,14 @@ const ApplicationDisplay = ({ onClose }) => {
               const htype = holidayType(date, calendar);
               const offday = htype === "holiday" || htype === "vacation";
               const holidayText = offday ? calendar[htype][key] : "";
-              const secondaryText =
-                koreanWeekDays[date.day()] + ` ${holidayText}`;
-
+              let secondaryText = koreanWeekDays[date.day()];
+              if (holidayText) secondaryText += ` | ${holidayText}`;
+              const secondaryTextColor =
+                calendar.event[key] || htype === "default"
+                  ? "text.secondary"
+                  : htype === "saturday"
+                  ? "primary"
+                  : "error";
               return (
                 <Box key={index}>
                   <ListItem>
@@ -912,6 +942,7 @@ const ApplicationDisplay = ({ onClose }) => {
                       variant="body2"
                       primary={date.format("M월 D일")}
                       secondary={secondaryText}
+                      secondaryTypographyProps={{ color: secondaryTextColor }}
                       sx={{ width: 100 }}
                     />
                     {(offday || weekend) && (
@@ -1060,61 +1091,70 @@ const Calculate = (props) => {
   const calendar = useContext(CalendarContext);
   const [dateRange, setDateRange] = useState([null, null]); // 근로 시간 확인 & 급여 정산
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState([]);
+  const [data, setData] = useState({});
   const [showDatePicker, setShowDatePicker] = useState(true);
   const [showDetail, setShowDetail] = useState(false);
-  const [worktime, setWorktime] = useState(0);
-  const [workedtime, setWorkedtime] = useState(0);
+  const [worktime, setWorktime] = useState({});
+  // const [workedtime, setWorkedtime] = useState(0);
 
   const handleCalculateClick = async (event) => {
     setLoading(true);
-    const responses = [];
-    for (
-      let d = moment(dateRange[0]);
-      d.isSameOrBefore(dateRange[1]);
-      d.add(1, "d")
-    ) {
-      const key = moment(d).format("YYYYMMDD");
-      responses.push(
-        fetchDayData(user.uid, moment(d)).then((docSnap) => {
-          if (docSnap.exists()) return { key, data: docSnap.data() };
-          else return { key, data: initialDailyData(moment(key), calendar) };
-        })
-      );
-    }
-    Promise.all(responses)
-      .then((snapshot) => {
-        let timeToWork = 0,
-          timeWorked = 0;
-        setData(snapshot);
-        snapshot.forEach((value) => {
-          const { data, key } = value;
-          const {
-            start,
-            started,
-            finish,
-            finished,
-            // type
-          } = data;
-          const htype = holidayType(moment(key), calendar);
-          if (htype !== "default") console.log("off day");
-          else {
-            const work = finish.toDate().getTime() - start.toDate().getTime();
-            const worked =
-              started && finished
-                ? finished.toDate().getTime() - started.toDate().getTime()
-                : 0;
-            timeToWork += work;
-            timeWorked += worked;
-          }
-        });
-        setWorktime(timeToWork);
-        setWorkedtime(timeWorked);
+    fetchRangeData(user.uid, dateRange[0], dateRange[1])
+      .then((data) => {
+        setData(data);
+        setWorktime(getWorkTime(calendar, data, dateRange[0], dateRange[1]));
       })
       .then(() => {
         setLoading(false);
         setShowDatePicker(false);
       });
+    // const responses = [];
+    // for (
+    //   let d = moment(dateRange[0]);
+    //   d.isSameOrBefore(dateRange[1]);
+    //   d.add(1, "d")
+    // ) {
+    //   const key = moment(d).format("YYYYMMDD");
+    //   responses.push(
+    //     fetchDayData(user.uid, moment(d)).then((docSnap) => {
+    //       if (docSnap.exists()) return { key, data: docSnap.data() };
+    //       else return { key, data: initialDailyData(moment(key), calendar) };
+    //     })
+    //   );
+    // }
+    // Promise.all(responses)
+    //   .then((snapshot) => {
+    //     let timeToWork = 0,
+    //       timeWorked = 0;
+    //     setData(snapshot);
+    //     snapshot.forEach((value) => {
+    //       const { data, key } = value;
+    //       const {
+    //         start,
+    //         started,
+    //         finish,
+    //         finished,
+    //         // type
+    //       } = data;
+    //       const htype = holidayType(moment(key), calendar);
+    //       if (htype !== "default") {
+    //       } else {
+    //         const work = finish.toDate().getTime() - start.toDate().getTime();
+    //         const worked =
+    //           started && finished
+    //             ? finished.toDate().getTime() - started.toDate().getTime()
+    //             : 0;
+    //         timeToWork += work;
+    //         timeWorked += worked;
+    //       }
+    //     });
+    //     setWorktime(timeToWork);
+    //     setWorkedtime(timeWorked);
+    //   })
+    //   .then(() => {
+    //     setLoading(false);
+    //     setShowDatePicker(false);
+    //   });
   };
 
   const handleRecalculateClick = (event) => {
@@ -1133,11 +1173,11 @@ const Calculate = (props) => {
           variant="contained"
           loading={loading}
           onClick={handleCalculateClick}
-          startIcon={<PriceCheckIcon />}
+          startIcon={<TimelapseIcon />}
           loadingPosition="start"
           disabled={!dateRange[1]}
         >
-          근로시간 및 예상 급여 확인하기
+          근로시간 확인하기
         </LoadingButton>
         <StaticDateRangePicker
           displayStaticWrapperAs="desktop"
@@ -1163,41 +1203,63 @@ const Calculate = (props) => {
           {dateRange[0].format("Y년 M월 D일")}부터{" "}
           {dateRange[1].format("Y년 M월 D일")}까지
         </Typography>
+        <Typography>기준 근로시간: {worktime.standard}h</Typography>
+        <Typography>예정 근로시간: {worktime.scheduled}h</Typography>
         <Typography>
-          예정 근로시간: {Math.floor(worktime / 3600000)}h{" "}
-          {Math.floor(worktime / 60000) % 60}m
-        </Typography>
-        <Typography>
-          실제 근로시간: {Math.floor(workedtime / 3600000)}h{" "}
-          {Math.floor(workedtime / 60000) % 60}m
+          실제 근로시간: {worktime.actual % 1}h {(worktime.actual * 60) % 60}m
         </Typography>
         <Button variant="text" onClick={handleDetailClick}>
           {showDetail ? "hide" : "show detail"}
         </Button>
-        {showDetail &&
-          data.map(({ key, data }) => {
-            const d = moment(key);
-            const htype = holidayType(d, calendar);
-            return (
-              <Box key={key}>
-                <Typography>{d.format("M월 D일")}</Typography>
-                {htype === "default" ? (
-                  <Typography>
-                    {moment(data.start.toDate()).format("HH:mm")} ~{" "}
-                    {moment(data.finish.toDate()).format("HH:mm")}
-                  </Typography>
-                ) : htype === "annual" ? (
-                  <Typography>연차</Typography>
-                ) : htype === "sick" ? (
-                  <Typography>병가</Typography>
-                ) : htype === "holiday" || htype === "vacation" ? (
-                  <Typography>{calendar[htype][key]}</Typography>
-                ) : (
-                  <Typography>{htype}</Typography>
-                )}
-              </Box>
-            );
-          })}
+        {
+          showDetail &&
+            Object.keys(data).map((key, index) => {
+              const date = moment(key);
+              const htype = holidayType(date, calendar);
+              return (
+                <Box key={key}>
+                  <Typography>{date.format("M월 D일")}</Typography>
+                  {htype === "default" ? (
+                    <Typography>
+                      {moment(data[key].start.toDate()).format("HH:mm")} ~{" "}
+                      {moment(data[key].finish.toDate()).format("HH:mm")}
+                    </Typography>
+                  ) : htype === "annual" ? (
+                    <Typography>연차</Typography>
+                  ) : htype === "sick" ? (
+                    <Typography>병가</Typography>
+                  ) : htype === "holiday" || htype === "vacation" ? (
+                    <Typography>{calendar[htype][key]}</Typography>
+                  ) : (
+                    <Typography>{htype}</Typography>
+                  )}
+                </Box>
+              );
+            })
+          // data.map(({ key, data }) => {
+          //   const d = moment(key);
+          //   const htype = holidayType(d, calendar);
+          //   return (
+          //     <Box key={key}>
+          //       <Typography>{d.format("M월 D일")}</Typography>
+          //       {htype === "default" ? (
+          //         <Typography>
+          //           {moment(data.start.toDate()).format("HH:mm")} ~{" "}
+          //           {moment(data.finish.toDate()).format("HH:mm")}
+          //         </Typography>
+          //       ) : htype === "annual" ? (
+          //         <Typography>연차</Typography>
+          //       ) : htype === "sick" ? (
+          //         <Typography>병가</Typography>
+          //       ) : htype === "holiday" || htype === "vacation" ? (
+          //         <Typography>{calendar[htype][key]}</Typography>
+          //       ) : (
+          //         <Typography>{htype}</Typography>
+          //       )}
+          //     </Box>
+          //   );
+          // })
+        }
       </Paper>
       <Button variant="contained" onClick={handleRecalculateClick}>
         다른 날짜 선택하기
