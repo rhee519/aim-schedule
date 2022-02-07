@@ -69,6 +69,7 @@ import {
   waitingUserRef,
 } from "../docFunctions";
 import {
+  EMOJI_ALERT,
   koreanWeekDays,
   PickersDayWithMarker,
   RecentScheduleStatusText,
@@ -416,10 +417,13 @@ const UserDisplay = (props) => {
                   initialDailyData(moment(key), calendar);
                 const { type } = dailyData;
                 const htype = holidayType(moment(key), calendar);
-                const notice =
-                  htype !== "default" && type !== "offday" ? "🚨" : undefined;
+                const showAlert = Boolean(
+                  htype !== "default" && type === "work"
+                );
+                // const notice =
+                //   htype !== "default" && type !== "offday" ? "🚨" : undefined;
 
-                let secondaryText = notice || koreanWeekDays[moment(key).day()];
+                let secondaryText = koreanWeekDays[moment(key).day()];
                 if (htype === "vacation" || htype === "holiday")
                   secondaryText += ` | ${calendar[htype][key]}`;
                 const secondaryTextColor =
@@ -464,7 +468,7 @@ const UserDisplay = (props) => {
                         justifyContent: "center",
                       }}
                     >
-                      {worktypeEmoji(type)}
+                      {showAlert ? EMOJI_ALERT : worktypeEmoji(type)}
                     </Box>
                     <Box width={100} mr={1}>
                       <ListItemText

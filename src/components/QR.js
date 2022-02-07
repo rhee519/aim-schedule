@@ -342,17 +342,20 @@ const CheckIn = async (uid, calendar) => {
     if (docSnap.exists()) {
       const data = docSnap.data();
       const started = data.started || time;
-      const log = data.log || time;
+      const log = data.log || [];
       log.push({ time, type: "in" });
       await updateDoc(docRef, { started, log });
     } else {
       const log = [];
       log.push({ time, type: "in" });
-      await setDoc(docRef, {
+      const newData = {
         ...initialDailyData(time, calendar),
         started: time,
         log,
-      });
+      };
+      if (newData.type === "annual" || newData.type === "offday")
+        newData.type = "work";
+      await setDoc(docRef, newData);
     }
   });
 };

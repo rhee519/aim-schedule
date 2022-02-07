@@ -77,6 +77,7 @@ export const EMOJI_ANNUAL = "🔥";
 export const EMOJI_HALF = "😎";
 export const EMOJI_SICK = "😷";
 export const EMOJI_ALT = "😴";
+export const EMOJI_ALERT = "🚨";
 export const worktypeEmoji = (type) => {
   if (type === "annual") return EMOJI_ANNUAL;
   else if (type === "half") return EMOJI_HALF;
@@ -110,6 +111,11 @@ export const ScheduleCategory = () => (
     <ListItemText
       primary={EMOJI_ALT}
       secondary="대체 휴무"
+      sx={{ textAlign: "center" }}
+    />
+    <ListItemText
+      primary={EMOJI_ALERT}
+      secondary="휴일 근로"
       sx={{ textAlign: "center" }}
     />
   </Stack>
